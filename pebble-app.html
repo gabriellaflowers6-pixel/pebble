@@ -1322,7 +1322,7 @@ function DataProvider({ children }) {
         max_tokens: 300,
         messages: [{
           role: 'user',
-          content: `User context: ${ctx}\n\nGenerate today's daily quote and recommendation. Reply with ONLY valid JSON, no extra text:\n{"quote":"...","quoteAuthor":"...","rec":{"type":"movie","title":"...","reason":"..."}}\n\nType can be movie, book, recipe, or podcast. Make it personal and relevant to this user's lifestyle.`
+          content: `User context: ${ctx}\n\nGenerate today's daily quote and recommendation. The user loves Terence McKenna and Alan Watts quotes — prioritize them heavily, but other philosophers, mystics, or thinkers in that vein are fine too. Reply with ONLY valid JSON, no extra text:\n{"quote":"...","quoteAuthor":"...","rec":{"type":"movie","title":"...","reason":"..."}}\n\nType can be movie, book, recipe, or podcast. Make it personal and relevant to this user's lifestyle.`
         }]
       })
     })
