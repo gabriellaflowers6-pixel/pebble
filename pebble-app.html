@@ -1244,7 +1244,8 @@ function dataReducer(state, action) {
       return { ...state, profile: { ...state.profile, ...action.fields } };
     }
     case 'LOAD_DATA': {
-      return deepMerge(DEFAULT_DATA, action.data);
+      const merged = deepMerge(DEFAULT_DATA, action.data);
+      return { ...merged, settings: { ...merged.settings, ...state.settings } };
     }
     default: return state;
   }
