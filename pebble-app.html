@@ -1258,7 +1258,27 @@ function DataProvider({ children }) {
   const [data, dispatch] = useReducer(dataReducer, null, () => {
     try {
       const saved = localStorage.getItem('pebble-data');
-      if (saved) return deepMerge(DEFAULT_DATA, JSON.parse(saved));
+      if (saved) {
+        const parsed = deepMerge(DEFAULT_DATA, JSON.parse(saved));
+        // Restore credentials from backup in case main data was purged/corrupted
+        try {
+          const creds = localStorage.getItem('pebble-credentials');
+          if (creds) {
+            const savedCreds = JSON.parse(creds);
+            parsed.settings = { ...parsed.settings, ...savedCreds };
+          }
+        } catch {}
+        return parsed;
+      }
+    } catch {}
+    // Even if main data is gone, try restoring credentials from backup
+    try {
+      const creds = localStorage.getItem('pebble-credentials');
+      if (creds) {
+        const restored = { ...DEFAULT_DATA };
+        restored.settings = { ...restored.settings, ...JSON.parse(creds) };
+        return restored;
+      }
     } catch {}
     return DEFAULT_DATA;
   });
@@ -1268,7 +1288,23 @@ function DataProvider({ children }) {
 
   // Save to localStorage on every change
   useEffect(() => {
-    localStorage.setItem('pebble-data', JSON.stringify(data));
+    try { localStorage.setItem('pebble-data', JSON.stringify(data)); } catch {}
+    // Backup credentials separately so they survive localStorage purges and Gist loads
+    try {
+      const creds = JSON.stringify(data.settings);
+      localStorage.setItem('pebble-credentials', creds);
+    } catch {}
+  }, [data]);
+
+  // Emergency save when user switches away (mobile kills pages without warning)
+  useEffect(() => {
+    const save = () => {
+      try { localStorage.setItem('pebble-data', JSON.stringify(data)); } catch {}
+      try { localStorage.setItem('pebble-credentials', JSON.stringify(data.settings)); } catch {}
+    };
+    document.addEventListener('visibilitychange', save);
+    window.addEventListener('pagehide', save);
+    return () => { document.removeEventListener('visibilitychange', save); window.removeEventListener('pagehide', save); };
   }, [data]);
 
   // Load from Gist on mount (source of truth for cross-device sync)
@@ -1293,12 +1329,16 @@ function DataProvider({ children }) {
     const { gistId, gistToken } = data.settings;
     if (!gistId || !gistToken) return;
     const { settings: _omit, ...safeData } = data;
-    const t = setTimeout(() => {
-      fetch(`https://api.github.com/gists/${gistId}`, {
+    const t = setTimeout(async () => {
+      const push = () => fetch(`https://api.github.com/gists/${gistId}`, {
         method: 'PATCH',
         headers: { Authorization: `token ${gistToken}`, 'Content-Type': 'application/json', Accept: 'application/vnd.github+json' },
         body: JSON.stringify({ files: { 'pebble.json': { content: JSON.stringify(safeData) } } })
-      }).catch(() => {});
+      });
+      try {
+        let res = await push();
+        if (res.status === 409) { await new Promise(r => setTimeout(r, 2000)); await push(); }
+      } catch {}
     }, 3000);
     return () => clearTimeout(t);
   }, [data]);
@@ -3377,11 +3417,13 @@ function SettingsPanel({ open, onClose }) {
           <p style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>sync & ai</p>
           <div className="glass-card px-4 py-3 space-y-3 mb-6">
             <div>
-              <label style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--dark)', display: 'block', marginBottom: 4 }}>claude api key</label>
-              <input type="password" value={data.settings?.apiKey || ''}
+              <label style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--dark)', display: 'block', marginBottom: 4 }}>claude api key {data.settings?.apiKey ? '✓' : ''}</label>
+              <input type="text" autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck="false"
+                value={data.settings?.apiKey || ''}
                 onChange={e => dispatch({ type: 'UPDATE_SETTINGS', key: 'apiKey', value: e.target.value })}
+                onBlur={() => { try { localStorage.setItem('pebble-credentials', JSON.stringify(data.settings)); } catch {} }}
                 placeholder="sk-ant-..."
-                style={{ width: '100%', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--dark)', background: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 8, padding: '8px 10px', outline: 'none' }} />
+                style={{ width: '100%', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--dark)', background: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 8, padding: '8px 10px', outline: 'none', WebkitTextSecurity: 'disc' }} />
             </div>
             <div style={{ height: 1, background: 'rgba(0,0,0,0.04)' }}/>
             <div>
@@ -3392,23 +3434,28 @@ function SettingsPanel({ open, onClose }) {
                 style={{ width: '100%', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--dark)', background: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 8, padding: '8px 10px', outline: 'none' }} />
             </div>
             <div>
-              <label style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--dark)', display: 'block', marginBottom: 4 }}>github token</label>
-              <input type="password" value={data.settings?.gistToken || ''}
+              <label style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--dark)', display: 'block', marginBottom: 4 }}>github token {data.settings?.gistToken ? '✓' : ''}</label>
+              <input type="text" autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck="false"
+                value={data.settings?.gistToken || ''}
                 onChange={e => dispatch({ type: 'UPDATE_SETTINGS', key: 'gistToken', value: e.target.value })}
+                onBlur={() => { try { localStorage.setItem('pebble-credentials', JSON.stringify(data.settings)); } catch {} }}
                 placeholder="ghp_..."
-                style={{ width: '100%', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--dark)', background: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 8, padding: '8px 10px', outline: 'none' }} />
+                style={{ width: '100%', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--dark)', background: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 8, padding: '8px 10px', outline: 'none', WebkitTextSecurity: 'disc' }} />
             </div>
             <p style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: 'var(--muted)', lineHeight: 1.5, marginBottom: 8 }}>auto-saves to gist every few seconds. on a new device, enter your gist id + token, then hit "pull" to load your data. need a gist? go to gist.github.com → new secret gist → create it → copy the ID from the URL.</p>
             {data.settings.gistId && data.settings.gistToken && (
               <div className="flex gap-2">
                 <button onClick={async () => {
                   const { settings: _omit, ...safeData } = data;
+                  const pushOnce = () => fetch(`https://api.github.com/gists/${data.settings.gistId}`, {
+                    method: 'PATCH',
+                    headers: { Authorization: `token ${data.settings.gistToken}`, 'Content-Type': 'application/json', Accept: 'application/vnd.github+json' },
+                    body: JSON.stringify({ files: { 'pebble.json': { content: JSON.stringify(safeData) } } })
+                  });
                   try {
-                    const res = await fetch(`https://api.github.com/gists/${data.settings.gistId}`, {
-                      method: 'PATCH',
-                      headers: { Authorization: `token ${data.settings.gistToken}`, 'Content-Type': 'application/json', Accept: 'application/vnd.github+json' },
-                      body: JSON.stringify({ files: { 'pebble.json': { content: JSON.stringify(safeData) } } })
-                    });
+                    let res = await pushOnce();
+                    // Retry once on 409 conflict (laptop auto-save racing with phone push)
+                    if (res.status === 409) { await new Promise(r => setTimeout(r, 1500)); res = await pushOnce(); }
                     if (res.ok) { alert('pushed to gist!'); }
                     else { const err = await res.json(); alert(`push failed (${res.status}): ${err.message}`); }
                   } catch (e) { alert('push failed: ' + e.message); }
