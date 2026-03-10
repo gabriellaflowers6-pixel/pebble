@@ -3397,18 +3397,34 @@ function SettingsPanel({ open, onClose }) {
                 placeholder="ghp_..."
                 style={{ width: '100%', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--dark)', background: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 8, padding: '8px 10px', outline: 'none' }} />
             </div>
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: 'var(--muted)', lineHeight: 1.5, marginBottom: 8 }}>saves to localStorage automatically. gist syncs your data across devices — use the button to pull when switching devices.</p>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: 'var(--muted)', lineHeight: 1.5, marginBottom: 8 }}>auto-saves to gist every few seconds. on a new device, enter your gist id + token, then hit "pull" to load your data. need a gist? go to gist.github.com → new secret gist → create it → copy the ID from the URL.</p>
             {data.settings.gistId && data.settings.gistToken && (
-              <button onClick={async () => {
-                try {
-                  const res = await fetch(`https://api.github.com/gists/${data.settings.gistId}`, { headers: { Authorization: `token ${data.settings.gistToken}`, Accept: 'application/vnd.github+json' } });
-                  const gist = await res.json();
-                  const content = gist.files?.['pebble.json']?.content;
-                  if (content) dispatch({ type: 'LOAD_DATA', data: JSON.parse(content) });
-                } catch {}
-              }} style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--primary)', background: 'var(--primary-light)', border: 'none', borderRadius: 8, padding: '7px 14px', cursor: 'pointer', width: '100%' }}>
-                ↓ pull from gist
-              </button>
+              <div className="flex gap-2">
+                <button onClick={async () => {
+                  const { settings: _omit, ...safeData } = data;
+                  try {
+                    await fetch(`https://api.github.com/gists/${data.settings.gistId}`, {
+                      method: 'PATCH',
+                      headers: { Authorization: `token ${data.settings.gistToken}`, 'Content-Type': 'application/json', Accept: 'application/vnd.github+json' },
+                      body: JSON.stringify({ files: { 'pebble.json': { content: JSON.stringify(safeData) } } })
+                    });
+                    alert('pushed to gist!');
+                  } catch { alert('push failed — check your token'); }
+                }} style={{ flex: 1, fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--accent)', background: 'var(--accent-light)', border: 'none', borderRadius: 8, padding: '7px 14px', cursor: 'pointer' }}>
+                  ↑ push now
+                </button>
+                <button onClick={async () => {
+                  try {
+                    const res = await fetch(`https://api.github.com/gists/${data.settings.gistId}`, { headers: { Authorization: `token ${data.settings.gistToken}`, Accept: 'application/vnd.github+json' } });
+                    const gist = await res.json();
+                    const content = gist.files?.['pebble.json']?.content;
+                    if (content) { dispatch({ type: 'LOAD_DATA', data: JSON.parse(content) }); alert('pulled! refresh to apply.'); }
+                    else alert('no data in gist yet — push from your other device first.');
+                  } catch { alert('pull failed — check your credentials'); }
+                }} style={{ flex: 1, fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--primary)', background: 'var(--primary-light)', border: 'none', borderRadius: 8, padding: '7px 14px', cursor: 'pointer' }}>
+                  ↓ pull now
+                </button>
+              </div>
             )}
           </div>
 
