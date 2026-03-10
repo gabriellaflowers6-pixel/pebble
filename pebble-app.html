@@ -14,6 +14,7 @@
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body { margin: 0; background: #E8E4DE; font-family: Calibri, sans-serif; }
@@ -1017,7 +1018,7 @@ const DEFAULT_DATA = {
     saves: [],
     dailyPick: { date: '', quote: '', quoteAuthor: '', rec: null },
   },
-  settings: { gistId: '', gistToken: '', apiKey: '' },
+  settings: { gistId: '', gistToken: '', apiKey: '', oneSignalAppId: '', oneSignalRestKey: '' },
   chat: { messages: [] },
 };
 
@@ -1730,6 +1731,24 @@ function Header({ onJarOpen, onSettingsOpen }) {
   );
 }
 
+/* ── Push Notification Helper ── */
+async function sendPushNotification(appId, restKey, title, body) {
+  if (!appId || !restKey) return false;
+  try {
+    const res = await fetch('https://onesignal.com/api/v1/notifications', {
+      method: 'POST',
+      headers: { 'Authorization': `Basic ${restKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        app_id: appId,
+        included_segments: ['All'],
+        headings: { en: title },
+        contents: { en: body },
+      }),
+    });
+    return res.ok;
+  } catch { return false; }
+}
+
 function ChatBar() {
   const { data, dispatch } = useContext(DataCtx);
   const { setCardQuiz } = useContext(QuizCtx);
@@ -1796,6 +1815,7 @@ Available actions:
 - ADD_JOB_APPLICATION: {type, company, role}
 - UPDATE_JOB_STATUS: {type, index, status ("applied"|"interviewing"|"offered"|"rejected")}
 - ADD_CAREER_EXPERIENCE: {type, topic}
+- SEND_NOTIFICATION: {type, title, body} — send a push notification to the user's phone (use for reminders, streak alerts, deadline nudges, or when the user asks you to remind them of something)
 
 You can include multiple actions in the array. Only include <actions> when explicitly modifying data. Today's date is ${todayKey}.
 
@@ -1824,6 +1844,8 @@ SPECIAL: When the user asks you to help BUILD a plan (gym routine, skincare rout
             actions.forEach(action => {
               if (action.type === 'START_CARD_QUIZ') {
                 setCardQuiz(action);
+              } else if (action.type === 'SEND_NOTIFICATION') {
+                sendPushNotification(data.settings?.oneSignalAppId, data.settings?.oneSignalRestKey, action.title, action.body);
               } else {
                 dispatch(action);
               }
@@ -3390,6 +3412,45 @@ function SettingsPanel({ open, onClose }) {
             )}
           </div>
 
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>push notifications</p>
+          <div className="glass-card px-4 py-3 space-y-3 mb-6">
+            <div>
+              <label style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--dark)', display: 'block', marginBottom: 4 }}>onesignal app id</label>
+              <input type="text" value={data.settings?.oneSignalAppId || ''}
+                onChange={e => dispatch({ type: 'UPDATE_SETTINGS', key: 'oneSignalAppId', value: e.target.value })}
+                placeholder="abc123-..."
+                style={{ width: '100%', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--dark)', background: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 8, padding: '8px 10px', outline: 'none' }} />
+            </div>
+            <div style={{ height: 1, background: 'rgba(0,0,0,0.04)' }}/>
+            <div>
+              <label style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--dark)', display: 'block', marginBottom: 4 }}>onesignal rest api key</label>
+              <input type="password" value={data.settings?.oneSignalRestKey || ''}
+                onChange={e => dispatch({ type: 'UPDATE_SETTINGS', key: 'oneSignalRestKey', value: e.target.value })}
+                placeholder="OS_..."
+                style={{ width: '100%', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--dark)', background: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 8, padding: '8px 10px', outline: 'none' }} />
+            </div>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: 'var(--muted)', lineHeight: 1.5 }}>get these from onesignal.com → your app → settings. once you've added your App ID, press the button below to allow notifications on this device.</p>
+            {data.settings?.oneSignalAppId && (
+              <button onClick={() => {
+                if (window.OneSignal) {
+                  window.OneSignal.Notifications.requestPermission();
+                } else {
+                  alert('OneSignal is still loading — try again in a moment');
+                }
+              }} style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--primary)', background: 'var(--primary-light)', border: 'none', borderRadius: 8, padding: '7px 14px', cursor: 'pointer', width: '100%' }}>
+                allow push notifications
+              </button>
+            )}
+            {data.settings?.oneSignalAppId && data.settings?.oneSignalRestKey && (
+              <button onClick={async () => {
+                const ok = await sendPushNotification(data.settings.oneSignalAppId, data.settings.oneSignalRestKey, 'pebble', 'push notifications are working!');
+                alert(ok ? 'test sent! check your phone.' : 'something went wrong — double-check your keys.');
+              }} style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--accent)', background: 'var(--accent-light)', border: 'none', borderRadius: 8, padding: '7px 14px', cursor: 'pointer', width: '100%' }}>
+                send test notification
+              </button>
+            )}
+          </div>
+
           <p style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>theme</p>
           <div className="space-y-2.5">
             {Object.entries(THEMES).map(([id, theme]) => (
@@ -3617,6 +3678,17 @@ function App() {
     const t = setTimeout(() => location.reload(), msTillMidnight);
     return () => clearTimeout(t);
   }, []);
+
+  /* OneSignal init — runs once when App ID is set */
+  useEffect(() => {
+    const appId = data.settings?.oneSignalAppId;
+    if (!appId || window._osInited) return;
+    window._osInited = true;
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    window.OneSignalDeferred.push(async function(OneSignal) {
+      await OneSignal.init({ appId });
+    });
+  }, [data.settings?.oneSignalAppId]);
 
   const staticPages = [StreamPage, PlannerPage, JournalPage, KitchenPage, GymPage, SelfCarePage, StudyPage, TrackerPage, CareerPage, NotebookPage, SegmentBuilderPage];
   const pages = [...staticPages, ...customSegments.map(s => getSegPage(s.id))];
