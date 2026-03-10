@@ -3403,13 +3403,14 @@ function SettingsPanel({ open, onClose }) {
                 <button onClick={async () => {
                   const { settings: _omit, ...safeData } = data;
                   try {
-                    await fetch(`https://api.github.com/gists/${data.settings.gistId}`, {
+                    const res = await fetch(`https://api.github.com/gists/${data.settings.gistId}`, {
                       method: 'PATCH',
                       headers: { Authorization: `token ${data.settings.gistToken}`, 'Content-Type': 'application/json', Accept: 'application/vnd.github+json' },
                       body: JSON.stringify({ files: { 'pebble.json': { content: JSON.stringify(safeData) } } })
                     });
-                    alert('pushed to gist!');
-                  } catch { alert('push failed — check your token'); }
+                    if (res.ok) { alert('pushed to gist!'); }
+                    else { const err = await res.json(); alert(`push failed (${res.status}): ${err.message}`); }
+                  } catch (e) { alert('push failed: ' + e.message); }
                 }} style={{ flex: 1, fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--accent)', background: 'var(--accent-light)', border: 'none', borderRadius: 8, padding: '7px 14px', cursor: 'pointer' }}>
                   ↑ push now
                 </button>
