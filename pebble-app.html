@@ -1795,18 +1795,23 @@ function ChatBar() {
   const { setCardQuiz } = useContext(QuizCtx);
   const [msg, setMsg] = useState('');
   const [chatOpen, setChatOpen] = useState(false);
+  const [sending, setSending] = useState(false);
   const msgsRef = useRef(null);
 
   useEffect(() => {
-    if (msgsRef.current) msgsRef.current.scrollTop = msgsRef.current.scrollHeight;
+    if (msgsRef.current) {
+      requestAnimationFrame(() => { if (msgsRef.current) msgsRef.current.scrollTop = msgsRef.current.scrollHeight; });
+    }
   }, [data.chat.messages]);
 
   const sendMessage = async () => {
-    if (!msg.trim()) return;
+    if (!msg.trim() || sending) return;
     const userText = msg.trim();
     const userMsg = { role: 'user', content: userText, time: new Date().toISOString() };
     dispatch({ type: 'ADD_CHAT_MSG', msg: userMsg });
     setMsg('');
+    setChatOpen(true);
+    setSending(true);
 
     if (data.settings?.apiKey) {
       try {
@@ -1856,15 +1861,21 @@ Available actions:
 - ADD_JOB_APPLICATION: {type, company, role}
 - UPDATE_JOB_STATUS: {type, index, status ("applied"|"interviewing"|"offered"|"rejected")}
 - ADD_CAREER_EXPERIENCE: {type, topic}
+- UPDATE_PROFILE: {type, fields: {name?, vegan?, skinType?}} — update the user's profile (name, diet, skin type)
 - SEND_NOTIFICATION: {type, title, body} — send a push notification to the user's phone (use for reminders, streak alerts, deadline nudges, or when the user asks you to remind them of something)
 
 You can include multiple actions in the array. Only include <actions> when explicitly modifying data. Today's date is ${todayKey}.
 
-SPECIAL: When the user asks you to help BUILD a plan (gym routine, skincare routine, meal plan, study schedule, etc.), instead of guessing, trigger a card quiz to gather their preferences first:
+IMPORTANT RULES:
+1. When the user tells you specific information to ADD or UPDATE (e.g. "add cleanser to my morning routine", "my skin type is oily", "add eggs to grocery list"), DO IT IMMEDIATELY with actions. Do NOT ask follow-up questions or start a quiz. Just do it.
+2. When the user gives you a list of items (e.g. "my morning routine is cleanser, toner, moisturizer, sunscreen"), add ALL of them with multiple actions in one response.
+3. ONLY use the card quiz when the user explicitly asks you to HELP THEM BUILD something from scratch and needs guidance (e.g. "I don't know what skincare routine to do, help me figure it out", "build me a gym plan from scratch").
+4. If in doubt, just do the action. Don't quiz.
+
+Card quiz format (ONLY for building plans from scratch when user needs guidance):
 - START_CARD_QUIZ: {type:"START_CARD_QUIZ", title:"...", cards:[{question:"...", options:["..."], key:"..."}, ...]}
 - Each card has a question + options array (user taps one) OR no options (free text)
-- Max 5 cards. Keep questions short. After the quiz, Pebble builds the plan automatically.
-- Use this for: "help me make a gym plan", "build my skincare routine", "plan my meals", "create a study schedule", "make me a routine", "help me plan my career", "what skills do I need", "build my career plan"`;
+- Max 5 cards. Keep questions short.`;
 
         const history = data.chat.messages.slice(-20).map(m => ({ role: m.role, content: m.content }));
 
@@ -1897,15 +1908,18 @@ SPECIAL: When the user asks you to help BUILD a plan (gym routine, skincare rout
         dispatch({ type: 'ADD_CHAT_MSG', msg: { role: 'assistant', content: cleanText, time: new Date().toISOString() } });
       } catch {
         dispatch({ type: 'ADD_CHAT_MSG', msg: { role: 'assistant', content: "couldn't reach pebble's brain right now. try again?", time: new Date().toISOString() } });
+      } finally {
+        setSending(false);
       }
     } else {
       dispatch({ type: 'ADD_CHAT_MSG', msg: { role: 'assistant', content: 'add your claude API key in settings to chat with me!', time: new Date().toISOString() } });
+      setSending(false);
     }
   };
 
   return (
     <>
-      {chatOpen && data.chat.messages.length > 0 && (
+      {(chatOpen || sending) && data.chat.messages.length > 0 && (
         <div ref={msgsRef} className="absolute bottom-14 left-0 right-0 z-40" style={{ maxHeight: 280, overflowY: 'auto', background: 'color-mix(in srgb, var(--bg) 95%, transparent)', backdropFilter: 'blur(12px)', borderTop: '1px solid rgba(0,0,0,0.06)', padding: '12px 16px' }}>
           {data.chat.messages.slice(-10).map((m, i) => (
             <div key={i} className={`mb-2 flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -1916,6 +1930,11 @@ SPECIAL: When the user asks you to help BUILD a plan (gym routine, skincare rout
                 border: m.role === 'assistant' ? '1px solid rgba(0,0,0,0.06)' : 'none' }}>{m.content}</div>
             </div>
           ))}
+          {sending && (
+            <div className="mb-2 flex justify-start">
+              <div style={{ padding: '8px 12px', borderRadius: 16, background: 'var(--card-bg)', border: '1px solid rgba(0,0,0,0.06)', fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--muted)' }}>thinking...</div>
+            </div>
+          )}
         </div>
       )}
       <div className="chat-bar border-t px-4 py-2.5 flex items-center gap-2 flex-shrink-0" style={{ borderColor: 'rgba(0,0,0,0.04)' }}>
@@ -1924,7 +1943,7 @@ SPECIAL: When the user asks you to help BUILD a plan (gym routine, skincare rout
           className="flex-1 outline-none"
           style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 999, padding: '10px 16px', fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--dark)', transition: 'border-color 0.15s' }}
           onFocus={e => { e.target.style.borderColor = 'var(--primary)'; setChatOpen(true); }}
-          onBlur={e => { e.target.style.borderColor = 'rgba(0,0,0,0.06)'; setTimeout(() => setChatOpen(false), 300); }}
+          onBlur={e => { e.target.style.borderColor = 'rgba(0,0,0,0.06)'; if (!sending) setTimeout(() => setChatOpen(false), 500); }}
           onKeyDown={e => e.key === 'Enter' && sendMessage()} />
         <button className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer flex-shrink-0"
           style={{ background: 'var(--primary)', opacity: msg.trim() ? 1 : 0.4, transition: 'opacity 0.15s' }}
