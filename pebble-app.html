@@ -912,7 +912,13 @@ function saveCustomThemes(themes) {
 const ThemeCtx = createContext();
 
 function ThemeProvider({ children }) {
-  const [themeId, setThemeId] = useState(() => localStorage.getItem('pebble-theme') || 'coquette');
+  const [themeId, setThemeId] = useState(() => {
+    const saved = localStorage.getItem('pebble-theme');
+    if (saved) return saved;
+    // Fallback: check credentials backup (mobile localStorage purge recovery)
+    try { const creds = JSON.parse(localStorage.getItem('pebble-credentials') || '{}'); if (creds.theme) return creds.theme; } catch {}
+    return 'coquette';
+  });
   const [customThemes, setCustomThemes] = useState(getCustomThemes);
 
   useEffect(() => {
@@ -962,6 +968,8 @@ function ThemeProvider({ children }) {
     Object.entries(vars).forEach(([k, v]) => root.style.setProperty(k, v));
     document.body.style.background = '#E8E4DE';
     localStorage.setItem('pebble-theme', id);
+    // Also save in credentials backup so theme survives mobile localStorage purges
+    try { const creds = JSON.parse(localStorage.getItem('pebble-credentials') || '{}'); creds.theme = id; localStorage.setItem('pebble-credentials', JSON.stringify(creds)); } catch {}
     setThemeId(id);
   }, []);
 
@@ -3614,6 +3622,7 @@ function CardQuizOverlay({ quiz, onClose }) {
   const [cardIdx, setCardIdx] = useState(0);
   const [answers, setAnswers] = useState({});
   const [textInput, setTextInput] = useState('');
+  const [showOther, setShowOther] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [done, setDone] = useState(false);
   const [slideDir, setSlideDir] = useState(1); // 1 = forward, -1 = back
@@ -3631,7 +3640,7 @@ function CardQuizOverlay({ quiz, onClose }) {
     } else {
       setSlideDir(1);
       setVisible(false);
-      setTimeout(() => { setCardIdx(c => c + 1); setTextInput(''); setVisible(true); }, 150);
+      setTimeout(() => { setCardIdx(c => c + 1); setTextInput(''); setShowOther(false); setVisible(true); }, 150);
     }
   };
 
@@ -3639,7 +3648,7 @@ function CardQuizOverlay({ quiz, onClose }) {
     if (cardIdx === 0) return;
     setSlideDir(-1);
     setVisible(false);
-    setTimeout(() => { setCardIdx(c => c - 1); setTextInput(''); setVisible(true); }, 150);
+    setTimeout(() => { setCardIdx(c => c - 1); setTextInput(''); setShowOther(false); setVisible(true); }, 150);
   };
 
   const runCompletion = async (finalAnswers) => {
@@ -3733,6 +3742,22 @@ function CardQuizOverlay({ quiz, onClose }) {
                     {opt}
                   </button>
                 ))}
+                {!showOther ? (
+                  <button onClick={() => setShowOther(true)}
+                    style={{ width: '100%', padding: '14px 20px', background: 'transparent', border: '1px dashed var(--card-border)', borderRadius: 'var(--card-radius)', fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--muted)', cursor: 'pointer', textAlign: 'left' }}>
+                    other...
+                  </button>
+                ) : (
+                  <div className="flex gap-2">
+                    <input type="text" value={textInput} onChange={e => setTextInput(e.target.value)}
+                      placeholder="type your own..."
+                      onKeyDown={e => e.key === 'Enter' && textInput.trim() && advance(card.key, textInput.trim())}
+                      autoFocus
+                      style={{ flex: 1, padding: '14px 16px', background: 'var(--card-bg)', border: '1px solid var(--primary)', borderRadius: 'var(--card-radius)', fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--dark)', outline: 'none' }} />
+                    <button onClick={() => textInput.trim() && advance(card.key, textInput.trim())}
+                      style={{ padding: '14px 18px', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: 'var(--card-radius)', fontFamily: 'var(--font-body)', fontSize: 14, cursor: textInput.trim() ? 'pointer' : 'default', opacity: textInput.trim() ? 1 : 0.4 }}>→</button>
+                  </div>
+                )}
               </div>
             ) : (
               <div>
