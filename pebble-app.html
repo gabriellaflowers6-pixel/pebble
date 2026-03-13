@@ -995,7 +995,7 @@ function ThemeProvider({ children }) {
    DATA LAYER — State Management
    ══════════════════════════════════════════ */
 const DEFAULT_DATA = {
-  profile: { name: '', vegan: false, skinType: '' },
+  profile: { name: '', vegan: false, skinType: '', context: '' },
   planner: { events: {}, todos: [], notes: [] },
   journal: { entries: [] },
   kitchen: {
@@ -1028,6 +1028,7 @@ const DEFAULT_DATA = {
   },
   settings: { gistId: '', gistToken: '', apiKey: '', oneSignalAppId: '', oneSignalRestKey: '' },
   chat: { messages: [] },
+  memory: { pending: [] },
 };
 
 let _nextId = 100;
@@ -1245,11 +1246,26 @@ function dataReducer(state, action) {
     case 'ADD_CHAT_MSG': {
       return { ...state, chat: { messages: [...state.chat.messages, action.msg] } };
     }
+    case 'ADD_MEMORY_PENDING': {
+      const already = (state.memory?.pending || []).some(p => p.label === action.item.label);
+      if (already) return state;
+      return { ...state, memory: { pending: [...(state.memory?.pending || []), action.item] } };
+    }
+    case 'DISMISS_MEMORY': {
+      return { ...state, memory: { pending: (state.memory?.pending || []).filter(p => p.id !== action.id) } };
+    }
     case 'UPDATE_SETTINGS': {
       return { ...state, settings: { ...state.settings, [action.key]: action.value } };
     }
     case 'UPDATE_PROFILE': {
       return { ...state, profile: { ...state.profile, ...action.fields } };
+    }
+    case 'UPDATE_CONTEXT': {
+      const existing = (state.profile.context || '').trim();
+      const fact = action.fact.trim();
+      if (existing.includes(fact)) return state;
+      const updated = existing ? existing + '\n- ' + fact : '- ' + fact;
+      return { ...state, profile: { ...state.profile, context: updated } };
     }
     case 'LOAD_DATA': {
       const merged = deepMerge(DEFAULT_DATA, action.data);
@@ -1798,6 +1814,26 @@ async function sendPushNotification(appId, restKey, title, body) {
   } catch { return false; }
 }
 
+function MemoryTray() {
+  const { data, dispatch } = useContext(DataCtx);
+  const pending = data.memory?.pending || [];
+  if (!pending.length) return null;
+  return (
+    <div style={{ padding: '10px 16px 8px', borderBottom: '1px solid rgba(0,0,0,0.06)', background: 'color-mix(in srgb, var(--primary) 7%, var(--bg))' }}>
+      <p style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 7, fontWeight: 600 }}>pebble noticed ✦</p>
+      {pending.slice(0, 4).map(item => (
+        <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--dark)', flex: 1, lineHeight: 1.3 }}>💾 {item.label}</span>
+          <button onClick={() => { dispatch(item.payload); dispatch({ type: 'DISMISS_MEMORY', id: item.id }); }}
+            style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'white', background: 'var(--primary)', border: 'none', borderRadius: 6, padding: '3px 10px', cursor: 'pointer', flexShrink: 0 }}>save</button>
+          <button onClick={() => dispatch({ type: 'DISMISS_MEMORY', id: item.id })}
+            style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--muted)', background: 'transparent', border: '1px solid rgba(0,0,0,0.1)', borderRadius: 6, padding: '3px 8px', cursor: 'pointer', flexShrink: 0 }}>nah</button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function ChatBar() {
   const { data, dispatch } = useContext(DataCtx);
   const { setCardQuiz } = useContext(QuizCtx);
@@ -1805,6 +1841,15 @@ function ChatBar() {
   const [chatOpen, setChatOpen] = useState(false);
   const [sending, setSending] = useState(false);
   const msgsRef = useRef(null);
+  const swipeStartX = useRef(null);
+
+  const handleTouchStart = (e) => { swipeStartX.current = e.touches[0].clientX; };
+  const handleTouchEnd = (e) => {
+    if (swipeStartX.current === null) return;
+    const dx = swipeStartX.current - e.changedTouches[0].clientX;
+    if (dx > 40) setChatOpen(v => !v);
+    swipeStartX.current = null;
+  };
 
   useEffect(() => {
     if (msgsRef.current) {
@@ -1826,7 +1871,7 @@ function ChatBar() {
         const todayEvents = (data.planner.events[todayKey] || []).map(e => `${e.time} ${e.text}`).join(', ');
         const systemPrompt = `You are Pebble, a warm and intelligent personal life assistant.
 Here is everything you know about the user:
-- Name: ${data.profile.name}, Vegan: ${data.profile.vegan}, Skin type: ${data.profile.skinType}
+- Name: ${data.profile.name}, Vegan: ${data.profile.vegan}, Skin type: ${data.profile.skinType}${data.profile.context ? `\n\nPERSONAL CONTEXT (always use this — allergies, preferences, goals, life facts):\n${data.profile.context}` : ''}
 - Active todos: ${data.planner.todos.filter(t => !t.done).map(t => t.text).join(', ')}
 - Today's events: ${todayEvents || 'none'}
 - Today's meals: B: ${data.kitchen.mealPlan.breakfast}, L: ${data.kitchen.mealPlan.lunch}, D: ${data.kitchen.mealPlan.dinner}
@@ -1870,9 +1915,14 @@ Available actions:
 - UPDATE_JOB_STATUS: {type, index, status ("applied"|"interviewing"|"offered"|"rejected")}
 - ADD_CAREER_EXPERIENCE: {type, topic}
 - UPDATE_PROFILE: {type, fields: {name?, vegan?, skinType?}} — update the user's profile (name, diet, skin type)
+- UPDATE_CONTEXT: {type, fact} — save a personal fact to the user's permanent knowledge base (allergies, preferences, life goals, important context)
 - SEND_NOTIFICATION: {type, title, body} — send a push notification to the user's phone (use for reminders, streak alerts, deadline nudges, or when the user asks you to remind them of something)
 
 You can include multiple actions in the array. Only include <actions> when explicitly modifying data. Today's date is ${todayKey}.
+
+When the user casually mentions important personal facts they did NOT explicitly ask you to save — goals, preferences, health context, life intentions — append a <memory> block at the very end of your reply (after <actions> if present):
+<memory>[{"label":"short human-readable description","payload":{action object}}]</memory>
+Only emit <memory> for stable, genuinely useful facts (allergies, dietary needs, preferences, career goals, life context, intentions). NOT for casual chat, emotions, or things already being saved via <actions>. Use UPDATE_CONTEXT for personal facts: {"type":"UPDATE_CONTEXT","fact":"..."} — this saves to the permanent knowledge base so you always remember it.
 
 IMPORTANT RULES:
 1. When the user tells you specific information to ADD or UPDATE (e.g. "add cleanser to my morning routine", "my skin type is oily", "add eggs to grocery list"), DO IT IMMEDIATELY with actions. Do NOT ask follow-up questions or start a quiz. Just do it.
@@ -1890,14 +1940,15 @@ Card quiz format (ONLY for building plans from scratch when user needs guidance)
         const res = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'x-api-key': data.settings.apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-          body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1024, system: systemPrompt, messages: [...history, { role: 'user', content: userText }] }),
+          body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1024, system: systemPrompt, messages: [...history, { role: 'user', content: userText }] }),
         });
         const json = await res.json();
         const raw = json.content?.[0]?.text || 'hmm, something went wrong.';
 
         // Extract and execute any actions
         const actionsMatch = raw.match(/<actions>([\s\S]*?)<\/actions>/);
-        const cleanText = raw.replace(/<actions>[\s\S]*?<\/actions>/, '').trim();
+        const memoryMatch = raw.match(/<memory>([\s\S]*?)<\/memory>/);
+        const cleanText = raw.replace(/<actions>[\s\S]*?<\/actions>/, '').replace(/<memory>[\s\S]*?<\/memory>/, '').trim();
         if (actionsMatch) {
           try {
             const actions = JSON.parse(actionsMatch[1]);
@@ -1908,6 +1959,16 @@ Card quiz format (ONLY for building plans from scratch when user needs guidance)
                 sendPushNotification(data.settings?.oneSignalAppId, data.settings?.oneSignalRestKey, action.title, action.body);
               } else {
                 dispatch(action);
+              }
+            });
+          } catch {}
+        }
+        if (memoryMatch) {
+          try {
+            const memories = JSON.parse(memoryMatch[1]);
+            memories.forEach(m => {
+              if (m.label && m.payload) {
+                dispatch({ type: 'ADD_MEMORY_PENDING', item: { id: Date.now() + Math.random(), label: m.label, payload: m.payload } });
               }
             });
           } catch {}
@@ -1926,11 +1987,13 @@ Card quiz format (ONLY for building plans from scratch when user needs guidance)
   };
 
   return (
-    <>
-      {(chatOpen || sending) && data.chat.messages.length > 0 && (
-        <div ref={msgsRef} className="absolute bottom-14 left-0 right-0 z-40" style={{ maxHeight: 280, overflowY: 'auto', background: 'color-mix(in srgb, var(--bg) 95%, transparent)', backdropFilter: 'blur(12px)', borderTop: '1px solid rgba(0,0,0,0.06)', padding: '12px 16px' }}>
+    <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} style={{ position: 'relative' }}>
+      {(chatOpen || sending || data.memory?.pending?.length > 0) && (data.chat.messages.length > 0 || data.memory?.pending?.length > 0) && (
+        <div ref={msgsRef} className="absolute bottom-14 left-0 right-0 z-40" style={{ maxHeight: 320, overflowY: 'auto', background: 'color-mix(in srgb, var(--bg) 95%, transparent)', backdropFilter: 'blur(12px)', borderTop: '1px solid rgba(0,0,0,0.06)', padding: '0' }}>
+          <MemoryTray />
+          <div style={{ padding: '12px 16px' }}>
           {data.chat.messages.slice(-10).map((m, i) => (
-            <div key={i} className={`mb-2 flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div key={m.time || i} className={`mb-2 flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div style={{ maxWidth: '80%', padding: '8px 12px', borderRadius: 16,
                 background: m.role === 'user' ? 'var(--primary)' : 'var(--card-bg)',
                 color: m.role === 'user' ? 'white' : 'var(--dark)',
@@ -1943,6 +2006,7 @@ Card quiz format (ONLY for building plans from scratch when user needs guidance)
               <div style={{ padding: '8px 12px', borderRadius: 16, background: 'var(--card-bg)', border: '1px solid rgba(0,0,0,0.06)', fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--muted)' }}>thinking...</div>
             </div>
           )}
+          </div>
         </div>
       )}
       <div className="chat-bar border-t px-4 py-2.5 flex items-center gap-2 flex-shrink-0" style={{ borderColor: 'rgba(0,0,0,0.04)' }}>
@@ -1950,8 +2014,8 @@ Card quiz format (ONLY for building plans from scratch when user needs guidance)
           placeholder="talk to pebble..."
           className="flex-1 outline-none"
           style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 999, padding: '10px 16px', fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--dark)', transition: 'border-color 0.15s' }}
-          onFocus={e => { e.target.style.borderColor = 'var(--primary)'; setChatOpen(true); }}
-          onBlur={e => { e.target.style.borderColor = 'rgba(0,0,0,0.06)'; if (!sending) setTimeout(() => setChatOpen(false), 500); }}
+          onFocus={e => { e.target.style.borderColor = 'var(--primary)'; }}
+          onBlur={e => { e.target.style.borderColor = 'rgba(0,0,0,0.06)'; }}
           onKeyDown={e => e.key === 'Enter' && sendMessage()} />
         <button className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer flex-shrink-0"
           style={{ background: 'var(--primary)', opacity: msg.trim() ? 1 : 0.4, transition: 'opacity 0.15s' }}
@@ -1959,7 +2023,7 @@ Card quiz format (ONLY for building plans from scratch when user needs guidance)
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
         </button>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -3441,6 +3505,17 @@ function SettingsPanel({ open, onClose }) {
             </div>
           </div>
 
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8, marginTop: 24 }}>my knowledge base</p>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.5, marginBottom: 10 }}>everything pebble always knows about you — allergies, preferences, goals, life context. edit directly or let chat build it.</p>
+          <div className="glass-card px-4 py-3 mb-6">
+            <textarea
+              value={data.profile.context || ''}
+              onChange={e => dispatch({ type: 'UPDATE_PROFILE', fields: { context: e.target.value } })}
+              placeholder={"- allergic to beets\n- prefer morning workouts\n- building AnchorED\n- lactose intolerant"}
+              rows={6}
+              style={{ width: '100%', fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--dark)', background: 'transparent', border: 'none', outline: 'none', resize: 'none', lineHeight: 1.7 }} />
+          </div>
+
           <p style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>sync & ai</p>
           <div className="glass-card px-4 py-3 space-y-3 mb-6">
             <div>
@@ -3665,7 +3740,7 @@ function CardQuizOverlay({ quiz, onClose }) {
         method: 'POST',
         headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json', 'anthropic-dangerous-direct-browser-access': 'true' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514', max_tokens: 1024,
+          model: 'claude-sonnet-4-6', max_tokens: 1024,
           messages: [{ role: 'user', content: `User context: ${context}\n\nThe user completed a quiz titled "${quiz.title}" with answers: ${answersStr}.\n\nNow build a personalized plan and add it to the app. Reply with a short friendly summary (2-3 sentences) and append an <actions> block with all the relevant data actions. Available actions: ADD_SKINCARE_STEP {routine,step}, REMOVE_SKINCARE_STEP {routine,index}, ADD_TODO {text,priority}, ADD_EXERCISE {exercise}, UPDATE_WORKOUT_NAME {name}, ADD_COURSE {name}, UPDATE_COURSE_STATUS {index,status}, ADD_EVENT {date,time,text}, ADD_GROCERY {text}, SET_CAREER_GOAL {role,targetDate}, ADD_CAREER_SKILL {name}, ADD_JOB_APPLICATION {company,role}, ADD_CAREER_EXPERIENCE {topic}. Today is ${todayKey}.\n\n<actions>[...]</actions>` }]
         })
       });
@@ -3826,6 +3901,7 @@ function App() {
 
   const staticPages = [StreamPage, PlannerPage, JournalPage, KitchenPage, GymPage, SelfCarePage, StudyPage, TrackerPage, CareerPage, NotebookPage, SegmentBuilderPage];
   const pages = [...staticPages, ...customSegments.map(s => getSegPage(s.id))];
+  const pageKeys = [...staticPages.map((_, i) => `static-${i}`), ...customSegments.map(s => `seg-${s.id}`)];
 
   /* IntersectionObserver to track current page — re-runs when page count changes */
   useEffect(() => {
@@ -3872,7 +3948,7 @@ function App() {
       <div className="swipe-container" ref={containerRef} style={{ position: 'relative' }}>
         <PageDots currentPage={currentPage} totalPages={pages.length} onDotClick={navigateTo} pageLabels={allPageLabels} />
         {pages.map((Page, i) => (
-          <div key={i} ref={setPageRef(i)} className="swipe-page-wrap">
+          <div key={pageKeys[i]} ref={setPageRef(i)} className="swipe-page-wrap">
             <Page />
           </div>
         ))}
