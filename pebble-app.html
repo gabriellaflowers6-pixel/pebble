@@ -1021,6 +1021,7 @@ const DEFAULT_DATA = {
     experiences: [],
   },
   segments: [],
+  stickies: [],
   dots: { workout: {}, skincare: {}, study: {}, meals: {}, water: {} },
   notebook: {
     saves: [],
@@ -1253,6 +1254,15 @@ function dataReducer(state, action) {
     }
     case 'DISMISS_MEMORY': {
       return { ...state, memory: { pending: (state.memory?.pending || []).filter(p => p.id !== action.id) } };
+    }
+    case 'ADD_STICKY': {
+      return { ...state, stickies: [{ id: Date.now(), text: '', color: action.color || 'yellow', createdAt: new Date().toISOString() }, ...(state.stickies || [])] };
+    }
+    case 'UPDATE_STICKY': {
+      return { ...state, stickies: (state.stickies || []).map(s => s.id === action.id ? { ...s, text: action.text } : s) };
+    }
+    case 'DELETE_STICKY': {
+      return { ...state, stickies: (state.stickies || []).filter(s => s.id !== action.id) };
     }
     case 'UPDATE_SETTINGS': {
       return { ...state, settings: { ...state.settings, [action.key]: action.value } };
@@ -1673,7 +1683,7 @@ function ThemeDeco({ themeId }) {
    MARBLE JAR (Navigation)
    ══════════════════════════════════════════ */
 const PAGE_NAMES = ['stream', 'planner', 'journal', 'kitchen', 'gym', 'selfcare', 'study', 'tracker', 'career', 'notebook', 'builder'];
-const PAGE_LABELS = ['Stream', 'Planner', 'Journal', 'Kitchen', 'Gym', 'Self-Care', 'Study', 'Tracker', 'Career', 'Picks', 'Build'];
+const PAGE_LABELS = ['Stream', 'Planner', 'Journal', 'Kitchen', 'Gym', 'Self-Care', 'Study', 'Tracker', 'Career', 'Picks', 'Build', 'Stickies'];
 
 function MarbleJar({ open, onClose, onNavigate, currentPage, customSegments, staticPageCount }) {
   if (!open) return null;
@@ -1690,6 +1700,7 @@ function MarbleJar({ open, onClose, onNavigate, currentPage, customSegments, sta
     { cx: 126, cy: 294, label: 'Career', page: 8 },
     { cx: 196, cy: 320, label: 'Picks', page: 9 },
     { cx: 80,  cy: 328, label: 'Build', page: 10 },
+    { cx: 155, cy: 348, label: 'Stickies', page: 11 },
   ];
 
   const segs = customSegments || [];
@@ -3129,7 +3140,85 @@ function CareerPage() {
   );
 }
 
-/* ── Page 11: Segment Builder ── */
+/* ── Page 11: Stickies ── */
+const STICKY_COLORS = [
+  { id: 'yellow',   bg: '#FFF9C4', border: '#F9E04B', text: '#5D4E00' },
+  { id: 'pink',     bg: '#FCE4EC', border: '#F48FB1', text: '#7B1A3A' },
+  { id: 'mint',     bg: '#E8F5E9', border: '#81C784', text: '#1B5E20' },
+  { id: 'lavender', bg: '#EDE7F6', border: '#B39DDB', text: '#4527A0' },
+  { id: 'peach',    bg: '#FBE9E7', border: '#FFAB91', text: '#7B3B1A' },
+  { id: 'sky',      bg: '#E3F2FD', border: '#90CAF9', text: '#0D47A1' },
+];
+
+function StickyNote({ sticky, onUpdate, onDelete }) {
+  const col = STICKY_COLORS.find(c => c.id === sticky.color) || STICKY_COLORS[0];
+  const [text, setText] = useState(sticky.text);
+  const save = () => { if (text !== sticky.text) onUpdate(sticky.id, text); };
+
+  return (
+    <div style={{ background: col.bg, border: `1.5px solid ${col.border}`, borderRadius: 4, padding: '10px 10px 8px', position: 'relative', boxShadow: '2px 3px 8px rgba(0,0,0,0.1)', minHeight: 100 }}>
+      <button onClick={() => onDelete(sticky.id)}
+        style={{ position: 'absolute', top: 4, right: 6, background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: col.text, opacity: 0.4, lineHeight: 1, padding: 0 }}>×</button>
+      <textarea value={text} onChange={e => setText(e.target.value)} onBlur={save}
+        placeholder="write something..."
+        style={{ width: '100%', minHeight: 80, resize: 'none', border: 'none', background: 'transparent', outline: 'none',
+          fontFamily: 'var(--font-body)', fontSize: 12, color: col.text, lineHeight: 1.6 }} />
+    </div>
+  );
+}
+
+function StickiesPage() {
+  const { data, dispatch } = useContext(DataCtx);
+  const stickies = data.stickies || [];
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  const addSticky = (colorId) => {
+    dispatch({ type: 'ADD_STICKY', color: colorId });
+    setPickerOpen(false);
+  };
+
+  return (
+    <div className="swipe-page">
+      <WavyFrame>
+        <div className="flex flex-col flex-1 py-4" style={{ minHeight: 0 }}>
+          <div className="flex items-center justify-between mb-4">
+            <p className="page-title" style={{ marginBottom: 0 }}>stickies</p>
+            <div style={{ position: 'relative' }}>
+              <button onClick={() => setPickerOpen(v => !v)}
+                style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--primary)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+              </button>
+              {pickerOpen && (
+                <div style={{ position: 'absolute', right: 0, top: 36, background: 'var(--card-bg)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 12, padding: '10px 12px', boxShadow: '0 4px 16px rgba(0,0,0,0.12)', zIndex: 10, display: 'flex', gap: 8 }}>
+                  {STICKY_COLORS.map(c => (
+                    <div key={c.id} onClick={() => addSticky(c.id)}
+                      style={{ width: 24, height: 24, borderRadius: 4, background: c.bg, border: `2px solid ${c.border}`, cursor: 'pointer' }} />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {stickies.length === 0 ? (
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0.4 }}>
+              <p style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--muted)', textAlign: 'center' }}>tap + to add your first sticky</p>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, overflowY: 'auto', flex: 1 }}>
+              {stickies.map(s => (
+                <StickyNote key={s.id} sticky={s}
+                  onUpdate={(id, text) => dispatch({ type: 'UPDATE_STICKY', id, text })}
+                  onDelete={(id) => dispatch({ type: 'DELETE_STICKY', id })} />
+              ))}
+            </div>
+          )}
+        </div>
+      </WavyFrame>
+    </div>
+  );
+}
+
+/* ── Page 12: Segment Builder ── */
 const FEATURE_OPTIONS = [
   { key: 'tracker', label: 'habit tracker', desc: 'daily check-in dot' },
   { key: 'log',     label: 'activity log',  desc: 'timestamped entries' },
@@ -3899,7 +3988,7 @@ function App() {
     });
   }, [data.settings?.oneSignalAppId]);
 
-  const staticPages = [StreamPage, PlannerPage, JournalPage, KitchenPage, GymPage, SelfCarePage, StudyPage, TrackerPage, CareerPage, NotebookPage, SegmentBuilderPage];
+  const staticPages = [StreamPage, PlannerPage, JournalPage, KitchenPage, GymPage, SelfCarePage, StudyPage, TrackerPage, CareerPage, NotebookPage, SegmentBuilderPage, StickiesPage];
   const pages = [...staticPages, ...customSegments.map(s => getSegPage(s.id))];
   const pageKeys = [...staticPages.map((_, i) => `static-${i}`), ...customSegments.map(s => `seg-${s.id}`)];
 
