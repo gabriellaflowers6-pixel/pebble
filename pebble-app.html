@@ -3365,6 +3365,40 @@ function KitchenPage() {
   const [generatingMeals, setGeneratingMeals] = useState(false);
   const [groceryExpanded, setGroceryExpanded] = useState(false);
   const [copyToast, setCopyToast] = useState(false);
+  const [grocerySearch, setGrocerySearch] = useState('');
+
+  const GROCERY_CATEGORIES = {
+    veggies: ['onion','onions','garlic','tomato','tomatoes','potato','potatoes','carrot','carrots','broccoli','spinach','kale','lettuce','cucumber','cucumbers','pepper','peppers','bell pepper','bell peppers','celery','zucchini','mushroom','mushrooms','corn','peas','green beans','asparagus','cabbage','cauliflower','sweet potato','sweet potatoes','eggplant','beet','beets','radish','radishes','squash','artichoke','leek','leeks','bok choy','arugula','avocado','avocados'],
+    fruit: ['apple','apples','banana','bananas','orange','oranges','lemon','lemons','lime','limes','berry','berries','strawberry','strawberries','blueberry','blueberries','raspberry','raspberries','grape','grapes','mango','mangoes','pineapple','watermelon','peach','peaches','pear','pears','plum','plums','cherry','cherries','kiwi','coconut','fig','figs','pomegranate','cantaloupe','honeydew','grapefruit','tangerine','nectarine','papaya'],
+    meat: ['chicken','beef','steak','pork','turkey','lamb','bacon','sausage','ham','ground beef','ground turkey','chicken breast','chicken thigh','chicken thighs','ribs','roast','meatballs','salami','pepperoni','prosciutto','chorizo','brisket','veal','duck'],
+    fish: ['salmon','tuna','shrimp','cod','tilapia','crab','lobster','fish','sardines','anchovies','mahi','halibut','trout','catfish','scallops','clams','mussels','oysters','calamari','squid','swordfish'],
+    dairy: ['milk','cheese','yogurt','butter','cream','eggs','egg','sour cream','cream cheese','cottage cheese','mozzarella','cheddar','parmesan','feta','ricotta','gouda','brie','swiss','whipped cream','half and half','heavy cream','oat milk','almond milk','greek yogurt'],
+    bread: ['bread','tortillas','buns','rolls','bagels','pita','naan','croissants','english muffins','wraps','baguette','sourdough','flatbread','cornbread','crackers','croutons'],
+    canned: ['canned','can of','cans of','canned beans','canned tomatoes','canned corn','canned tuna','canned soup','canned chicken','tomato sauce','tomato paste','coconut milk','broth','stock','diced tomatoes','crushed tomatoes','chickpeas','black beans','kidney beans','refried beans','canned fruit','sardines'],
+    frozen: ['frozen','ice cream','frozen pizza','frozen vegetables','frozen fruit','frozen berries','frozen meals','popsicles','frozen waffles','frozen fries','ice','frozen chicken','frozen shrimp'],
+    snacks: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola','granola bars','cookies','candy','chocolate','gummy','jerky','rice cakes','protein bar','protein bars','peanuts','almonds','cashews','pistachios','dried fruit'],
+    drinks: ['water','juice','soda','coffee','tea','kombucha','sparkling water','energy drink','wine','beer','lemonade','coconut water','sports drink','gatorade','cold brew','matcha','creamer'],
+    condiments: ['ketchup','mustard','mayo','mayonnaise','hot sauce','soy sauce','sriracha','ranch','dressing','vinegar','olive oil','oil','salt','pepper','honey','maple syrup','jam','jelly','peanut butter','almond butter','salsa','guacamole','hummus','bbq sauce','teriyaki','worcestershire','relish','tahini'],
+    grains: ['rice','pasta','noodles','quinoa','oats','oatmeal','flour','cereal','couscous','barley','farro','lentils','polenta','cornmeal','breadcrumbs','panko'],
+    baking: ['flour','sugar','brown sugar','baking soda','baking powder','vanilla','cocoa','chocolate chips','yeast','powdered sugar','cornstarch','sprinkles','frosting','cake mix','pie crust'],
+    spices: ['cinnamon','cumin','paprika','oregano','basil','thyme','rosemary','chili powder','turmeric','ginger','nutmeg','cayenne','garlic powder','onion powder','italian seasoning','bay leaves','curry','red pepper flakes','dill','parsley','cilantro','mint','sage'],
+  };
+
+  const filterGrocery = (items, query) => {
+    if (!query.trim()) return items.map((item, i) => ({ ...item, _idx: i }));
+    const q = query.toLowerCase().trim();
+    // Check if query matches a category
+    const matchedCategories = Object.entries(GROCERY_CATEGORIES).filter(([cat]) => cat.startsWith(q) || q.startsWith(cat));
+    const categoryWords = matchedCategories.flatMap(([, words]) => words);
+    return items.map((item, i) => ({ ...item, _idx: i })).filter(item => {
+      const t = item.text.toLowerCase();
+      // Direct text match
+      if (t.includes(q)) return true;
+      // Category match — check if item text contains any word from matched categories
+      if (categoryWords.length > 0) return categoryWords.some(w => t.includes(w));
+      return false;
+    });
+  };
 
   const copyGrocery = () => {
     const items = grocery.filter(g => !g.done).map(g => `- ${g.text}`);
@@ -3518,33 +3552,48 @@ function KitchenPage() {
                       <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--primary)' }}>{copyToast ? 'copied!' : 'copy all'}</span>
                     </button>
                   )}
-                  <button onClick={() => setGroceryExpanded(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+                  <button onClick={() => { setGroceryExpanded(false); setGrocerySearch(''); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--dark)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{icons.collapse}</svg>
                   </button>
                 </div>
               </div>
-              {grocery.filter(g => g.done).length > 0 && (
-                <div className="px-5 pt-2">
-                  <button onClick={() => { grocery.forEach((g, i) => { if (g.done) dispatch({ type: 'DELETE_GROCERY', index: i }); }); }}
-                    style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--accent)', background: 'var(--accent-light)', border: 'none', borderRadius: 999, padding: '3px 10px', cursor: 'pointer' }}>
-                    clear completed
-                  </button>
-                </div>
-              )}
-              <div style={{ flex: 1, overflowY: 'auto', padding: '12px 20px' }}>
-                {grocery.length === 0 ? (
-                  <p style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--muted)', textAlign: 'center', marginTop: 40 }}>no items yet</p>
-                ) : grocery.map((item, i) => (
-                  <div key={i} className="flex items-center gap-3 py-3" style={{ borderBottom: '1px solid rgba(0,0,0,0.04)' }}>
-                    <div className={`checkbox ${item.done ? 'done' : ''}`} style={{ width: 18, height: 18 }} onClick={() => { navigator.vibrate?.(10); dispatch({ type: 'TOGGLE_GROCERY', index: i }); }}>
-                      {item.done && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">{icons.check}</svg>}
-                    </div>
-                    <span style={{ fontFamily: 'var(--font-body)', fontSize: 15, color: item.done ? 'var(--muted)' : 'var(--dark)', textDecoration: item.done ? 'line-through' : 'none', flex: 1 }}>{item.text}</span>
-                    <button onClick={() => dispatch({ type: 'DELETE_GROCERY', index: i })} style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.3, padding: 4 }}>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{icons.x}</svg>
+              <div className="px-5 pt-3 pb-1 flex items-center gap-2">
+                <div className="flex-1 flex items-center gap-2" style={{ background: 'var(--card-bg)', borderRadius: 999, padding: '6px 12px', border: '1px solid rgba(0,0,0,0.06)' }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  <input type="text" value={grocerySearch} onChange={e => setGrocerySearch(e.target.value)}
+                    placeholder="search items or categories (veggies, meat, canned...)"
+                    className="flex-1 outline-none"
+                    style={{ background: 'transparent', border: 'none', fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--dark)' }} />
+                  {grocerySearch && (
+                    <button onClick={() => setGrocerySearch('')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{icons.x}</svg>
                     </button>
-                  </div>
-                ))}
+                  )}
+                </div>
+                {grocery.filter(g => g.done).length > 0 && (
+                  <button onClick={() => { const doneIndices = grocery.map((g, i) => g.done ? i : -1).filter(i => i >= 0).reverse(); doneIndices.forEach(i => dispatch({ type: 'DELETE_GROCERY', index: i })); }}
+                    style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: 'var(--accent)', background: 'var(--accent-light)', border: 'none', borderRadius: 999, padding: '4px 8px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                    clear done
+                  </button>
+                )}
+              </div>
+              <div style={{ flex: 1, overflowY: 'auto', padding: '12px 20px' }}>
+                {(() => {
+                  const filtered = filterGrocery(grocery, grocerySearch);
+                  if (grocery.length === 0) return <p style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--muted)', textAlign: 'center', marginTop: 40 }}>no items yet</p>;
+                  if (filtered.length === 0) return <p style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--muted)', textAlign: 'center', marginTop: 40 }}>no matches for "{grocerySearch}"</p>;
+                  return filtered.map(item => (
+                    <div key={item._idx} className="flex items-center gap-3 py-3" style={{ borderBottom: '1px solid rgba(0,0,0,0.04)' }}>
+                      <div className={`checkbox ${item.done ? 'done' : ''}`} style={{ width: 18, height: 18 }} onClick={() => { navigator.vibrate?.(10); dispatch({ type: 'TOGGLE_GROCERY', index: item._idx }); }}>
+                        {item.done && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">{icons.check}</svg>}
+                      </div>
+                      <span style={{ fontFamily: 'var(--font-body)', fontSize: 15, color: item.done ? 'var(--muted)' : 'var(--dark)', textDecoration: item.done ? 'line-through' : 'none', flex: 1 }}>{item.text}</span>
+                      <button onClick={() => dispatch({ type: 'DELETE_GROCERY', index: item._idx })} style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.3, padding: 4 }}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{icons.x}</svg>
+                      </button>
+                    </div>
+                  ));
+                })()}
               </div>
               <div className="px-5 pb-5 pt-2" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
                 <div className="flex items-center gap-2" style={{ background: 'var(--card-bg)', borderRadius: 999, padding: '8px 16px', border: '1px solid rgba(0,0,0,0.06)' }}>
