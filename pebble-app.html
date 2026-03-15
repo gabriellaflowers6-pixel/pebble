@@ -2050,6 +2050,85 @@ function MemoryTray() {
   );
 }
 
+/* ── Layer 2: Tool definitions + executors ── */
+const PEBBLE_TOOLS = [
+  {
+    name: 'get_weather',
+    description: 'Get current weather and forecast for a location. Use when the user asks about weather, whether to bring a jacket, UV index, rain, etc.',
+    input_schema: { type: 'object', properties: { latitude: { type: 'number', description: 'Latitude' }, longitude: { type: 'number', description: 'Longitude' }, city: { type: 'string', description: 'City name (used for display only, lat/long are for the API)' } }, required: ['latitude', 'longitude'] }
+  },
+  {
+    name: 'define_word',
+    description: 'Look up the definition of a word. Use when the user asks what a word means.',
+    input_schema: { type: 'object', properties: { word: { type: 'string', description: 'The word to define' } }, required: ['word'] }
+  },
+  {
+    name: 'get_time',
+    description: 'Get the current time in a specific timezone. Use when the user asks what time it is somewhere.',
+    input_schema: { type: 'object', properties: { timezone: { type: 'string', description: 'IANA timezone string, e.g. "America/New_York", "Asia/Tokyo"' } }, required: ['timezone'] }
+  },
+  {
+    name: 'get_quote',
+    description: 'Get a random inspirational quote. Use when the user wants motivation or inspiration.',
+    input_schema: { type: 'object', properties: {} }
+  },
+];
+
+async function executeToolCall(name, input) {
+  try {
+    switch (name) {
+      case 'get_weather': {
+        const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${input.latitude}&longitude=${input.longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,uv_index&temperature_unit=fahrenheit&wind_speed_unit=mph&forecast_days=1&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,uv_index_max`);
+        const d = await r.json();
+        const c = d.current;
+        const daily = d.daily;
+        const weatherCodes = { 0: 'Clear', 1: 'Mostly clear', 2: 'Partly cloudy', 3: 'Overcast', 45: 'Foggy', 51: 'Light drizzle', 53: 'Drizzle', 55: 'Heavy drizzle', 61: 'Light rain', 63: 'Rain', 65: 'Heavy rain', 71: 'Light snow', 73: 'Snow', 75: 'Heavy snow', 80: 'Rain showers', 95: 'Thunderstorm' };
+        return JSON.stringify({
+          temperature: c.temperature_2m + '°F',
+          feels_like: c.apparent_temperature + '°F',
+          condition: weatherCodes[c.weather_code] || 'Unknown',
+          humidity: c.relative_humidity_2m + '%',
+          wind: c.wind_speed_10m + ' mph',
+          uv_index: c.uv_index,
+          precipitation: c.precipitation + ' mm',
+          high: daily.temperature_2m_max[0] + '°F',
+          low: daily.temperature_2m_min[0] + '°F',
+          rain_chance: daily.precipitation_probability_max[0] + '%',
+          uv_max: daily.uv_index_max[0],
+          city: input.city || 'your location',
+        });
+      }
+      case 'define_word': {
+        const r = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(input.word)}`);
+        if (!r.ok) return JSON.stringify({ error: `Could not find definition for "${input.word}"` });
+        const d = await r.json();
+        const entry = d[0];
+        const defs = entry.meanings.slice(0, 3).map(m => ({
+          partOfSpeech: m.partOfSpeech,
+          definition: m.definitions[0]?.definition,
+          example: m.definitions[0]?.example || null,
+        }));
+        return JSON.stringify({ word: entry.word, phonetic: entry.phonetic || '', definitions: defs });
+      }
+      case 'get_time': {
+        const r = await fetch(`https://worldtimeapi.org/api/timezone/${input.timezone}`);
+        if (!r.ok) return JSON.stringify({ error: `Unknown timezone: ${input.timezone}` });
+        const d = await r.json();
+        return JSON.stringify({ timezone: d.timezone, datetime: d.datetime, utc_offset: d.utc_offset, day_of_week: d.day_of_week });
+      }
+      case 'get_quote': {
+        const r = await fetch('https://zenquotes.io/api/random');
+        const d = await r.json();
+        return JSON.stringify({ quote: d[0]?.q, author: d[0]?.a });
+      }
+      default:
+        return JSON.stringify({ error: 'Unknown tool' });
+    }
+  } catch (e) {
+    return JSON.stringify({ error: e.message });
+  }
+}
+
 function ChatBar() {
   const { data, dispatch } = useContext(DataCtx);
   const { setCardQuiz } = useContext(QuizCtx);
@@ -2151,48 +2230,76 @@ IMPORTANT RULES:
 Card quiz format (ONLY for building plans from scratch when user needs guidance):
 - START_CARD_QUIZ: {type:"START_CARD_QUIZ", title:"...", cards:[{question:"...", options:["..."], key:"..."}, ...]}
 - Each card has a question + options array (user taps one) OR no options (free text)
-- Max 5 cards. Keep questions short.`;
+- Max 5 cards. Keep questions short.
+
+You have TOOLS available — use them when the user asks about weather, word definitions, what time it is somewhere, or wants a quote. Don't mention the tools by name, just use them naturally. For weather, use common city coordinates (e.g. Chicago: 41.88, -87.63). If the user hasn't told you their city, ask.`;
 
         const history = data.chat.messages.slice(-20).map(m => ({ role: m.role, content: m.content }));
 
-        const res = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-api-key': data.settings.apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-          body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1024, system: systemPrompt, messages: [...history, { role: 'user', content: userText }] }),
-        });
-        const json = await res.json();
-        const raw = json.content?.[0]?.text || 'hmm, something went wrong.';
+        // Tool-use loop: keep calling Claude until we get a final text response
+        let messages = [...history, { role: 'user', content: userText }];
+        let finalText = '';
+        let loops = 0;
+        while (loops < 5) {
+          loops++;
+          const res = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-api-key': data.settings.apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+            body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1024, system: systemPrompt, messages, tools: PEBBLE_TOOLS }),
+          });
+          const json = await res.json();
 
-        // Extract and execute any actions
-        const actionsMatch = raw.match(/<actions>([\s\S]*?)<\/actions>/);
-        const memoryMatch = raw.match(/<memory>([\s\S]*?)<\/memory>/);
-        const cleanText = raw.replace(/<actions>[\s\S]*?<\/actions>/, '').replace(/<memory>[\s\S]*?<\/memory>/, '').trim();
-        if (actionsMatch) {
-          try {
-            const actions = JSON.parse(actionsMatch[1]);
-            actions.forEach(action => {
-              if (action.type === 'START_CARD_QUIZ') {
-                setCardQuiz(action);
-              } else if (action.type === 'SEND_NOTIFICATION') {
-                sendPushNotification(data.settings?.oneSignalAppId, data.settings?.oneSignalRestKey, action.title, action.body);
-              } else {
-                dispatch(action);
-              }
-            });
-          } catch {}
-        }
-        if (memoryMatch) {
-          try {
-            const memories = JSON.parse(memoryMatch[1]);
-            memories.forEach(m => {
-              if (m.label && m.payload) {
-                dispatch({ type: 'ADD_MEMORY_PENDING', item: { id: Date.now() + Math.random(), label: m.label, payload: m.payload } });
-              }
-            });
-          } catch {}
-        }
+          // Check if Claude wants to use tools
+          const toolUses = (json.content || []).filter(b => b.type === 'tool_use');
+          const textBlocks = (json.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
 
-        dispatch({ type: 'ADD_CHAT_MSG', msg: { role: 'assistant', content: cleanText, time: new Date().toISOString() } });
+          if (toolUses.length > 0 && json.stop_reason === 'tool_use') {
+            // Execute each tool call and build results
+            const toolResults = [];
+            for (const tu of toolUses) {
+              const result = await executeToolCall(tu.name, tu.input);
+              toolResults.push({ type: 'tool_result', tool_use_id: tu.id, content: result });
+            }
+            // Add assistant's response + tool results to messages, then loop
+            messages = [...messages, { role: 'assistant', content: json.content }, { role: 'user', content: toolResults }];
+            continue; // go around the loop again
+          }
+
+          // No more tool calls — we have the final response
+          const raw = textBlocks || 'hmm, something went wrong.';
+
+          // Extract and execute any actions
+          const actionsMatch = raw.match(/<actions>([\s\S]*?)<\/actions>/);
+          const memoryMatch = raw.match(/<memory>([\s\S]*?)<\/memory>/);
+          const cleanText = raw.replace(/<actions>[\s\S]*?<\/actions>/, '').replace(/<memory>[\s\S]*?<\/memory>/, '').trim();
+          if (actionsMatch) {
+            try {
+              const actions = JSON.parse(actionsMatch[1]);
+              actions.forEach(action => {
+                if (action.type === 'START_CARD_QUIZ') {
+                  setCardQuiz(action);
+                } else if (action.type === 'SEND_NOTIFICATION') {
+                  sendPushNotification(data.settings?.oneSignalAppId, data.settings?.oneSignalRestKey, action.title, action.body);
+                } else {
+                  dispatch(action);
+                }
+              });
+            } catch {}
+          }
+          if (memoryMatch) {
+            try {
+              const memories = JSON.parse(memoryMatch[1]);
+              memories.forEach(m => {
+                if (m.label && m.payload) {
+                  dispatch({ type: 'ADD_MEMORY_PENDING', item: { id: Date.now() + Math.random(), label: m.label, payload: m.payload } });
+                }
+              });
+            } catch {}
+          }
+
+          dispatch({ type: 'ADD_CHAT_MSG', msg: { role: 'assistant', content: cleanText, time: new Date().toISOString() } });
+          break; // exit the loop
+        } // end while loop
       } catch {
         dispatch({ type: 'ADD_CHAT_MSG', msg: { role: 'assistant', content: "couldn't reach pebble's brain right now. try again?", time: new Date().toISOString() } });
       } finally {
