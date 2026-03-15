@@ -2380,6 +2380,33 @@ async function executeToolCall(name, input) {
   }
 }
 
+function ChatBubble({ msg }) {
+  const [expanded, setExpanded] = useState(false);
+  const isLong = msg.role === 'assistant' && msg.content.length > 200;
+  const displayText = isLong && !expanded ? msg.content.slice(0, 200) + '...' : msg.content;
+
+  return (
+    <div className={`mb-2 flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+      <div style={{ maxWidth: '80%' }}>
+        <div style={{ padding: '8px 12px', borderRadius: 16,
+          background: msg.role === 'user' ? 'var(--primary)' : 'var(--card-bg)',
+          color: msg.role === 'user' ? 'white' : 'var(--dark)',
+          fontFamily: 'var(--font-body)', fontSize: 12, lineHeight: 1.5,
+          whiteSpace: 'pre-line',
+          border: msg.role === 'assistant' ? '1px solid rgba(0,0,0,0.06)' : 'none' }}>
+          {displayText}
+        </div>
+        {isLong && (
+          <button onClick={() => setExpanded(!expanded)}
+            style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--primary)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0 0', marginLeft: 4 }}>
+            {expanded ? 'show less' : 'show more'}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function ChatBar() {
   const { data, dispatch } = useContext(DataCtx);
   const { setCardQuiz } = useContext(QuizCtx);
@@ -2614,7 +2641,7 @@ ${(data.plans || []).length ? '\nActive plans: ' + (data.plans || []).map(p => p
 
   return (
     <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} style={{ position: 'relative' }}>
-      {(chatOpen || sending || data.memory?.pending?.length > 0) && (data.chat.messages.length > 0 || data.memory?.pending?.length > 0) && (<>
+      {chatOpen && (data.chat.messages.length > 0) && (<>
         <div onClick={() => setChatOpen(false)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 30 }} />
         <div ref={msgsRef} className="absolute bottom-14 left-0 right-0 z-40" style={{ maxHeight: 320, overflowY: 'auto', background: 'color-mix(in srgb, var(--bg) 95%, transparent)', backdropFilter: 'blur(12px)', borderTop: '1px solid rgba(0,0,0,0.06)', padding: '0' }}>
           {/* Close bar — full width tap target */}
@@ -2623,13 +2650,7 @@ ${(data.plans || []).length ? '\nActive plans: ' + (data.plans || []).map(p => p
           </div>
           <div style={{ padding: '4px 16px 12px' }}>
           {data.chat.messages.slice(-10).map((m, i) => (
-            <div key={m.time || i} className={`mb-2 flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div style={{ maxWidth: '80%', padding: '8px 12px', borderRadius: 16,
-                background: m.role === 'user' ? 'var(--primary)' : 'var(--card-bg)',
-                color: m.role === 'user' ? 'white' : 'var(--dark)',
-                fontFamily: 'var(--font-body)', fontSize: 12, lineHeight: 1.5,
-                border: m.role === 'assistant' ? '1px solid rgba(0,0,0,0.06)' : 'none' }}>{m.content}</div>
-            </div>
+            <ChatBubble key={m.time || i} msg={m} />
           ))}
           {sending && (
             <div className="mb-2 flex justify-start">
