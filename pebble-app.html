@@ -1096,6 +1096,7 @@ const DEFAULT_DATA = {
   dailyPlan: { date: '', plan: '' },
   pageNotes: {},
   stickies: [],
+  waterCount: {},
   dots: { workout: {}, skincare: {}, study: {}, meals: {}, water: {} },
   notebook: {
     saves: [],
@@ -1362,6 +1363,16 @@ function dataReducer(state, action) {
       if (!key || !fact) return state;
       ctx[key] = fact;
       return { ...state, profile: { ...state.profile, context: ctx } };
+    }
+    case 'INCREMENT_WATER': {
+      const wc = { ...(state.waterCount || {}) };
+      wc[action.date] = Math.min((wc[action.date] || 0) + 1, 20);
+      return { ...state, waterCount: wc };
+    }
+    case 'DECREMENT_WATER': {
+      const wc = { ...(state.waterCount || {}) };
+      wc[action.date] = Math.max((wc[action.date] || 0) - 1, 0);
+      return { ...state, waterCount: wc };
     }
     case 'LOAD_DATA': {
       const merged = migrateContext(deepMerge(DEFAULT_DATA, action.data));
@@ -1910,7 +1921,7 @@ function MarbleJar({ open, onClose, onNavigate, currentPage, customSegments, sta
           {marbles.map((m, i) => {
             const isActive = currentPage === m.page;
             return (
-              <g key={i} className="marble-group" onClick={() => { onNavigate(m.page); onClose(); }}>
+              <g key={i} className="marble-group" onClick={() => { navigator.vibrate?.(10); onNavigate(m.page); onClose(); }}>
                 <circle cx={m.cx} cy={m.cy} r="22"
                   fill={isActive ? 'var(--primary)' : 'var(--accent-light)'}
                   stroke="var(--primary)" strokeWidth={isActive ? "2.5" : "1.5"}
@@ -1964,7 +1975,7 @@ function TabNav({ currentPage, onNavigate, pageLabels }) {
       {pageLabels.map((label, i) => {
         const active = i === currentPage;
         return (
-          <button key={i} ref={active ? activeRef : null} onClick={() => onNavigate(i)}
+          <button key={i} ref={active ? activeRef : null} onClick={() => { navigator.vibrate?.(10); onNavigate(i); }}
             style={{
               fontFamily: 'var(--font-body)', fontSize: 10, letterSpacing: 0.5,
               padding: '8px 12px 6px', whiteSpace: 'nowrap', cursor: 'pointer',
@@ -2002,7 +2013,7 @@ function PebbleNav({ currentPage, onNavigate, pageLabels }) {
       {pageLabels.map((label, i) => {
         const active = i === currentPage;
         return (
-          <button key={i} ref={active ? activeRef : null} onClick={() => onNavigate(i)}
+          <button key={i} ref={active ? activeRef : null} onClick={() => { navigator.vibrate?.(10); onNavigate(i); }}
             style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, cursor: 'pointer', background: 'none', border: 'none', padding: 0, flexShrink: 0 }}>
             <div style={{
               width: 32, height: 32, borderRadius: '50%',
@@ -2036,7 +2047,7 @@ function PageDots({ currentPage, totalPages, onDotClick, pageLabels }) {
         <div
           key={i}
           className={`page-dot ${i === currentPage ? 'active' : ''}`}
-          onClick={() => onDotClick(i)}
+          onClick={() => { navigator.vibrate?.(10); onDotClick(i); }}
           role="button"
           aria-label={`Go to ${(pageLabels || PAGE_LABELS)[i] || `Page ${i + 1}`}`}
         />
@@ -2224,8 +2235,35 @@ function ChatBar() {
   const [msg, setMsg] = useState('');
   const [chatOpen, setChatOpen] = useState(false);
   const [sending, setSending] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef(null);
   const msgsRef = useRef(null);
   const swipeStartX = useRef(null);
+  const hasSpeechAPI = typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition);
+
+  const toggleVoice = useCallback(() => {
+    if (isListening && recognitionRef.current) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+      return;
+    }
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      setMsg(prev => prev ? prev + ' ' + transcript : transcript);
+    };
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = () => setIsListening(false);
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsListening(true);
+    navigator.vibrate?.(10);
+  }, [isListening]);
 
   const handleTouchStart = (e) => { swipeStartX.current = e.touches[0].clientX; };
   const handleTouchEnd = (e) => {
@@ -2253,7 +2291,14 @@ function ChatBar() {
     if (data.settings?.apiKey) {
       try {
         const todayEvents = (data.planner.events[todayKey] || []).map(e => `${e.time} ${e.text}`).join(', ');
+        const _missingToday = [];
+        if (!data.dots.workout?.[todayKey]) _missingToday.push('workout');
+        if (!data.dots.skincare?.[todayKey]) _missingToday.push('skincare');
+        if (!data.dots.study?.[todayKey]) _missingToday.push('study');
+        if (!data.journal.entries.find(e => e.date === todayKey)) _missingToday.push('journal');
         const systemPrompt = `You are Pebble, a warm and intelligent personal life assistant.
+- Current time: ${new Date().toLocaleTimeString()}. Adjust your tone and suggestions to the time of day (morning = energizing, afternoon = productive, evening = wind-down, night = reflective/gentle).
+- Not yet done today: ${_missingToday.join(', ') || 'all caught up!'}. If the user hasn't done something important today, you can gently mention it when relevant — don't nag, just a friendly nudge.
 Here is everything you know about the user:
 - Name: ${data.profile.name}, Vegan: ${data.profile.vegan}, Skin type: ${data.profile.skinType}${(() => { const ctx = data.profile.context; if (!ctx || typeof ctx !== 'object' || !Object.keys(ctx).length) return ''; return '\n\nPERSONAL CONTEXT (always use this — allergies, preferences, goals, life facts):\n' + Object.entries(ctx).map(([k,v]) => `- [${k}] ${v}`).join('\n'); })()}
 - Active todos: ${data.planner.todos.filter(t => !t.done).map(t => t.text).join(', ')}
@@ -2438,9 +2483,16 @@ You have TOOLS available — use them when the user asks about weather, word def
           onFocus={e => { e.target.style.borderColor = 'var(--primary)'; }}
           onBlur={e => { e.target.style.borderColor = 'rgba(0,0,0,0.06)'; }}
           onKeyDown={e => e.key === 'Enter' && sendMessage()} />
+        {hasSpeechAPI && (
+          <button className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer flex-shrink-0"
+            style={{ background: isListening ? 'var(--primary)' : 'rgba(0,0,0,0.04)', border: isListening ? '2px solid var(--primary)' : '1px solid rgba(0,0,0,0.08)', transition: 'all 0.15s' }}
+            onClick={toggleVoice}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={isListening ? 'white' : 'var(--muted)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </button>
+        )}
         <button className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer flex-shrink-0"
           style={{ background: 'var(--primary)', opacity: msg.trim() ? 1 : 0.4, transition: 'opacity 0.15s' }}
-          onClick={sendMessage} disabled={!msg.trim()}>
+          onClick={() => { navigator.vibrate?.(10); sendMessage(); }} disabled={!msg.trim()}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
         </button>
       </div>
@@ -2489,13 +2541,55 @@ function StreamPage() {
                 return (
                   <div key={cat} className="flex flex-col items-center gap-1.5">
                     <div className={`dot today ${filled ? 'filled' : ''}`} style={{ width: 14, height: 14, cursor: 'pointer' }}
-                      onClick={() => dispatch({ type: 'TOGGLE_DOT', category: cat, date: todayKey })} />
+                      onClick={() => { navigator.vibrate?.(10); dispatch({ type: 'TOGGLE_DOT', category: cat, date: todayKey }); }} />
                     <span style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1 }}>{cat.slice(0, 4)}</span>
                   </div>
                 );
               })}
             </div>
           </div>
+
+          {/* Water Tracker */}
+          <div className="glass-card px-4 py-3 mb-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--dark)' }}>{(data.waterCount || {})[todayKey] || 0}/8 glasses</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => { navigator.vibrate?.(10); dispatch({ type: 'DECREMENT_WATER', date: todayKey }); }}
+                  style={{ width: 26, height: 26, borderRadius: '50%', border: '1px solid rgba(0,0,0,0.08)', background: 'rgba(0,0,0,0.02)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-body)', fontSize: 16, color: 'var(--muted)', lineHeight: 1 }}>-</button>
+                <button onClick={() => { navigator.vibrate?.(10); dispatch({ type: 'INCREMENT_WATER', date: todayKey }); }}
+                  style={{ width: 26, height: 26, borderRadius: '50%', border: '1px solid rgba(0,0,0,0.08)', background: 'var(--primary-light)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-body)', fontSize: 16, color: 'var(--primary)', lineHeight: 1 }}>+</button>
+              </div>
+            </div>
+            <div style={{ marginTop: 8, height: 4, borderRadius: 2, background: 'rgba(0,0,0,0.05)', overflow: 'hidden' }}>
+              <div style={{ height: '100%', borderRadius: 2, width: `${Math.min(((data.waterCount || {})[todayKey] || 0) / 8 * 100, 100)}%`, background: 'var(--primary)', transition: 'width 0.3s' }} />
+            </div>
+          </div>
+
+          {/* Mood Trends — 7 days */}
+          {(() => {
+            const last7 = [];
+            for (let i = 6; i >= 0; i--) {
+              const d = new Date(today);
+              d.setDate(today.getDate() - i);
+              const key = d.toISOString().split('T')[0];
+              const entry = data.journal.entries.find(e => e.date === key);
+              last7.push(entry?.mood || '');
+            }
+            const moodColor = (m) => m === 'good' ? 'var(--primary)' : m === 'okay' ? 'var(--accent)' : m === 'tough' ? 'var(--danger)' : 'rgba(0,0,0,0.08)';
+            return (
+              <div className="mb-5">
+                <p style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>mood · 7 days</p>
+                <div className="flex items-center gap-3 justify-center">
+                  {last7.map((m, i) => (
+                    <div key={i} style={{ width: 10, height: 10, borderRadius: '50%', background: moodColor(m), transition: 'background 0.2s', opacity: m ? 1 : 0.4 }} title={m || 'no entry'} />
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Daily Plan */}
           {(() => {
@@ -2700,7 +2794,7 @@ function PlannerPage() {
           <div className="glass-card px-4 py-3 space-y-2.5 flex-1 overflow-y-auto" style={{ maxHeight: 240 }}>
             {filtered.map(task => (
               <div key={task.id} className="flex items-center gap-3">
-                <div className={`checkbox ${task.done ? 'done' : ''}`} onClick={() => dispatch({ type: 'TOGGLE_TODO', id: task.id })}>
+                <div className={`checkbox ${task.done ? 'done' : ''}`} onClick={() => { navigator.vibrate?.(10); dispatch({ type: 'TOGGLE_TODO', id: task.id }); }}>
                   {task.done && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">{icons.check}</svg>}
                 </div>
                 <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: task.done ? 'var(--muted)' : 'var(--dark)', textDecoration: task.done ? 'line-through' : 'none', flex: 1 }}>{task.text}</span>
@@ -2842,7 +2936,7 @@ function KitchenPage() {
               <p style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--muted)', textAlign: 'center' }}>no items yet</p>
             ) : grocery.map((item, i) => (
               <div key={i} className="flex items-center gap-2 py-1.5">
-                <div className={`checkbox ${item.done ? 'done' : ''}`} style={{ width: 14, height: 14 }} onClick={() => dispatch({ type: 'TOGGLE_GROCERY', index: i })}>
+                <div className={`checkbox ${item.done ? 'done' : ''}`} style={{ width: 14, height: 14 }} onClick={() => { navigator.vibrate?.(10); dispatch({ type: 'TOGGLE_GROCERY', index: i }); }}>
                   {item.done && <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">{icons.check}</svg>}
                 </div>
                 <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: item.done ? 'var(--muted)' : 'var(--dark)', textDecoration: item.done ? 'line-through' : 'none', flex: 1 }}>{item.text}</span>
@@ -3334,7 +3428,7 @@ function JournalPage() {
 
               <div className="flex gap-1.5" style={{ marginTop: 8 }}>
                 {moods.map(m => (
-                  <button key={m} onClick={() => { setMood(m); if (body.trim()) dispatch({ type: 'SAVE_JOURNAL', date: currentDate, body: body.trim(), mood: m }); }}
+                  <button key={m} onClick={() => { navigator.vibrate?.(10); setMood(m); if (body.trim()) dispatch({ type: 'SAVE_JOURNAL', date: currentDate, body: body.trim(), mood: m }); }}
                     style={{ fontFamily: 'var(--font-body)', fontSize: 10, padding: '3px 10px', borderRadius: 999, cursor: 'pointer',
                       border: mood === m ? '1.5px solid var(--primary)' : '1px solid rgba(0,0,0,0.06)',
                       background: mood === m ? 'var(--primary-light)' : 'rgba(0,0,0,0.02)',
@@ -3940,7 +4034,7 @@ function CustomSegmentPage({ segId }) {
               <SectionLabel>today</SectionLabel>
               <div className="glass-card px-4 py-3 flex items-center justify-between mb-2">
                 <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--muted)' }}>{todayKey}</p>
-                <button onClick={() => dispatch({ type: 'TOGGLE_SEGMENT_DOT', id: segId, date: todayKey })}
+                <button onClick={() => { navigator.vibrate?.(10); dispatch({ type: 'TOGGLE_SEGMENT_DOT', id: segId, date: todayKey }); }}
                   style={{ fontFamily: 'var(--font-body)', fontSize: 10, padding: '5px 14px', borderRadius: 999, background: todayDot ? 'var(--accent)' : 'var(--primary-light)', color: todayDot ? 'white' : 'var(--primary)', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}>
                   {todayDot ? '✓ done' : 'check in'}
                 </button>
@@ -3950,7 +4044,7 @@ function CustomSegmentPage({ segId }) {
                   const d = new Date(); d.setDate(d.getDate() - (13 - i));
                   const k = d.toISOString().split('T')[0];
                   return (
-                    <div key={k} onClick={() => dispatch({ type: 'TOGGLE_SEGMENT_DOT', id: segId, date: k })}
+                    <div key={k} onClick={() => { navigator.vibrate?.(10); dispatch({ type: 'TOGGLE_SEGMENT_DOT', id: segId, date: k }); }}
                       style={{ width: 18, height: 18, borderRadius: 4, background: seg.dots?.[k] ? 'var(--primary)' : 'rgba(0,0,0,0.06)', cursor: 'pointer', transition: 'background 0.15s' }} />
                   );
                 })}
@@ -3989,7 +4083,7 @@ function CustomSegmentPage({ segId }) {
               <div className="space-y-1.5 mb-2">
                 {(seg.checks || []).map(c => (
                   <div key={c.id} className="glass-card px-3 py-2 flex items-center gap-2">
-                    <button onClick={() => dispatch({ type: 'TOGGLE_SEGMENT_CHECK', id: segId, checkId: c.id })}
+                    <button onClick={() => { navigator.vibrate?.(10); dispatch({ type: 'TOGGLE_SEGMENT_CHECK', id: segId, checkId: c.id }); }}
                       style={{ width: 18, height: 18, borderRadius: 4, background: c.done ? 'var(--accent)' : 'transparent', border: `1.5px solid ${c.done ? 'var(--accent)' : 'rgba(0,0,0,0.15)'}`, cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}>
                       {c.done && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">{icons.check}</svg>}
                     </button>
@@ -4134,7 +4228,7 @@ function ThemeSwatch({ id, theme, isActive, onSelect, onDelete, isCustom }) {
       <button
         className={`theme-swatch ${isActive ? 'active' : ''}`}
         style={{ background: 'var(--card-bg)', flex: 1 }}
-        onClick={() => onSelect(id)}
+        onClick={() => { navigator.vibrate?.(10); onSelect(id); }}
         aria-label={`Select ${theme.name} theme`}
         aria-pressed={isActive}
       >
