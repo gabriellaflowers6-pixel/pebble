@@ -161,12 +161,12 @@
     .swipe-container { scroll-behavior: auto; }
   }
 
-  /* ── Cloud image overlay on cards ── */
-  .glass-card {
+  /* ── Cloud image overlay on cards (only when cloud theme active) ── */
+  .cloud-cards .glass-card {
     position: relative;
     overflow: hidden;
   }
-  .glass-card::after {
+  .cloud-cards .glass-card::after {
     content: '';
     position: absolute; top: 0; left: 0; right: 0; bottom: 0;
     background-image: var(--card-cloud-img, none);
@@ -176,7 +176,7 @@
     border-radius: inherit;
     z-index: 0;
   }
-  .glass-card > * { position: relative; z-index: 1; }
+  .cloud-cards .glass-card > * { position: relative; z-index: 1; }
 
   /* ── Playground element overrides (only active when vars are set) ── */
   .glass-card [class*="title"], .card-title { color: var(--card-title-color, inherit); }
@@ -1018,13 +1018,12 @@ function ThemeProvider({ children }) {
       phoneFrame.style.backgroundImage = '';
       phoneFrame.style.backgroundSize = '';
       phoneFrame.style.backgroundPosition = '';
+      phoneFrame.classList.remove('cloud-cards');
       root.style.removeProperty('--card-cloud-img');
       root.style.removeProperty('--card-cloud-opacity');
 
       if (theme.cloudImg && theme.cloudImg.src) {
         const ci = theme.cloudImg;
-        const bgVal = vars['--bg'] || CSS_DEFAULTS['--bg'];
-        // Convert hex/named color to rgba for overlay
         const overlayAlpha = 1 - (ci.opacity || 0.3);
         if (ci.target === 'bg' || ci.target === 'both') {
           phoneFrame.style.backgroundImage = `linear-gradient(rgba(255,255,255,${overlayAlpha}), rgba(255,255,255,${overlayAlpha})), url(${ci.src})`;
@@ -1032,6 +1031,7 @@ function ThemeProvider({ children }) {
           phoneFrame.style.backgroundPosition = 'center';
         }
         if (ci.target === 'cards' || ci.target === 'both') {
+          phoneFrame.classList.add('cloud-cards');
           root.style.setProperty('--card-cloud-img', `url(${ci.src})`);
           root.style.setProperty('--card-cloud-opacity', ci.opacity || 0.3);
         }
@@ -2645,7 +2645,7 @@ ${(data.plans || []).length ? '\nActive plans: ' + (data.plans || []).map(p => p
           placeholder="talk to pebble..."
           className="flex-1 outline-none"
           style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 999, padding: '10px 16px', fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--dark)', transition: 'border-color 0.15s' }}
-          onFocus={e => { e.target.style.borderColor = 'var(--primary)'; }}
+          onFocus={e => { e.target.style.borderColor = 'var(--primary)'; if (data.chat.messages.length) setChatOpen(true); }}
           onBlur={e => { e.target.style.borderColor = 'rgba(0,0,0,0.06)'; }}
           onKeyDown={e => e.key === 'Enter' && sendMessage()} />
         {hasSpeechAPI && (
