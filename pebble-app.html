@@ -1094,6 +1094,7 @@ const DEFAULT_DATA = {
   },
   segments: [],
   dailyPlan: { date: '', plan: '' },
+  plans: [],
   pageNotes: {},
   stickies: [],
   waterCount: {},
@@ -1329,6 +1330,16 @@ function dataReducer(state, action) {
     }
     case 'DISMISS_MEMORY': {
       return { ...state, memory: { pending: (state.memory?.pending || []).filter(p => p.id !== action.id) } };
+    }
+    case 'ADD_PLAN': {
+      const plan = { id: Date.now(), title: action.title, steps: (action.steps || []).map((s, i) => ({ id: i, text: s, done: false })), createdAt: todayKey };
+      return { ...state, plans: [plan, ...(state.plans || [])] };
+    }
+    case 'TOGGLE_PLAN_STEP': {
+      return { ...state, plans: (state.plans || []).map(p => p.id === action.planId ? { ...p, steps: p.steps.map(s => s.id === action.stepId ? { ...s, done: !s.done } : s) } : p) };
+    }
+    case 'DELETE_PLAN': {
+      return { ...state, plans: (state.plans || []).filter(p => p.id !== action.planId) };
     }
     case 'SAVE_DAILY_PLAN': {
       return { ...state, dailyPlan: { date: action.date, plan: action.plan } };
@@ -2368,7 +2379,12 @@ Card quiz format (ONLY for building plans from scratch when user needs guidance)
 - Each card has a question + options array (user taps one) OR no options (free text)
 - Max 5 cards. Keep questions short.
 
-You have TOOLS available — use them when the user asks about weather, word definitions, what time it is somewhere, or wants a quote. Don't mention the tools by name, just use them naturally. For weather, use common city coordinates (e.g. Chicago: 41.88, -87.63). If the user hasn't told you their city, ask.`;
+You have TOOLS available — use them when the user asks about weather, word definitions, what time it is somewhere, or wants a quote. Don't mention the tools by name, just use them naturally. For weather, use common city coordinates (e.g. Chicago: 41.88, -87.63). If the user hasn't told you their city, ask.
+
+When the user asks you to help them plan something multi-step (e.g. "help me prep for my interview", "plan my Sunday", "I want to start running", "plan a study schedule"), create a step-by-step plan by appending a <plan> block at the very end of your reply (after <actions> and <memory> if present):
+<plan>{"title":"short plan name","steps":["step 1","step 2","step 3"]}</plan>
+Keep plans actionable and specific (5-8 steps). The plan becomes a persistent checklist the user can check off over time. Don't create plans for simple one-step requests.
+${(data.plans || []).length ? '\nActive plans: ' + (data.plans || []).map(p => p.title + ' (' + p.steps.filter(s => s.done).length + '/' + p.steps.length + ' done)').join(', ') : ''}`;
 
         const history = data.chat.messages.slice(-20).map(m => ({ role: m.role, content: m.content }));
 
@@ -2407,7 +2423,8 @@ You have TOOLS available — use them when the user asks about weather, word def
           // Extract and execute any actions
           const actionsMatch = raw.match(/<actions>([\s\S]*?)<\/actions>/);
           const memoryMatch = raw.match(/<memory>([\s\S]*?)<\/memory>/);
-          const cleanText = raw.replace(/<actions>[\s\S]*?<\/actions>/, '').replace(/<memory>[\s\S]*?<\/memory>/, '').trim();
+          const planMatch = raw.match(/<plan>([\s\S]*?)<\/plan>/);
+          const cleanText = raw.replace(/<actions>[\s\S]*?<\/actions>/, '').replace(/<memory>[\s\S]*?<\/memory>/, '').replace(/<plan>[\s\S]*?<\/plan>/, '').trim();
           if (actionsMatch) {
             try {
               const actions = JSON.parse(actionsMatch[1]);
@@ -2430,6 +2447,14 @@ You have TOOLS available — use them when the user asks about weather, word def
                   dispatch({ type: 'ADD_MEMORY_PENDING', item: { id: Date.now() + Math.random(), label: m.label, payload: m.payload } });
                 }
               });
+            } catch {}
+          }
+          if (planMatch) {
+            try {
+              const plan = JSON.parse(planMatch[1]);
+              if (plan.title && plan.steps?.length) {
+                dispatch({ type: 'ADD_PLAN', title: plan.title, steps: plan.steps });
+              }
             } catch {}
           }
 
@@ -2663,6 +2688,48 @@ Keep it to 8-12 lines max. Warm, personal tone. Reference their actual data.`;
               </div>
             );
           })()}
+
+          {/* Active Plans */}
+          {(data.plans || []).length > 0 && (
+            <div className="mb-4">
+              <SectionLabel>plans</SectionLabel>
+              <div className="space-y-2.5">
+                {(data.plans || []).map(plan => {
+                  const doneCount = plan.steps.filter(s => s.done).length;
+                  const allDone = doneCount === plan.steps.length;
+                  return (
+                    <div key={plan.id} className="glass-card px-4 py-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <p style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: allDone ? 'var(--muted)' : 'var(--dark)', fontWeight: 600, textDecoration: allDone ? 'line-through' : 'none' }}>{plan.title}</p>
+                        <div className="flex items-center gap-2">
+                          <span style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: 'var(--muted)' }}>{doneCount}/{plan.steps.length}</span>
+                          <button onClick={() => dispatch({ type: 'DELETE_PLAN', planId: plan.id })}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, opacity: 0.4 }}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                          </button>
+                        </div>
+                      </div>
+                      {/* Progress bar */}
+                      <div style={{ height: 3, borderRadius: 2, background: 'rgba(0,0,0,0.06)', marginBottom: 8 }}>
+                        <div style={{ height: '100%', borderRadius: 2, background: 'var(--primary)', width: (doneCount / plan.steps.length * 100) + '%', transition: 'width 0.3s' }} />
+                      </div>
+                      <div className="space-y-1.5">
+                        {plan.steps.map(step => (
+                          <div key={step.id} className="flex items-start gap-2.5" style={{ cursor: 'pointer' }}
+                            onClick={() => { navigator.vibrate?.(10); dispatch({ type: 'TOGGLE_PLAN_STEP', planId: plan.id, stepId: step.id }); }}>
+                            <div className={`checkbox ${step.done ? 'done' : ''}`} style={{ width: 16, height: 16, marginTop: 1, flexShrink: 0 }}>
+                              {step.done && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>}
+                            </div>
+                            <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: step.done ? 'var(--muted)' : 'var(--dark)', lineHeight: 1.5, textDecoration: step.done ? 'line-through' : 'none' }}>{step.text}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div className="glass-card px-3.5 py-3">
