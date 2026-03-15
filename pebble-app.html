@@ -159,6 +159,23 @@
     .swipe-container { scroll-behavior: auto; }
   }
 
+  /* ── Cloud image overlay on cards ── */
+  .glass-card {
+    position: relative;
+    overflow: hidden;
+  }
+  .glass-card::after {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background-image: var(--card-cloud-img, none);
+    background-size: cover; background-position: center;
+    opacity: var(--card-cloud-opacity, 0);
+    pointer-events: none;
+    border-radius: inherit;
+    z-index: 0;
+  }
+  .glass-card > * { position: relative; z-index: 1; }
+
   /* ── Playground element overrides (only active when vars are set) ── */
   .glass-card [class*="title"], .card-title { color: var(--card-title-color, inherit); }
   .glass-card [class*="meta"] { color: var(--card-meta-color, inherit); }
@@ -991,6 +1008,34 @@ function ThemeProvider({ children }) {
       root.style.setProperty(k, v);
       if (!(k in CSS_DEFAULTS)) extraVarsRef.current.push(k);
     });
+
+    // Apply cloud image overlay from playground themes
+    const phoneFrame = document.querySelector('.phone-frame');
+    if (phoneFrame) {
+      // Clear previous cloud image
+      phoneFrame.style.backgroundImage = '';
+      phoneFrame.style.backgroundSize = '';
+      phoneFrame.style.backgroundPosition = '';
+      root.style.removeProperty('--card-cloud-img');
+      root.style.removeProperty('--card-cloud-opacity');
+
+      if (theme.cloudImg && theme.cloudImg.src) {
+        const ci = theme.cloudImg;
+        const bgVal = vars['--bg'] || CSS_DEFAULTS['--bg'];
+        // Convert hex/named color to rgba for overlay
+        const overlayAlpha = 1 - (ci.opacity || 0.3);
+        if (ci.target === 'bg' || ci.target === 'both') {
+          phoneFrame.style.backgroundImage = `linear-gradient(rgba(255,255,255,${overlayAlpha}), rgba(255,255,255,${overlayAlpha})), url(${ci.src})`;
+          phoneFrame.style.backgroundSize = 'cover';
+          phoneFrame.style.backgroundPosition = 'center';
+        }
+        if (ci.target === 'cards' || ci.target === 'both') {
+          root.style.setProperty('--card-cloud-img', `url(${ci.src})`);
+          root.style.setProperty('--card-cloud-opacity', ci.opacity || 0.3);
+        }
+      }
+    }
+
     document.body.style.background = '#E8E4DE';
     localStorage.setItem('pebble-theme', id);
     // Also save in credentials backup so theme survives mobile localStorage purges
@@ -1892,7 +1937,7 @@ function TabNav({ currentPage, onNavigate, pageLabels }) {
     }
   }, [currentPage]);
   return (
-    <div ref={scrollRef} style={{ display: 'flex', overflowX: 'auto', gap: 0, padding: '0 12px', flexShrink: 0, borderBottom: '2px solid var(--card-border)', background: 'var(--bg)', scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}>
+    <div ref={scrollRef} style={{ display: 'flex', overflowX: 'auto', gap: 0, padding: '0 12px', flexShrink: 0, borderBottom: '2px solid var(--card-border)', background: 'var(--bg)', boxShadow: '0 4px 12px rgba(0,0,0,0.06)', scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch', position: 'relative', zIndex: 5 }}>
       <style>{`.tab-scroll::-webkit-scrollbar{display:none}`}</style>
       {pageLabels.map((label, i) => {
         const active = i === currentPage;
@@ -1931,7 +1976,7 @@ function PebbleNav({ currentPage, onNavigate, pageLabels }) {
     }
   }, [currentPage]);
   return (
-    <div ref={scrollRef} style={{ display: 'flex', overflowX: 'auto', gap: 8, padding: '8px 16px', flexShrink: 0, scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}>
+    <div ref={scrollRef} style={{ display: 'flex', overflowX: 'auto', gap: 8, padding: '8px 16px 10px', flexShrink: 0, borderBottom: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 4px 12px rgba(0,0,0,0.06)', scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch', position: 'relative', zIndex: 5 }}>
       {pageLabels.map((label, i) => {
         const active = i === currentPage;
         return (
@@ -1994,7 +2039,7 @@ function SectionLabel({ children, right }) {
 function Header({ onJarOpen, onSettingsOpen }) {
   const { data } = useContext(DataCtx);
   return (
-    <div className="px-5 pt-12 pb-2 flex items-center justify-between flex-shrink-0">
+    <div className="px-5 pt-12 pb-2 flex items-center justify-between flex-shrink-0" style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.06)', position: 'relative', zIndex: 5 }}
       <div className="flex items-center gap-2">
         <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, color: 'var(--dark)', lineHeight: 1.1 }}>pebble</h1>
       </div>

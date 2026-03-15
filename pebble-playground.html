@@ -2213,11 +2213,19 @@
     // Strip empty values
     Object.keys(vars).forEach(k => { if (!vars[k]) delete vars[k]; });
 
+    // Include cloud image data if enabled
+    const cloudImg = cloudsEnabled && selectedCloudImg ? {
+      src: selectedCloudImg,
+      opacity: cloudImgOpacity,
+      target: cloudTarget,
+    } : null;
+
     const theme = {
       id: 'custom_' + Date.now(),
       name: name,
       desc: 'From playground',
       vars: vars,
+      cloudImg: cloudImg,
       swatches: [bgColor, primaryColor, accentColor, mutedColor],
       source: 'playground',
       date: Date.now(),
