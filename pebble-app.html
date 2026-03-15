@@ -1093,7 +1093,7 @@ const DEFAULT_DATA = {
     experiences: [],
   },
   segments: [],
-  dailyPlan: { date: '', plan: '' },
+  weekPlan: { weekStart: '', days: {} },
   plans: [],
   pageNotes: {},
   stickies: [],
@@ -1341,8 +1341,27 @@ function dataReducer(state, action) {
     case 'DELETE_PLAN': {
       return { ...state, plans: (state.plans || []).filter(p => p.id !== action.planId) };
     }
-    case 'SAVE_DAILY_PLAN': {
-      return { ...state, dailyPlan: { date: action.date, plan: action.plan } };
+    case 'SAVE_WEEK_PLAN': {
+      return { ...state, weekPlan: { weekStart: action.weekStart, days: action.days } };
+    }
+    case 'ACCEPT_DAY_PLAN': {
+      const wp = { ...state.weekPlan, days: { ...state.weekPlan.days } };
+      const dayData = wp.days[action.date];
+      if (!dayData) return state;
+      wp.days[action.date] = { ...dayData, accepted: true };
+      return { ...state, weekPlan: wp };
+    }
+    case 'UPDATE_DAY_PLAN': {
+      const wp2 = { ...state.weekPlan, days: { ...state.weekPlan.days } };
+      const dd = wp2.days[action.date];
+      if (!dd) return state;
+      if (action.field.startsWith('meals.')) {
+        const mealKey = action.field.split('.')[1];
+        wp2.days[action.date] = { ...dd, meals: { ...dd.meals, [mealKey]: action.value } };
+      } else {
+        wp2.days[action.date] = { ...dd, [action.field]: action.value };
+      }
+      return { ...state, weekPlan: wp2 };
     }
     case 'UPDATE_PAGE_NOTE': {
       const notes = { ...(state.pageNotes || {}) };
@@ -1483,6 +1502,18 @@ function generateBrainMd(d) {
   if (entries.length) {
     lines.push('## Recent Journal');
     entries.forEach(e => lines.push(`- **${e.date}**${e.mood ? ' (' + e.mood + ')' : ''}: ${e.body.slice(0, 200)}`));
+    lines.push('');
+  }
+
+  const wp = d.weekPlan;
+  if (wp?.weekStart && wp.days && Object.keys(wp.days).length) {
+    lines.push('## Week Plan');
+    lines.push(`- Week of: ${wp.weekStart}`);
+    Object.entries(wp.days).forEach(([date, day]) => {
+      lines.push(`- **${date}**${day.accepted ? ' (accepted)' : ''}: ${(day.schedule || '').split('\n')[0].slice(0, 80)}...`);
+      if (day.meals) lines.push(`  - Meals: B: ${day.meals.breakfast || '?'}, L: ${day.meals.lunch || '?'}, D: ${day.meals.dinner || '?'}`);
+      if (day.workout) lines.push(`  - Workout: ${day.workout.slice(0, 80)}`);
+    });
     lines.push('');
   }
 
@@ -2781,72 +2812,286 @@ function StreamPage() {
             );
           })()}
 
-          {/* Daily Plan */}
+          {/* Week Planner */}
           {(() => {
-            const hasPlan = data.dailyPlan?.date === todayKey && data.dailyPlan?.plan;
-            const [planLoading, setPlanLoading] = useState(false);
-            const [planOpen, setPlanOpen] = useState(true);
+            const [weekLoading, setWeekLoading] = useState(false);
+            const [dayLoading, setDayLoading] = useState(false);
+            const [selectedDayIdx, setSelectedDayIdx] = useState(() => {
+              const dow = today.getDay();
+              return dow === 0 ? 6 : dow - 1;
+            });
+            const [openSections, setOpenSections] = useState({ schedule: true, meals: true, workout: true });
 
-            const generatePlan = async () => {
-              if (!data.settings?.apiKey || planLoading) return;
-              setPlanLoading(true);
+            const toggleSection = (key) => setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
+
+            // Get Monday of current week
+            const getMonday = () => {
+              const d = new Date(today);
+              const dow = d.getDay();
+              const diff = dow === 0 ? -6 : 1 - dow;
+              d.setDate(d.getDate() + diff);
+              d.setHours(0,0,0,0);
+              return d;
+            };
+            const monday = getMonday();
+            const mondayKey = monday.toISOString().split('T')[0];
+
+            // Build array of 7 day keys (Mon-Sun)
+            const weekDays = Array.from({ length: 7 }, (_, i) => {
+              const d = new Date(monday);
+              d.setDate(d.getDate() + i);
+              return d.toISOString().split('T')[0];
+            });
+
+            const dayLabels = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+
+            const hasWeek = data.weekPlan?.weekStart === mondayKey && Object.keys(data.weekPlan?.days || {}).length > 0;
+            const selectedDateKey = weekDays[selectedDayIdx];
+            const selectedDay = data.weekPlan?.days?.[selectedDateKey];
+
+            const selectedDateObj = new Date(selectedDateKey + 'T12:00:00');
+            const selectedDateLabel = `${dayNames[selectedDateObj.getDay()]}, ${monthNames[selectedDateObj.getMonth()].toLowerCase()} ${selectedDateObj.getDate()}`;
+
+            const buildPromptContext = () => {
+              const ctx = data.profile.context || {};
+              const ctxStr = Object.entries(ctx).map(([k,v]) => `${k}: ${v}`).join(', ');
+              const todos = data.planner.todos.filter(t => !t.done).map(t => t.text).join(', ') || 'none';
+              const am = data.selfCare.skincare.morning.join(', ') || 'not set';
+              const pm = data.selfCare.skincare.evening.join(', ') || 'not set';
+              const workout = data.gym.workoutPlan[0]?.name || 'none';
+              const exercises = (data.gym.workoutPlan[0]?.exercises || []).join(', ') || 'none';
+              const courses = data.study.courses.map(c => c.name + ' (' + c.progress + '%, ' + c.status + ')').join(', ') || 'none';
+              const stickies = (data.stickies || []).filter(s => s.text).map(s => s.text).join(', ') || 'none';
+              return { ctxStr, todos, am, pm, workout, exercises, courses, stickies };
+            };
+
+            const generateWeek = async () => {
+              if (!data.settings?.apiKey || weekLoading) return;
+              navigator.vibrate?.(10);
+              setWeekLoading(true);
               try {
-                const ctx = data.profile.context || {};
-                const ctxStr = Object.entries(ctx).map(([k,v]) => `${k}: ${v}`).join(', ');
-                const prompt = `Based on everything you know, create a short daily plan for today (${dateStr}). Consider:
-- Profile: ${data.profile.name}, vegan: ${data.profile.vegan}, skin: ${data.profile.skinType}
-- Context: ${ctxStr || 'none'}
-- Active todos: ${data.planner.todos.filter(t => !t.done).map(t => t.text).join(', ') || 'none'}
-- Today's events: ${(data.planner.events[todayKey] || []).map(e => e.time + ' ' + e.text).join(', ') || 'none'}
-- Meals planned: B: ${data.kitchen.mealPlan.breakfast || '?'}, L: ${data.kitchen.mealPlan.lunch || '?'}, D: ${data.kitchen.mealPlan.dinner || '?'}
-- Skincare AM: ${data.selfCare.skincare.morning.join(', ') || 'not set'}
-- Workout: ${data.gym.workoutPlan[0]?.name || 'none'}
-- Stickies: ${(data.stickies || []).filter(s => s.text).map(s => s.text).join(', ') || 'none'}
-- Recent journal mood: ${(data.journal.entries.slice(-1)[0]?.mood) || 'unknown'}
+                const { ctxStr, todos, am, pm, workout, exercises, courses, stickies } = buildPromptContext();
+                const prompt = `Plan a full week for the user starting ${mondayKey}.
+Context:
+- Name: ${data.profile.name}, Vegan: ${data.profile.vegan}
+- Knowledge base: ${ctxStr || 'none'}
+- Active todos: ${todos}
+- Skincare AM: ${am}, PM: ${pm}
+- Workout plan: ${workout}, exercises: ${exercises}
+- Study courses: ${courses}
+- Stickies: ${stickies}
 
-Reply with ONLY a short daily plan — time blocks with brief items. Use simple lines like:
-☀️ morning
-- skincare routine
-- breakfast: [meal]
+Reply with ONLY valid JSON:
+{
+  "${weekDays[0]}": {
+    "schedule": "morning\\n- item\\n- item\\n\\nafternoon\\n- item\\n\\nevening\\n- item",
+    "meals": { "breakfast": "...", "lunch": "...", "dinner": "..." },
+    "workout": "..."
+  }
+}
+(7 days, Mon-Sun: ${weekDays.join(', ')})
 
-Keep it to 8-12 lines max. Warm, personal tone. Reference their actual data.`;
+Make meals vegan if they are vegan. Make workouts specific to their plan. Reference their actual todos, courses, and stickies. Keep schedules short (6-10 lines each). Make each day different and realistic.`;
 
                 const res = await fetch('https://api.anthropic.com/v1/messages', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json', 'x-api-key': data.settings.apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-                  body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 400, messages: [{ role: 'user', content: prompt }] }),
+                  body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 2048, messages: [{ role: 'user', content: prompt }] }),
                 });
                 const json = await res.json();
-                const plan = json.content?.[0]?.text || '';
-                if (plan) dispatch({ type: 'SAVE_DAILY_PLAN', date: todayKey, plan });
-              } catch {}
-              setPlanLoading(false);
+                const text = json.content?.[0]?.text || '';
+                const parsed = JSON.parse(stripJsonFences(text));
+                // Ensure each day has accepted: false
+                const days = {};
+                weekDays.forEach(dk => {
+                  if (parsed[dk]) {
+                    days[dk] = { ...parsed[dk], accepted: false };
+                  }
+                });
+                if (Object.keys(days).length > 0) {
+                  dispatch({ type: 'SAVE_WEEK_PLAN', weekStart: mondayKey, days });
+                }
+              } catch (e) { console.error('Week plan error:', e); }
+              setWeekLoading(false);
             };
+
+            const regenerateDay = async (dateKey) => {
+              if (!data.settings?.apiKey || dayLoading) return;
+              navigator.vibrate?.(10);
+              setDayLoading(true);
+              try {
+                const { ctxStr, todos, am, pm, workout, exercises, courses, stickies } = buildPromptContext();
+                const dateObj = new Date(dateKey + 'T12:00:00');
+                const dayName = dayNames[dateObj.getDay()];
+                const prompt = `Plan a single day (${dayName}, ${dateKey}) for the user.
+Context:
+- Name: ${data.profile.name}, Vegan: ${data.profile.vegan}
+- Knowledge base: ${ctxStr || 'none'}
+- Active todos: ${todos}
+- Skincare AM: ${am}, PM: ${pm}
+- Workout plan: ${workout}, exercises: ${exercises}
+- Study courses: ${courses}
+- Stickies: ${stickies}
+
+Reply with ONLY valid JSON:
+{
+  "schedule": "morning\\n- item\\n\\nafternoon\\n- item\\n\\nevening\\n- item",
+  "meals": { "breakfast": "...", "lunch": "...", "dinner": "..." },
+  "workout": "..."
+}
+Make meals vegan if they are vegan. Keep schedule 6-10 lines. Be specific and realistic.`;
+
+                const res = await fetch('https://api.anthropic.com/v1/messages', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', 'x-api-key': data.settings.apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+                  body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 512, messages: [{ role: 'user', content: prompt }] }),
+                });
+                const json = await res.json();
+                const text = json.content?.[0]?.text || '';
+                const parsed = JSON.parse(stripJsonFences(text));
+                const updatedDays = { ...(data.weekPlan?.days || {}) };
+                updatedDays[dateKey] = { ...parsed, accepted: false };
+                dispatch({ type: 'SAVE_WEEK_PLAN', weekStart: mondayKey, days: updatedDays });
+              } catch (e) { console.error('Day regen error:', e); }
+              setDayLoading(false);
+            };
+
+            const acceptDay = (dateKey) => {
+              navigator.vibrate?.(10);
+              dispatch({ type: 'ACCEPT_DAY_PLAN', date: dateKey });
+              const dayData = data.weekPlan?.days?.[dateKey];
+              if (dayData?.meals && dateKey === todayKey) {
+                if (dayData.meals.breakfast) dispatch({ type: 'UPDATE_MEAL_NAME', meal: 'breakfast', name: dayData.meals.breakfast });
+                if (dayData.meals.lunch) dispatch({ type: 'UPDATE_MEAL_NAME', meal: 'lunch', name: dayData.meals.lunch });
+                if (dayData.meals.dinner) dispatch({ type: 'UPDATE_MEAL_NAME', meal: 'dinner', name: dayData.meals.dinner });
+              }
+            };
+
+            const chevronSvg = (dir) => (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round"><path d={dir === 'left' ? 'M15 18l-6-6 6-6' : 'M9 6l6 6-6 6'} /></svg>
+            );
 
             return (
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-2">
-                  <SectionLabel>my day</SectionLabel>
+                  <SectionLabel>my week</SectionLabel>
                 </div>
-                {hasPlan ? (
-                  <div className="glass-card px-4 py-3">
-                    <button onClick={() => setPlanOpen(!planOpen)} className="flex items-center justify-between w-full" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                      <span style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--primary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1 }}>today's plan ✦</span>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" style={{ transform: planOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}><path d="M6 9l6 6 6-6"/></svg>
-                    </button>
-                    {planOpen && (
-                      <div style={{ marginTop: 8 }}>
-                        <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--dark)', lineHeight: 1.8, whiteSpace: 'pre-line' }}>{data.dailyPlan.plan}</p>
-                        <button onClick={generatePlan} style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer', marginTop: 8, padding: 0 }}>regenerate</button>
+
+                {hasWeek ? (
+                  <div>
+                    {/* Weekly overview dots */}
+                    <div className="flex items-center justify-center gap-2 mb-3">
+                      {weekDays.map((dk, i) => {
+                        const dayD = data.weekPlan?.days?.[dk];
+                        const isAccepted = dayD?.accepted;
+                        const hasPlan = !!dayD;
+                        const isSelected = i === selectedDayIdx;
+                        const isToday = dk === todayKey;
+                        return (
+                          <button key={dk} onClick={() => { navigator.vibrate?.(10); setSelectedDayIdx(i); }}
+                            style={{
+                              width: 20, height: 20, borderRadius: '50%', border: isSelected ? '2px solid var(--primary)' : '1.5px solid transparent',
+                              background: isAccepted ? '#4ade80' : hasPlan ? 'var(--primary)' : 'rgba(0,0,0,0.08)',
+                              opacity: isSelected ? 1 : 0.7, cursor: 'pointer', padding: 0,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s',
+                              boxShadow: isToday ? '0 0 0 2px rgba(0,0,0,0.1)' : 'none'
+                            }}>
+                            <span style={{ fontFamily: 'var(--font-body)', fontSize: 7, color: (isAccepted || hasPlan) ? '#fff' : 'var(--muted)', fontWeight: 600, textTransform: 'uppercase' }}>
+                              {dayLabels[i][0]}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Day navigation */}
+                    <div className="flex items-center justify-between mb-2">
+                      <button onClick={() => { navigator.vibrate?.(10); setSelectedDayIdx(Math.max(0, selectedDayIdx - 1)); }} disabled={selectedDayIdx === 0}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, opacity: selectedDayIdx === 0 ? 0.3 : 1 }}>
+                        {chevronSvg('left')}
+                      </button>
+                      <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--dark)', fontWeight: 500 }}>
+                        {selectedDateLabel}
+                        {selectedDateKey === todayKey && <span style={{ color: 'var(--primary)', marginLeft: 6, fontSize: 10 }}>today</span>}
+                      </span>
+                      <button onClick={() => { navigator.vibrate?.(10); setSelectedDayIdx(Math.min(6, selectedDayIdx + 1)); }} disabled={selectedDayIdx === 6}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, opacity: selectedDayIdx === 6 ? 0.3 : 1 }}>
+                        {chevronSvg('right')}
+                      </button>
+                    </div>
+
+                    {selectedDay ? (
+                      <div className="glass-card px-4 py-3">
+                        {selectedDay.accepted && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
+                            <span style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: '#4ade80', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1 }}>accepted</span>
+                          </div>
+                        )}
+
+                        {/* Schedule section */}
+                        <button onClick={() => toggleSection('schedule')} className="flex items-center justify-between w-full" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0', marginBottom: 4 }}>
+                          <span style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--primary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1 }}>schedule</span>
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" style={{ transform: openSections.schedule ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}><path d="M6 9l6 6 6-6"/></svg>
+                        </button>
+                        {openSections.schedule && (
+                          <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--dark)', lineHeight: 1.8, whiteSpace: 'pre-line', marginBottom: 12 }}>{selectedDay.schedule || 'No schedule yet'}</p>
+                        )}
+
+                        {/* Meals section */}
+                        <button onClick={() => toggleSection('meals')} className="flex items-center justify-between w-full" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0', marginBottom: 4 }}>
+                          <span style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--primary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1 }}>meals</span>
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" style={{ transform: openSections.meals ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}><path d="M6 9l6 6 6-6"/></svg>
+                        </button>
+                        {openSections.meals && selectedDay.meals && (
+                          <div style={{ marginBottom: 12 }}>
+                            {['breakfast', 'lunch', 'dinner'].map(meal => (
+                              <div key={meal} style={{ marginBottom: 6 }}>
+                                <span style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1 }}>{meal}</span>
+                                <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--dark)', marginTop: 1 }}>{selectedDay.meals[meal] || '—'}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Workout section */}
+                        <button onClick={() => toggleSection('workout')} className="flex items-center justify-between w-full" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0', marginBottom: 4 }}>
+                          <span style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--primary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1 }}>workout</span>
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" style={{ transform: openSections.workout ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}><path d="M6 9l6 6 6-6"/></svg>
+                        </button>
+                        {openSections.workout && (
+                          <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--dark)', lineHeight: 1.8, whiteSpace: 'pre-line', marginBottom: 8 }}>{selectedDay.workout || 'Rest day'}</p>
+                        )}
+
+                        {/* Action buttons */}
+                        <div className="flex items-center gap-3" style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid rgba(0,0,0,0.05)' }}>
+                          {!selectedDay.accepted && (
+                            <button onClick={() => acceptDay(selectedDateKey)}
+                              style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: '#fff', background: '#4ade80', border: 'none', cursor: 'pointer', padding: '5px 12px', borderRadius: 12, fontWeight: 600 }}>
+                              accept
+                            </button>
+                          )}
+                          <button onClick={() => regenerateDay(selectedDateKey)} disabled={dayLoading}
+                            style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--muted)', background: 'none', border: '1px solid rgba(0,0,0,0.08)', cursor: 'pointer', padding: '5px 12px', borderRadius: 12 }}>
+                            {dayLoading ? 'regenerating...' : 'regenerate'}
+                          </button>
+                          <button onClick={generateWeek} disabled={weekLoading}
+                            style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--muted)', background: 'none', border: '1px solid rgba(0,0,0,0.08)', cursor: 'pointer', padding: '5px 12px', borderRadius: 12 }}>
+                            {weekLoading ? 'reloading...' : 'reload week'}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="glass-card px-4 py-3" style={{ textAlign: 'center' }}>
+                        <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--muted)' }}>no plan for this day</p>
                       </div>
                     )}
                   </div>
                 ) : (
-                  <button onClick={generatePlan} disabled={planLoading || !data.settings?.apiKey} className="glass-card w-full" style={{ padding: '14px 16px', cursor: 'pointer', border: '1.5px dashed rgba(0,0,0,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                    {planLoading ? (
-                      <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--muted)' }}>planning your day...</span>
+                  <button onClick={generateWeek} disabled={weekLoading || !data.settings?.apiKey} className="glass-card w-full" style={{ padding: '14px 16px', cursor: 'pointer', border: '1.5px dashed rgba(0,0,0,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                    {weekLoading ? (
+                      <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--muted)' }}>planning your week...</span>
                     ) : (
-                      <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--primary)' }}>✦ plan my day</span>
+                      <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--primary)' }}>✦ plan my week</span>
                     )}
                   </button>
                 )}
