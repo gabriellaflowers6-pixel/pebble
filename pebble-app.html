@@ -2621,7 +2621,6 @@ ${(data.plans || []).length ? '\nActive plans: ' + (data.plans || []).map(p => p
           <div onClick={() => setChatOpen(false)} style={{ position: 'sticky', top: 0, zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8px 0 4px', cursor: 'pointer', background: 'color-mix(in srgb, var(--bg) 95%, transparent)' }}>
             <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(0,0,0,0.15)' }} />
           </div>
-          <MemoryTray />
           <div style={{ padding: '4px 16px 12px' }}>
           {data.chat.messages.slice(-10).map((m, i) => (
             <div key={m.time || i} className={`mb-2 flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -2640,6 +2639,7 @@ ${(data.plans || []).length ? '\nActive plans: ' + (data.plans || []).map(p => p
           </div>
         </div>
       </>)}
+      <MemoryTray />
       <div className="chat-bar border-t px-4 py-2.5 flex items-center gap-2 flex-shrink-0" style={{ borderColor: 'rgba(0,0,0,0.04)' }}>
         <input type="text" value={msg} onChange={e => setMsg(e.target.value)}
           placeholder="talk to pebble..."
