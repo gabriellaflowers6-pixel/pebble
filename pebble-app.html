@@ -2400,8 +2400,7 @@ You have TOOLS available — use them when the user asks about weather, word def
 
   return (
     <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} style={{ position: 'relative' }}>
-      {(chatOpen || sending || data.memory?.pending?.length > 0) && (data.chat.messages.length > 0 || data.memory?.pending?.length > 0) && (
-        {/* Tap-outside backdrop to close chat */}
+      {(chatOpen || sending || data.memory?.pending?.length > 0) && (data.chat.messages.length > 0 || data.memory?.pending?.length > 0) && (<>
         <div onClick={() => setChatOpen(false)} className="absolute inset-0 z-30" />
         <div ref={msgsRef} className="absolute bottom-14 left-0 right-0 z-40" style={{ maxHeight: 320, overflowY: 'auto', background: 'color-mix(in srgb, var(--bg) 95%, transparent)', backdropFilter: 'blur(12px)', borderTop: '1px solid rgba(0,0,0,0.06)', padding: '0' }}>
           {/* Close bar — full width tap target */}
@@ -2426,7 +2425,7 @@ You have TOOLS available — use them when the user asks about weather, word def
           )}
           </div>
         </div>
-      )}
+      </>)}
       <div className="chat-bar border-t px-4 py-2.5 flex items-center gap-2 flex-shrink-0" style={{ borderColor: 'rgba(0,0,0,0.04)' }}>
         <input type="text" value={msg} onChange={e => setMsg(e.target.value)}
           placeholder="talk to pebble..."
