@@ -186,6 +186,18 @@ memory: { pending[] }
 - **Daily picks**: quote + fun fact + book-leaning recommendation
 
 ## Not Yet Built (future sessions)
+
+### Next up (Gabby approved)
+- [ ] Onboarding flow — 3-step welcome: name → theme → Gist sync setup
+- [ ] Search — search across todos, journal, stickies, notes, grocery, everything
+- [ ] Swipe to delete — swipe left on todos/grocery/stickies to delete (native mobile feel)
+- [ ] Streak calendar — GitHub-style heatmap on tracker page showing streaks over months
+- [ ] Night mode shortcut — long-press "pebble" header to toggle midnight mode
+- [ ] Grocery auto-clear — "clear completed" button when all items are checked
+
+### Backlog
+- [ ] Export to PDF — weekly plan, journal, meal plan as printable PDF
+- [ ] Chat pinning — pin important AI responses so they don't scroll away
 - [ ] Weekly review — AI summarizes the week every Sunday
 - [ ] Grocery from meals — AI suggests missing grocery items based on meal plan
 - [ ] Planner: monthly calendar view
