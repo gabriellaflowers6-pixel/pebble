@@ -2401,7 +2401,7 @@ You have TOOLS available — use them when the user asks about weather, word def
   return (
     <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} style={{ position: 'relative' }}>
       {(chatOpen || sending || data.memory?.pending?.length > 0) && (data.chat.messages.length > 0 || data.memory?.pending?.length > 0) && (<>
-        <div onClick={() => setChatOpen(false)} className="absolute inset-0 z-30" />
+        <div onClick={() => setChatOpen(false)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 30 }} />
         <div ref={msgsRef} className="absolute bottom-14 left-0 right-0 z-40" style={{ maxHeight: 320, overflowY: 'auto', background: 'color-mix(in srgb, var(--bg) 95%, transparent)', backdropFilter: 'blur(12px)', borderTop: '1px solid rgba(0,0,0,0.06)', padding: '0' }}>
           {/* Close bar — full width tap target */}
           <div onClick={() => setChatOpen(false)} style={{ position: 'sticky', top: 0, zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8px 0 4px', cursor: 'pointer', background: 'color-mix(in srgb, var(--bg) 95%, transparent)' }}>
