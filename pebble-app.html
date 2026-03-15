@@ -1200,7 +1200,7 @@ function dataReducer(state, action) {
       return { ...state, notebook: { ...state.notebook, saves: [save, ...state.notebook.saves] } };
     }
     case 'UPDATE_DAILY_PICK': {
-      return { ...state, notebook: { ...state.notebook, dailyPick: { date: action.date, quote: action.quote, quoteAuthor: action.quoteAuthor, rec: action.rec } } };
+      return { ...state, notebook: { ...state.notebook, dailyPick: { date: action.date, quote: action.quote, quoteAuthor: action.quoteAuthor, funFact: action.funFact || '', rec: action.rec } } };
     }
     case 'ADD_EVENT': {
       const dateEvents = [...(state.planner.events[action.date] || []), { time: action.time || '', text: action.text }];
@@ -1587,7 +1587,7 @@ function DataProvider({ children }) {
         max_tokens: 300,
         messages: [{
           role: 'user',
-          content: `User context: ${ctx}\n\nGenerate today's daily quote and recommendation. The user loves Terence McKenna, Alan Watts, and Doctor Who quotes — rotate between these. She also loves literary fiction — Song of Achilles, Circe, Babel (R.F. Kuang), Life of Pi, Martyr! (Kaveh Akbar). Mix in quotes from these books too. Her reading list includes There Is No Antimemetics Division. Reply with ONLY valid JSON, no extra text:\n{"quote":"...","quoteAuthor":"...","rec":{"type":"movie","title":"...","reason":"..."}}\n\nType can be movie, book, recipe, or podcast. Lean heavily toward book recs similar to her taste (literary, mythological, philosophical, lyrical prose). Make it personal and relevant to this user's lifestyle.`
+          content: `User context: ${ctx}\n\nGenerate today's daily quote, fun fact, and recommendation. The user loves Terence McKenna, Alan Watts, and Doctor Who quotes — rotate between these. She also loves literary fiction — Song of Achilles, Circe, Babel (R.F. Kuang), Life of Pi, Martyr! (Kaveh Akbar). Mix in quotes from these books too. Her reading list includes There Is No Antimemetics Division. Reply with ONLY valid JSON, no extra text:\n{"quote":"...","quoteAuthor":"...","funFact":"...","rec":{"type":"movie","title":"...","reason":"..."}}\n\nfunFact: a surprising, weird, or delightful fact — science, history, language, nature, mythology, space, animals, anything fascinating. Keep it 1-2 sentences. Type can be movie, book, recipe, or podcast. Lean heavily toward book recs similar to her taste (literary, mythological, philosophical, lyrical prose). Make it personal and relevant to this user's lifestyle.`
         }]
       })
     })
@@ -1596,7 +1596,7 @@ function DataProvider({ children }) {
         const text = res.content?.[0]?.text?.trim();
         if (!text) return;
         const parsed = JSON.parse(stripJsonFences(text));
-        dispatch({ type: 'UPDATE_DAILY_PICK', date: todayKey, quote: parsed.quote, quoteAuthor: parsed.quoteAuthor, rec: parsed.rec });
+        dispatch({ type: 'UPDATE_DAILY_PICK', date: todayKey, quote: parsed.quote, quoteAuthor: parsed.quoteAuthor, funFact: parsed.funFact, rec: parsed.rec });
       })
       .catch(() => {});
   }, [data.settings.apiKey, data.notebook.dailyPick.date]);
@@ -4066,7 +4066,7 @@ function CustomSegmentPage({ segId }) {
 /* ── Page 12: Notebook (Pebble's Picks) ── */
 function NotebookPage() {
   const { data, dispatch } = useContext(DataCtx);
-  const { quote, quoteAuthor, rec } = data.notebook.dailyPick;
+  const { quote, quoteAuthor, funFact, rec } = data.notebook.dailyPick;
   const isSaved = data.notebook.saves.some(s => s.title === rec?.title);
 
   return (
@@ -4080,6 +4080,16 @@ function NotebookPage() {
             <p style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: 'var(--dark)', fontStyle: 'italic', lineHeight: 1.6, marginTop: 12, marginBottom: 8 }}>"{quote}"</p>
             <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--muted)' }}>— {quoteAuthor}</p>
           </div>
+
+          {funFact && (
+            <div className="glass-card px-4 py-3 mb-4 flex items-start gap-3">
+              <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>🧠</span>
+              <div>
+                <p style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: 1.2, fontWeight: 600, marginBottom: 4 }}>fun fact</p>
+                <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--dark)', lineHeight: 1.6 }}>{funFact}</p>
+              </div>
+            </div>
+          )}
 
           <SectionLabel>today's rec</SectionLabel>
           <div className="glass-card px-4 py-4 flex items-center gap-3 mb-4">
