@@ -2049,6 +2049,99 @@ function PebbleNav({ currentPage, onNavigate, pageLabels }) {
 }
 
 /* ══════════════════════════════════════════
+   GLASS JAR NAV — jar SVG + labeled pebbles outside
+   ══════════════════════════════════════════ */
+function GlassJarNav({ currentPage, onNavigate, pageLabels }) {
+  const [open, setOpen] = useState(false);
+
+  // Marble colors matching pebble-jar.html gradients
+  const marbleColors = [
+    '#5db8c8', // stream — teal
+    '#9d88d4', // planner — lavender
+    '#6ab87a', // kitchen — sage
+    '#d85858', // gym — coral
+    '#e0748a', // selfcare — rose
+    '#6878c0', // study — indigo
+    '#e89840', // tracker — orange
+    '#6888a8', // career — steel
+    '#e8972a', // journal — amber
+    '#8ab850', // notebook — lime
+    '#c07850', // build — terracotta
+    '#5ec8b8', // stickies — mint
+  ];
+
+  if (!open) {
+    return (
+      <div onClick={() => setOpen(true)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '6px 0', cursor: 'pointer', flexShrink: 0 }}>
+        {/* Mini jar icon */}
+        <svg width="28" height="36" viewBox="0 0 220 420" fill="none" style={{ opacity: 0.5 }}>
+          <path d="M82,100 Q48,112 36,136 L36,355 Q36,376 110,382 Q184,376 184,355 L184,136 Q172,112 138,100 Z" fill="var(--primary)" fillOpacity="0.12" stroke="var(--primary)" strokeWidth="4" strokeOpacity="0.3"/>
+          <path d="M82,96 Q92,88 110,86 Q128,88 138,96" stroke="var(--primary)" strokeWidth="4" strokeOpacity="0.25" fill="none"/>
+        </svg>
+        <span style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: 'var(--muted)', marginLeft: 6, letterSpacing: 0.5 }}>tap to open jar</span>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ flexShrink: 0, position: 'relative' }}>
+      {/* Backdrop */}
+      <div onClick={() => setOpen(false)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 40, background: 'rgba(0,0,0,0.1)' }} />
+      <div style={{ position: 'relative', zIndex: 41, background: 'var(--bg)', borderBottom: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 8px 24px rgba(0,0,0,0.08)', padding: '12px 16px 16px' }}>
+        {/* Glass jar SVG — compact */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
+          <svg width="80" height="100" viewBox="30 80 160 310" fill="none">
+            <path d="M82,100 Q48,112 36,136 L36,355 Q36,376 110,382 Q184,376 184,355 L184,136 Q172,112 138,100 Z"
+              fill="var(--card-bg)" stroke="var(--primary)" strokeWidth="2" strokeOpacity="0.3"/>
+            <path d="M82,96 Q92,88 110,86 Q128,88 138,96" stroke="var(--primary)" strokeWidth="2" strokeOpacity="0.25" fill="none"/>
+            <path d="M82,100 Q48,112 36,136 L36,355 Q36,372 46,378 L46,374 Q38,368 38,355 L38,136 Q49,114 84,102 Z" fill="var(--primary)" fillOpacity="0.08"/>
+            {/* Highlight stripe */}
+            <path d="M56,140 L56,350" stroke="white" strokeWidth="1.5" strokeOpacity="0.3" strokeLinecap="round"/>
+          </svg>
+        </div>
+
+        {/* Pebbles outside the jar — grid of labeled circles */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center' }}>
+          {pageLabels.map((label, i) => {
+            const active = i === currentPage;
+            const color = marbleColors[i] || marbleColors[0];
+            return (
+              <button key={i} onClick={() => { navigator.vibrate?.(10); onNavigate(i); setOpen(false); }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  padding: '5px 10px 5px 6px', borderRadius: 999,
+                  border: active ? `2px solid ${color}` : '1.5px solid rgba(0,0,0,0.06)',
+                  background: active ? color + '18' : 'var(--card-bg)',
+                  cursor: 'pointer', transition: 'all 0.15s',
+                }}>
+                {/* Glass marble */}
+                <div style={{
+                  width: 18, height: 18, borderRadius: '50%',
+                  background: `radial-gradient(circle at 36% 30%, ${color}44, ${color}11 50%, ${color}55)`,
+                  border: `1.5px solid ${color}${active ? '88' : '33'}`,
+                  position: 'relative', overflow: 'hidden',
+                }}>
+                  <div style={{ position: 'absolute', top: 3, left: 4, width: 6, height: 4, borderRadius: '50%', background: 'rgba(255,255,255,0.6)', transform: 'rotate(-20deg)' }} />
+                </div>
+                <span style={{
+                  fontFamily: 'var(--font-body)', fontSize: 10,
+                  color: active ? color : 'var(--muted)',
+                  fontWeight: active ? 600 : 400,
+                  whiteSpace: 'nowrap',
+                }}>{label.toLowerCase()}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Close hint */}
+        <p onClick={() => setOpen(false)} style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: 'var(--muted)', textAlign: 'center', marginTop: 8, opacity: 0.4, cursor: 'pointer' }}>tap outside to close</p>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════
    PAGE DOTS (vertical indicator)
    ══════════════════════════════════════════ */
 function PageDots({ currentPage, totalPages, onDotClick, pageLabels }) {
@@ -4376,6 +4469,7 @@ function SettingsPanel({ open, onClose }) {
           <div className="flex gap-2 mb-6">
             {[
               { id: 'jar', label: 'jar', icon: '🫙' },
+              { id: 'glassjar', label: 'glass', icon: '✨' },
               { id: 'tabs', label: 'tabs', icon: '📑' },
               { id: 'pebbles', label: 'pebbles', icon: '🪨' },
             ].map(opt => {
@@ -4866,6 +4960,7 @@ function App() {
 
       {navStyle === 'tabs' && <TabNav currentPage={currentPage} onNavigate={navigateTo} pageLabels={allPageLabels} />}
       {navStyle === 'pebbles' && <PebbleNav currentPage={currentPage} onNavigate={navigateTo} pageLabels={allPageLabels} />}
+      {navStyle === 'glassjar' && <GlassJarNav currentPage={currentPage} onNavigate={navigateTo} pageLabels={allPageLabels} />}
 
       <div className="swipe-container" ref={containerRef} style={{ position: 'relative' }}>
         {navStyle === 'jar' && <PageDots currentPage={currentPage} totalPages={pages.length} onDotClick={navigateTo} pageLabels={allPageLabels} />}
