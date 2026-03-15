@@ -1587,7 +1587,7 @@ function DataProvider({ children }) {
         max_tokens: 300,
         messages: [{
           role: 'user',
-          content: `User context: ${ctx}\n\nGenerate today's daily quote and recommendation. The user loves Terence McKenna, Alan Watts, and Doctor Who quotes — prioritize these heavily, rotating between them. Reply with ONLY valid JSON, no extra text:\n{"quote":"...","quoteAuthor":"...","rec":{"type":"movie","title":"...","reason":"..."}}\n\nType can be movie, book, recipe, or podcast. Make it personal and relevant to this user's lifestyle.`
+          content: `User context: ${ctx}\n\nGenerate today's daily quote and recommendation. The user loves Terence McKenna, Alan Watts, and Doctor Who quotes — rotate between these. She also loves literary fiction — Song of Achilles, Circe, Babel (R.F. Kuang), Life of Pi, Martyr! (Kaveh Akbar). Mix in quotes from these books too. Her reading list includes There Is No Antimemetics Division. Reply with ONLY valid JSON, no extra text:\n{"quote":"...","quoteAuthor":"...","rec":{"type":"movie","title":"...","reason":"..."}}\n\nType can be movie, book, recipe, or podcast. Lean heavily toward book recs similar to her taste (literary, mythological, philosophical, lyrical prose). Make it personal and relevant to this user's lifestyle.`
         }]
       })
     })
