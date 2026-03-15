@@ -2011,6 +2011,12 @@ function TabNav({ currentPage, onNavigate, pageLabels }) {
 /* ══════════════════════════════════════════
    PEBBLE NAV — labeled pebbles in a row
    ══════════════════════════════════════════ */
+const PEBBLE_COLORS = [
+  '#5db8c8', '#9d88d4', '#6ab87a', '#d85858', '#e0748a',
+  '#6878c0', '#e89840', '#6888a8', '#e8972a', '#8ab850',
+  '#c07850', '#5ec8b8',
+];
+
 function PebbleNav({ currentPage, onNavigate, pageLabels }) {
   const scrollRef = useRef(null);
   const activeRef = useRef(null);
@@ -2023,21 +2029,24 @@ function PebbleNav({ currentPage, onNavigate, pageLabels }) {
     <div ref={scrollRef} style={{ display: 'flex', overflowX: 'auto', gap: 8, padding: '8px 16px 10px', flexShrink: 0, borderBottom: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 4px 12px rgba(0,0,0,0.06)', scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch', position: 'relative', zIndex: 5 }}>
       {pageLabels.map((label, i) => {
         const active = i === currentPage;
+        const color = PEBBLE_COLORS[i % PEBBLE_COLORS.length];
         return (
           <button key={i} ref={active ? activeRef : null} onClick={() => { navigator.vibrate?.(10); onNavigate(i); }}
             style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, cursor: 'pointer', background: 'none', border: 'none', padding: 0, flexShrink: 0 }}>
             <div style={{
-              width: 32, height: 32, borderRadius: '50%',
-              background: active ? 'var(--primary)' : 'var(--accent-light)',
-              border: `${active ? 2.5 : 1.5}px solid ${active ? 'var(--primary)' : 'var(--card-border)'}`,
+              width: 30, height: 30, borderRadius: '50%',
+              background: `radial-gradient(circle at 36% 30%, ${color}${active ? '99' : '44'}, ${color}${active ? '44' : '11'} 50%, ${color}${active ? 'bb' : '55'})`,
+              border: `1.5px solid ${color}${active ? '99' : '33'}`,
               transition: 'all 0.15s',
-              position: 'relative',
+              position: 'relative', overflow: 'hidden',
+              boxShadow: active ? `0 0 8px ${color}44` : 'none',
             }}>
-              <div style={{ position: 'absolute', top: 5, left: 7, width: 8, height: 5, borderRadius: '50%', background: 'white', opacity: active ? 0.3 : 0.15 }}/>
+              <div style={{ position: 'absolute', top: 4, left: 6, width: 8, height: 5, borderRadius: '50%', background: 'rgba(255,255,255,0.6)', transform: 'rotate(-20deg)' }}/>
+              <div style={{ position: 'absolute', top: 8, left: 9, width: 3, height: 2, borderRadius: '50%', background: 'rgba(255,255,255,0.35)' }}/>
             </div>
             <span style={{
               fontFamily: 'var(--font-body)', fontSize: 8, letterSpacing: 0.3,
-              color: active ? 'var(--dark)' : 'var(--muted)',
+              color: active ? color : 'var(--muted)',
               fontWeight: active ? 600 : 400,
               whiteSpace: 'nowrap',
             }}>{label.length > 7 ? label.slice(0, 6) + '.' : label.toLowerCase()}</span>
@@ -4469,7 +4478,6 @@ function SettingsPanel({ open, onClose }) {
           <div className="flex gap-2 mb-6">
             {[
               { id: 'jar', label: 'jar', icon: '🫙' },
-              { id: 'glassjar', label: 'glass', icon: '✨' },
               { id: 'tabs', label: 'tabs', icon: '📑' },
               { id: 'pebbles', label: 'pebbles', icon: '🪨' },
             ].map(opt => {
@@ -4960,7 +4968,6 @@ function App() {
 
       {navStyle === 'tabs' && <TabNav currentPage={currentPage} onNavigate={navigateTo} pageLabels={allPageLabels} />}
       {navStyle === 'pebbles' && <PebbleNav currentPage={currentPage} onNavigate={navigateTo} pageLabels={allPageLabels} />}
-      {navStyle === 'glassjar' && <GlassJarNav currentPage={currentPage} onNavigate={navigateTo} pageLabels={allPageLabels} />}
 
       <div className="swipe-container" ref={containerRef} style={{ position: 'relative' }}>
         {navStyle === 'jar' && <PageDots currentPage={currentPage} totalPages={pages.length} onDotClick={navigateTo} pageLabels={allPageLabels} />}
