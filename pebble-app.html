@@ -1496,8 +1496,35 @@ function generateBrainMd(d) {
   return lines.join('\n');
 }
 
+// Read sync credentials from URL hash (survives localStorage wipes)
+function getHashCreds() {
+  try {
+    const hash = window.location.hash.slice(1);
+    if (!hash) return null;
+    const params = new URLSearchParams(hash);
+    const gistId = params.get('g');
+    const gistToken = params.get('t');
+    const apiKey = params.get('k');
+    if (gistId && gistToken) return { gistId, gistToken, ...(apiKey ? { apiKey } : {}) };
+  } catch {}
+  return null;
+}
+
+function updateHashCreds(settings) {
+  if (!settings.gistId || !settings.gistToken) return;
+  const params = new URLSearchParams();
+  params.set('g', settings.gistId);
+  params.set('t', settings.gistToken);
+  if (settings.apiKey) params.set('k', settings.apiKey);
+  const newHash = '#' + params.toString();
+  if (window.location.hash !== newHash) {
+    history.replaceState(null, '', newHash);
+  }
+}
+
 function DataProvider({ children }) {
   const [data, dispatch] = useReducer(dataReducer, null, () => {
+    const hashCreds = getHashCreds();
     try {
       const saved = localStorage.getItem('pebble-data');
       if (saved) {
@@ -1513,6 +1540,8 @@ function DataProvider({ children }) {
             if (savedProfile) parsed.profile = { ...parsed.profile, ...savedProfile };
           }
         } catch {}
+        // URL hash creds override everything (most reliable source)
+        if (hashCreds) parsed.settings = { ...parsed.settings, ...hashCreds };
         return parsed;
       }
     } catch {}
@@ -1522,9 +1551,16 @@ function DataProvider({ children }) {
       if (creds) {
         const restored = { ...DEFAULT_DATA };
         restored.settings = { ...restored.settings, ...JSON.parse(creds) };
+        if (hashCreds) restored.settings = { ...restored.settings, ...hashCreds };
         return restored;
       }
     } catch {}
+    // Last resort: URL hash creds on a totally fresh device
+    if (hashCreds) {
+      const fresh = { ...DEFAULT_DATA };
+      fresh.settings = { ...fresh.settings, ...hashCreds };
+      return fresh;
+    }
     return DEFAULT_DATA;
   });
 
@@ -1539,6 +1575,8 @@ function DataProvider({ children }) {
       const creds = JSON.stringify({ ...data.settings, _profile: data.profile });
       localStorage.setItem('pebble-credentials', creds);
     } catch {}
+    // Keep URL hash in sync so bookmarked URL always has latest creds
+    updateHashCreds(data.settings);
   }, [data]);
 
   // Emergency save when user switches away (mobile kills pages without warning)
@@ -4584,7 +4622,15 @@ function SettingsPanel({ open, onClose }) {
                 placeholder="ghp_..."
                 style={{ width: '100%', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--dark)', background: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 8, padding: '8px 10px', outline: 'none', WebkitTextSecurity: 'disc' }} />
             </div>
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: 'var(--muted)', lineHeight: 1.5, marginBottom: 8 }}>auto-saves to gist every few seconds. on a new device, enter your gist id + token, then hit "pull" to load your data. need a gist? go to gist.github.com → new secret gist → create it → copy the ID from the URL.</p>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: 'var(--muted)', lineHeight: 1.5, marginBottom: 8 }}>auto-saves to gist every few seconds. bookmark your sync link below — it has your keys baked in so you never lose your data, even if the browser clears storage.</p>
+            {data.settings.gistId && data.settings.gistToken && (
+              <button onClick={() => {
+                const url = window.location.origin + window.location.pathname + window.location.hash;
+                navigator.clipboard?.writeText(url).then(() => alert('sync link copied! bookmark this URL on your phone.')).catch(() => prompt('copy this link and bookmark it:', url));
+              }} style={{ width: '100%', fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--primary)', background: 'var(--primary-light)', border: 'none', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', marginBottom: 8 }}>
+                📎 copy sync link
+              </button>
+            )}
             {data.settings.gistId && data.settings.gistToken && (
               <div className="flex gap-2">
                 <button onClick={async () => {
