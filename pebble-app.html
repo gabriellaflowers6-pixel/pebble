@@ -940,7 +940,7 @@ function ThemeProvider({ children }) {
     if (saved) return saved;
     // Fallback: check credentials backup (mobile localStorage purge recovery)
     try { const creds = JSON.parse(localStorage.getItem('pebble-credentials') || '{}'); if (creds.theme) return creds.theme; } catch {}
-    return 'coquette';
+    return 'sage';
   });
   const [customThemes, setCustomThemes] = useState(getCustomThemes);
 
@@ -980,7 +980,7 @@ function ThemeProvider({ children }) {
       const customs = getCustomThemes();
       theme = customs.find(ct => ct.id === id);
     }
-    if (!theme) { id = 'coquette'; theme = THEMES.coquette; }
+    if (!theme) { id = 'sage'; theme = THEMES.sage; }
 
     const root = document.documentElement;
 
@@ -1049,7 +1049,7 @@ function ThemeProvider({ children }) {
     const updated = getCustomThemes().filter(ct => ct.id !== id);
     saveCustomThemes(updated);
     setCustomThemes(updated);
-    if (themeId === id) applyTheme('coquette');
+    if (themeId === id) applyTheme('sage');
   }, [themeId, applyTheme]);
 
   useEffect(() => { applyTheme(themeId); }, []);
