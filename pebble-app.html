@@ -1075,6 +1075,7 @@ const DEFAULT_DATA = {
     calorieLog: { breakfast: 0, lunch: 0, dinner: 0 },
     target: 2000,
     grocery: [],
+    grocerySaved: {},
   },
   gym: {
     workoutPlan: [{ name: '', exercises: [] }],
@@ -1161,7 +1162,24 @@ function dataReducer(state, action) {
       return { ...state, kitchen: { ...state.kitchen, target: Number(action.value) || state.kitchen.target } };
     }
     case 'ADD_GROCERY': {
-      return { ...state, kitchen: { ...state.kitchen, grocery: [...state.kitchen.grocery, { text: action.text, done: false }] } };
+      // Auto-save item to grocerySaved under its category
+      const saved = { ...(state.kitchen.grocerySaved || {}) };
+      const cat = categorizeGroceryItem(action.text);
+      if (!saved[cat]) saved[cat] = [];
+      if (!saved[cat].find(s => s.toLowerCase() === action.text.toLowerCase())) saved[cat] = [...saved[cat], action.text];
+      return { ...state, kitchen: { ...state.kitchen, grocery: [...state.kitchen.grocery, { text: action.text, done: false }], grocerySaved: saved } };
+    }
+    case 'SAVE_GROCERY_ITEM': {
+      const saved2 = { ...(state.kitchen.grocerySaved || {}) };
+      const cat2 = action.category || 'other';
+      if (!saved2[cat2]) saved2[cat2] = [];
+      if (!saved2[cat2].find(s => s.toLowerCase() === action.text.toLowerCase())) saved2[cat2] = [...saved2[cat2], action.text];
+      return { ...state, kitchen: { ...state.kitchen, grocerySaved: saved2 } };
+    }
+    case 'DELETE_SAVED_GROCERY': {
+      const saved3 = { ...(state.kitchen.grocerySaved || {}) };
+      if (saved3[action.category]) saved3[action.category] = saved3[action.category].filter(s => s.toLowerCase() !== action.text.toLowerCase());
+      return { ...state, kitchen: { ...state.kitchen, grocerySaved: saved3 } };
     }
     case 'TOGGLE_GROCERY': {
       const grocery = state.kitchen.grocery.map((g, i) => i === action.index ? { ...g, done: !g.done } : g);
@@ -1720,6 +1738,43 @@ const today = new Date();
 const todayKey = today.toISOString().split('T')[0];
 const dayNames = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
 const monthNames = ['january','february','march','april','may','june','july','august','september','october','november','december'];
+
+const GROCERY_CATEGORIES = {
+  veggies: ['onion','onions','garlic','tomato','tomatoes','potato','potatoes','carrot','carrots','broccoli','spinach','kale','lettuce','cucumber','cucumbers','pepper','peppers','bell pepper','bell peppers','celery','zucchini','mushroom','mushrooms','corn','peas','green beans','asparagus','cabbage','cauliflower','sweet potato','sweet potatoes','eggplant','beet','beets','radish','radishes','squash','artichoke','leek','leeks','bok choy','arugula','avocado','avocados','jalapeño','jalapeños','scallions','shallot','shallots'],
+  fruit: ['apple','apples','banana','bananas','orange','oranges','lemon','lemons','lime','limes','berry','berries','strawberry','strawberries','blueberry','blueberries','raspberry','raspberries','grape','grapes','mango','mangoes','pineapple','watermelon','peach','peaches','pear','pears','plum','plums','cherry','cherries','kiwi','coconut','fig','figs','pomegranate','cantaloupe','honeydew','grapefruit','tangerine','nectarine','papaya'],
+  proteins: ['chicken','beef','steak','pork','turkey','lamb','bacon','sausage','ham','ground beef','ground turkey','chicken breast','chicken thigh','chicken thighs','ribs','roast','meatballs','salami','pepperoni','prosciutto','chorizo','brisket','veal','duck','salmon','tuna','shrimp','cod','tilapia','crab','lobster','fish','sardines','anchovies','halibut','trout','scallops','clams','mussels','tofu','tempeh','seitan','eggs','egg'],
+  dairy: ['milk','cheese','yogurt','butter','cream','sour cream','cream cheese','cottage cheese','mozzarella','cheddar','parmesan','feta','ricotta','gouda','brie','swiss','whipped cream','half and half','heavy cream','oat milk','almond milk','greek yogurt'],
+  grains: ['rice','pasta','noodles','quinoa','oats','oatmeal','flour','cereal','couscous','barley','farro','lentils','polenta','cornmeal','breadcrumbs','panko','bread','tortillas','buns','rolls','bagels','pita','naan','croissants','english muffins','wraps','baguette','sourdough','flatbread'],
+  canned: ['canned beans','canned tomatoes','canned corn','canned tuna','canned soup','canned chicken','tomato sauce','tomato paste','coconut milk','broth','stock','diced tomatoes','crushed tomatoes','chickpeas','black beans','kidney beans','refried beans','canned fruit'],
+  frozen: ['frozen pizza','frozen vegetables','frozen fruit','frozen berries','frozen meals','frozen waffles','frozen fries','frozen chicken','frozen shrimp','ice cream','popsicles'],
+  snacks: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola','granola bars','cookies','candy','chocolate','gummy','jerky','rice cakes','protein bar','protein bars','peanuts','almonds','cashews','pistachios','dried fruit'],
+  drinks: ['water','juice','soda','coffee','tea','kombucha','sparkling water','energy drink','wine','beer','lemonade','coconut water','sports drink','cold brew','matcha','creamer'],
+  condiments: ['ketchup','mustard','mayo','mayonnaise','hot sauce','soy sauce','sriracha','ranch','dressing','vinegar','olive oil','oil','salt','pepper','honey','maple syrup','jam','jelly','peanut butter','almond butter','salsa','guacamole','hummus','bbq sauce','teriyaki','tahini'],
+  baking: ['flour','sugar','brown sugar','baking soda','baking powder','vanilla','cocoa','chocolate chips','yeast','powdered sugar','cornstarch','sprinkles','frosting','cake mix','pie crust'],
+  spices: ['cinnamon','cumin','paprika','oregano','basil','thyme','rosemary','chili powder','turmeric','ginger','nutmeg','cayenne','garlic powder','onion powder','italian seasoning','bay leaves','curry','red pepper flakes','dill','parsley','cilantro','mint','sage'],
+};
+
+// Recipe/meal ingredient sets for quick-add
+const GROCERY_RECIPES = {
+  'burger night': ['ground beef','buns','lettuce','tomato','onion','cheese','ketchup','mustard','pickles'],
+  'oatmeal': ['oats','banana','blueberries','honey','almond milk','cinnamon'],
+  'taco night': ['ground beef','tortillas','lettuce','tomato','cheese','sour cream','salsa','cilantro','lime'],
+  'pasta night': ['pasta','tomato sauce','garlic','parmesan','olive oil','basil','ground beef'],
+  'stir fry': ['rice','soy sauce','broccoli','bell pepper','carrots','garlic','ginger','tofu','sesame oil'],
+  'salad': ['lettuce','cucumber','tomato','carrots','avocado','dressing','croutons'],
+  'smoothie': ['banana','strawberries','blueberries','yogurt','almond milk','honey'],
+  'sandwich': ['bread','turkey','cheese','lettuce','tomato','mayo','mustard'],
+  'breakfast': ['eggs','bacon','bread','butter','orange juice','coffee'],
+  'soup': ['broth','carrots','celery','onion','garlic','potatoes','salt','pepper'],
+};
+
+function categorizeGroceryItem(text) {
+  const t = text.toLowerCase().trim();
+  for (const [cat, words] of Object.entries(GROCERY_CATEGORIES)) {
+    if (words.some(w => t.includes(w) || w.includes(t))) return cat;
+  }
+  return 'other';
+}
 
 function getStreak(dotsData, category) {
   const dots = dotsData[category] || {};
@@ -3381,23 +3436,7 @@ function KitchenPage() {
   const [groceryExpanded, setGroceryExpanded] = useState(false);
   const [copyToast, setCopyToast] = useState(false);
   const [grocerySearch, setGrocerySearch] = useState('');
-
-  const GROCERY_CATEGORIES = {
-    veggies: ['onion','onions','garlic','tomato','tomatoes','potato','potatoes','carrot','carrots','broccoli','spinach','kale','lettuce','cucumber','cucumbers','pepper','peppers','bell pepper','bell peppers','celery','zucchini','mushroom','mushrooms','corn','peas','green beans','asparagus','cabbage','cauliflower','sweet potato','sweet potatoes','eggplant','beet','beets','radish','radishes','squash','artichoke','leek','leeks','bok choy','arugula','avocado','avocados'],
-    fruit: ['apple','apples','banana','bananas','orange','oranges','lemon','lemons','lime','limes','berry','berries','strawberry','strawberries','blueberry','blueberries','raspberry','raspberries','grape','grapes','mango','mangoes','pineapple','watermelon','peach','peaches','pear','pears','plum','plums','cherry','cherries','kiwi','coconut','fig','figs','pomegranate','cantaloupe','honeydew','grapefruit','tangerine','nectarine','papaya'],
-    meat: ['chicken','beef','steak','pork','turkey','lamb','bacon','sausage','ham','ground beef','ground turkey','chicken breast','chicken thigh','chicken thighs','ribs','roast','meatballs','salami','pepperoni','prosciutto','chorizo','brisket','veal','duck'],
-    fish: ['salmon','tuna','shrimp','cod','tilapia','crab','lobster','fish','sardines','anchovies','mahi','halibut','trout','catfish','scallops','clams','mussels','oysters','calamari','squid','swordfish'],
-    dairy: ['milk','cheese','yogurt','butter','cream','eggs','egg','sour cream','cream cheese','cottage cheese','mozzarella','cheddar','parmesan','feta','ricotta','gouda','brie','swiss','whipped cream','half and half','heavy cream','oat milk','almond milk','greek yogurt'],
-    bread: ['bread','tortillas','buns','rolls','bagels','pita','naan','croissants','english muffins','wraps','baguette','sourdough','flatbread','cornbread','crackers','croutons'],
-    canned: ['canned','can of','cans of','canned beans','canned tomatoes','canned corn','canned tuna','canned soup','canned chicken','tomato sauce','tomato paste','coconut milk','broth','stock','diced tomatoes','crushed tomatoes','chickpeas','black beans','kidney beans','refried beans','canned fruit','sardines'],
-    frozen: ['frozen','ice cream','frozen pizza','frozen vegetables','frozen fruit','frozen berries','frozen meals','popsicles','frozen waffles','frozen fries','ice','frozen chicken','frozen shrimp'],
-    snacks: ['chips','crackers','pretzels','popcorn','nuts','trail mix','granola','granola bars','cookies','candy','chocolate','gummy','jerky','rice cakes','protein bar','protein bars','peanuts','almonds','cashews','pistachios','dried fruit'],
-    drinks: ['water','juice','soda','coffee','tea','kombucha','sparkling water','energy drink','wine','beer','lemonade','coconut water','sports drink','gatorade','cold brew','matcha','creamer'],
-    condiments: ['ketchup','mustard','mayo','mayonnaise','hot sauce','soy sauce','sriracha','ranch','dressing','vinegar','olive oil','oil','salt','pepper','honey','maple syrup','jam','jelly','peanut butter','almond butter','salsa','guacamole','hummus','bbq sauce','teriyaki','worcestershire','relish','tahini'],
-    grains: ['rice','pasta','noodles','quinoa','oats','oatmeal','flour','cereal','couscous','barley','farro','lentils','polenta','cornmeal','breadcrumbs','panko'],
-    baking: ['flour','sugar','brown sugar','baking soda','baking powder','vanilla','cocoa','chocolate chips','yeast','powdered sugar','cornstarch','sprinkles','frosting','cake mix','pie crust'],
-    spices: ['cinnamon','cumin','paprika','oregano','basil','thyme','rosemary','chili powder','turmeric','ginger','nutmeg','cayenne','garlic powder','onion powder','italian seasoning','bay leaves','curry','red pepper flakes','dill','parsley','cilantro','mint','sage'],
-  };
+  const [groceryTab, setGroceryTab] = useState('list');
 
   const filterGrocery = (items, query) => {
     if (!query.trim()) return items.map((item, i) => ({ ...item, _idx: i }));
@@ -3575,69 +3614,135 @@ function KitchenPage() {
           {/* Expanded grocery overlay — portaled to phone-frame so it covers nav + chat */}
           {groceryExpanded && ReactDOM.createPortal(
             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 200, background: 'var(--bg)', display: 'flex', flexDirection: 'column', animation: 'slideUp 0.25s ease' }}>
-              <div className="flex items-center justify-between px-5 pt-5 pb-3" style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+              <div className="flex items-center justify-between px-5 pt-4 pb-2">
                 <p style={{ fontFamily: 'var(--font-display)', fontSize: 20, color: 'var(--dark)' }}>grocery list</p>
                 <div className="flex items-center gap-3">
-                  {grocery.length > 0 && (
+                  {groceryTab === 'list' && grocery.length > 0 && (
                     <button onClick={copyGrocery} style={{ background: 'var(--primary-light)', border: 'none', borderRadius: 999, padding: '6px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{icons.clipboard}</svg>
                       <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--primary)' }}>{copyToast ? 'copied!' : 'copy all'}</span>
                     </button>
                   )}
-                  <button onClick={() => { setGroceryExpanded(false); setGrocerySearch(''); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+                  <button onClick={() => { setGroceryExpanded(false); setGrocerySearch(''); setGroceryTab('list'); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--dark)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{icons.collapse}</svg>
                   </button>
                 </div>
               </div>
-              <div className="px-5 pt-3 pb-1 flex items-center gap-2">
-                <div className="flex-1 flex items-center gap-2" style={{ background: 'var(--card-bg)', borderRadius: 999, padding: '6px 12px', border: '1px solid rgba(0,0,0,0.06)' }}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                  <input type="text" value={grocerySearch} onChange={e => setGrocerySearch(e.target.value)}
-                    placeholder="search items or categories (veggies, meat, canned...)"
-                    className="flex-1 outline-none"
-                    style={{ background: 'transparent', border: 'none', fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--dark)' }} />
-                  {grocerySearch && (
-                    <button onClick={() => setGrocerySearch('')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{icons.x}</svg>
+              {/* Tabs */}
+              <div className="flex px-5 gap-1 pb-2" style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+                {['list', 'saved'].map(tab => (
+                  <button key={tab} onClick={() => setGroceryTab(tab)}
+                    style={{ fontFamily: 'var(--font-body)', fontSize: 11, padding: '5px 14px', borderRadius: 999, border: 'none', cursor: 'pointer',
+                      background: groceryTab === tab ? 'var(--primary)' : 'rgba(0,0,0,0.04)', color: groceryTab === tab ? 'white' : 'var(--muted)' }}>
+                    {tab === 'list' ? 'my list' : 'saved items'}
+                  </button>
+                ))}
+              </div>
+
+              {/* LIST TAB */}
+              {groceryTab === 'list' && (<>
+                <div className="px-5 pt-3 pb-1 flex items-center gap-2">
+                  <div className="flex-1 flex items-center gap-2" style={{ background: 'var(--card-bg)', borderRadius: 999, padding: '6px 12px', border: '1px solid rgba(0,0,0,0.06)' }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" value={grocerySearch} onChange={e => setGrocerySearch(e.target.value)}
+                      placeholder="search items or categories..."
+                      className="flex-1 outline-none"
+                      style={{ background: 'transparent', border: 'none', fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--dark)' }} />
+                    {grocerySearch && (
+                      <button onClick={() => setGrocerySearch('')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{icons.x}</svg>
+                      </button>
+                    )}
+                  </div>
+                  {grocery.filter(g => g.done).length > 0 && (
+                    <button onClick={() => { const doneIndices = grocery.map((g, i) => g.done ? i : -1).filter(i => i >= 0).reverse(); doneIndices.forEach(i => dispatch({ type: 'DELETE_GROCERY', index: i })); }}
+                      style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: 'var(--accent)', background: 'var(--accent-light)', border: 'none', borderRadius: 999, padding: '4px 8px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                      clear done
                     </button>
                   )}
                 </div>
-                {grocery.filter(g => g.done).length > 0 && (
-                  <button onClick={() => { const doneIndices = grocery.map((g, i) => g.done ? i : -1).filter(i => i >= 0).reverse(); doneIndices.forEach(i => dispatch({ type: 'DELETE_GROCERY', index: i })); }}
-                    style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: 'var(--accent)', background: 'var(--accent-light)', border: 'none', borderRadius: 999, padding: '4px 8px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                    clear done
-                  </button>
-                )}
-              </div>
-              <div style={{ flex: 1, overflowY: 'auto', padding: '12px 20px' }}>
-                {(() => {
-                  const filtered = filterGrocery(grocery, grocerySearch);
-                  if (grocery.length === 0) return <p style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--muted)', textAlign: 'center', marginTop: 40 }}>no items yet</p>;
-                  if (filtered.length === 0) return <p style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--muted)', textAlign: 'center', marginTop: 40 }}>no matches for "{grocerySearch}"</p>;
-                  return filtered.map(item => (
-                    <div key={item._idx} className="flex items-center gap-3 py-3" style={{ borderBottom: '1px solid rgba(0,0,0,0.04)' }}>
-                      <div className={`checkbox ${item.done ? 'done' : ''}`} style={{ width: 18, height: 18 }} onClick={() => { navigator.vibrate?.(10); dispatch({ type: 'TOGGLE_GROCERY', index: item._idx }); }}>
-                        {item.done && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">{icons.check}</svg>}
+                <div style={{ flex: 1, overflowY: 'auto', padding: '12px 20px' }}>
+                  {(() => {
+                    const filtered = filterGrocery(grocery, grocerySearch);
+                    if (grocery.length === 0) return <p style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--muted)', textAlign: 'center', marginTop: 40 }}>no items yet</p>;
+                    if (filtered.length === 0) return <p style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--muted)', textAlign: 'center', marginTop: 40 }}>no matches for "{grocerySearch}"</p>;
+                    return filtered.map(item => (
+                      <div key={item._idx} className="flex items-center gap-3 py-3" style={{ borderBottom: '1px solid rgba(0,0,0,0.04)' }}>
+                        <div className={`checkbox ${item.done ? 'done' : ''}`} style={{ width: 18, height: 18 }} onClick={() => { navigator.vibrate?.(10); dispatch({ type: 'TOGGLE_GROCERY', index: item._idx }); }}>
+                          {item.done && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">{icons.check}</svg>}
+                        </div>
+                        <span style={{ fontFamily: 'var(--font-body)', fontSize: 15, color: item.done ? 'var(--muted)' : 'var(--dark)', textDecoration: item.done ? 'line-through' : 'none', flex: 1 }}>{item.text}</span>
+                        <button onClick={() => dispatch({ type: 'DELETE_GROCERY', index: item._idx })} style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.3, padding: 4 }}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{icons.x}</svg>
+                        </button>
                       </div>
-                      <span style={{ fontFamily: 'var(--font-body)', fontSize: 15, color: item.done ? 'var(--muted)' : 'var(--dark)', textDecoration: item.done ? 'line-through' : 'none', flex: 1 }}>{item.text}</span>
-                      <button onClick={() => dispatch({ type: 'DELETE_GROCERY', index: item._idx })} style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.3, padding: 4 }}>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{icons.x}</svg>
-                      </button>
-                    </div>
-                  ));
-                })()}
-              </div>
-              <div className="px-5 pb-5 pt-2" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-                <div className="flex items-center gap-2" style={{ background: 'var(--card-bg)', borderRadius: 999, padding: '8px 16px', border: '1px solid rgba(0,0,0,0.06)' }}>
-                  <input type="text" value={newGrocery} onChange={e => setNewGrocery(e.target.value)}
-                    placeholder="add item..." onKeyDown={e => { if (e.key === 'Enter' && newGrocery.trim()) { dispatch({ type: 'ADD_GROCERY', text: newGrocery.trim() }); setNewGrocery(''); } }}
-                    className="flex-1 outline-none"
-                    style={{ background: 'transparent', border: 'none', fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--dark)' }} />
-                  <button onClick={() => { if (newGrocery.trim()) { dispatch({ type: 'ADD_GROCERY', text: newGrocery.trim() }); setNewGrocery(''); } }}
-                    style={{ background: 'var(--primary)', border: 'none', cursor: 'pointer', color: 'white', width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, opacity: newGrocery.trim() ? 1 : 0.4 }}>+</button>
+                    ));
+                  })()}
                 </div>
-                <p style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--muted)', textAlign: 'center', marginTop: 8 }}>{grocery.filter(g => !g.done).length} remaining · {grocery.filter(g => g.done).length} done</p>
-              </div>
+                <div className="px-5 pb-5 pt-2" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                  <div className="flex items-center gap-2" style={{ background: 'var(--card-bg)', borderRadius: 999, padding: '8px 16px', border: '1px solid rgba(0,0,0,0.06)' }}>
+                    <input type="text" value={newGrocery} onChange={e => setNewGrocery(e.target.value)}
+                      placeholder="add item..." onKeyDown={e => { if (e.key === 'Enter' && newGrocery.trim()) { dispatch({ type: 'ADD_GROCERY', text: newGrocery.trim() }); setNewGrocery(''); } }}
+                      className="flex-1 outline-none"
+                      style={{ background: 'transparent', border: 'none', fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--dark)' }} />
+                    <button onClick={() => { if (newGrocery.trim()) { dispatch({ type: 'ADD_GROCERY', text: newGrocery.trim() }); setNewGrocery(''); } }}
+                      style={{ background: 'var(--primary)', border: 'none', cursor: 'pointer', color: 'white', width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, opacity: newGrocery.trim() ? 1 : 0.4 }}>+</button>
+                  </div>
+                  <p style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--muted)', textAlign: 'center', marginTop: 8 }}>{grocery.filter(g => !g.done).length} remaining · {grocery.filter(g => g.done).length} done</p>
+                </div>
+              </>)}
+
+              {/* SAVED ITEMS TAB */}
+              {groceryTab === 'saved' && (
+                <div style={{ flex: 1, overflowY: 'auto', padding: '12px 20px' }}>
+                  {/* Recipe quick-add sets */}
+                  <p style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>quick add</p>
+                  <div className="flex flex-wrap gap-1.5 mb-5">
+                    {Object.entries(GROCERY_RECIPES).map(([name, items]) => (
+                      <button key={name} onClick={() => {
+                        items.forEach(item => {
+                          if (!grocery.find(g => g.text.toLowerCase() === item.toLowerCase())) dispatch({ type: 'ADD_GROCERY', text: item });
+                        });
+                        navigator.vibrate?.(10);
+                        setGroceryTab('list');
+                      }}
+                        style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--primary)', background: 'var(--primary-light)', border: 'none', borderRadius: 999, padding: '5px 12px', cursor: 'pointer' }}>
+                        {name}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Saved items by category */}
+                  {(() => {
+                    const saved = data.kitchen.grocerySaved || {};
+                    const cats = Object.entries(saved).filter(([, items]) => items.length > 0);
+                    if (cats.length === 0) return (
+                      <div style={{ textAlign: 'center', marginTop: 20 }}>
+                        <p style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--muted)' }}>no saved items yet</p>
+                        <p style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>items you add to your list get saved here automatically</p>
+                      </div>
+                    );
+                    return cats.map(([cat, items]) => (
+                      <div key={cat} className="mb-4">
+                        <p style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 6 }}>{cat}</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {items.map(item => {
+                            const alreadyInList = grocery.some(g => g.text.toLowerCase() === item.toLowerCase());
+                            return (
+                              <button key={item} onClick={() => {
+                                if (!alreadyInList) { dispatch({ type: 'ADD_GROCERY', text: item }); navigator.vibrate?.(10); }
+                              }}
+                                style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: alreadyInList ? 'var(--muted)' : 'var(--dark)', background: alreadyInList ? 'rgba(0,0,0,0.03)' : 'var(--card-bg)', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 999, padding: '5px 12px', cursor: alreadyInList ? 'default' : 'pointer', opacity: alreadyInList ? 0.5 : 1, textDecoration: alreadyInList ? 'line-through' : 'none' }}>
+                                {item}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              )}
             </div>,
             document.querySelector('.phone-frame')
           )}
