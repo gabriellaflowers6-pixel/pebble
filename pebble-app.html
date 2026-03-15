@@ -1093,6 +1093,7 @@ const DEFAULT_DATA = {
     experiences: [],
   },
   segments: [],
+  dailyPlan: { date: '', plan: '' },
   pageNotes: {},
   stickies: [],
   dots: { workout: {}, skincare: {}, study: {}, meals: {}, water: {} },
@@ -1327,6 +1328,9 @@ function dataReducer(state, action) {
     }
     case 'DISMISS_MEMORY': {
       return { ...state, memory: { pending: (state.memory?.pending || []).filter(p => p.id !== action.id) } };
+    }
+    case 'SAVE_DAILY_PLAN': {
+      return { ...state, dailyPlan: { date: action.date, plan: action.plan } };
     }
     case 'UPDATE_PAGE_NOTE': {
       const notes = { ...(state.pageNotes || {}) };
@@ -1868,8 +1872,8 @@ function ThemeDeco({ themeId }) {
 /* ══════════════════════════════════════════
    MARBLE JAR (Navigation)
    ══════════════════════════════════════════ */
-const PAGE_NAMES = ['stream', 'planner', 'journal', 'kitchen', 'gym', 'selfcare', 'study', 'tracker', 'career', 'notebook', 'builder'];
-const PAGE_LABELS = ['Stream', 'Planner', 'Journal', 'Kitchen', 'Gym', 'Self-Care', 'Study', 'Tracker', 'Career', 'Picks', 'Build', 'Stickies'];
+const PAGE_NAMES = ['stream', 'planner', 'kitchen', 'gym', 'selfcare', 'study', 'tracker', 'career', 'journal', 'notebook', 'builder'];
+const PAGE_LABELS = ['Stream', 'Planner', 'Kitchen', 'Gym', 'Self-Care', 'Study', 'Tracker', 'Career', 'Journal', 'Picks', 'Build', 'Stickies'];
 
 function MarbleJar({ open, onClose, onNavigate, currentPage, customSegments, staticPageCount }) {
   if (!open) return null;
@@ -1877,13 +1881,13 @@ function MarbleJar({ open, onClose, onNavigate, currentPage, customSegments, sta
   const marbles = [
     { cx: 90,  cy: 118, label: 'Stream', page: 0 },
     { cx: 170, cy: 108, label: 'Planner', page: 1 },
-    { cx: 125, cy: 160, label: 'Journal', page: 2 },
-    { cx: 68,  cy: 196, label: 'Kitchen', page: 3 },
-    { cx: 198, cy: 177, label: 'Gym', page: 4 },
-    { cx: 128, cy: 226, label: 'Self-Care', page: 5 },
-    { cx: 72,  cy: 260, label: 'Study', page: 6 },
-    { cx: 190, cy: 244, label: 'Tracker', page: 7 },
-    { cx: 126, cy: 294, label: 'Career', page: 8 },
+    { cx: 125, cy: 160, label: 'Kitchen', page: 2 },
+    { cx: 68,  cy: 196, label: 'Gym', page: 3 },
+    { cx: 198, cy: 177, label: 'Self-Care', page: 4 },
+    { cx: 128, cy: 226, label: 'Study', page: 5 },
+    { cx: 72,  cy: 260, label: 'Tracker', page: 6 },
+    { cx: 190, cy: 244, label: 'Career', page: 7 },
+    { cx: 126, cy: 294, label: 'Journal', page: 8 },
     { cx: 196, cy: 320, label: 'Picks', page: 9 },
     { cx: 80,  cy: 328, label: 'Build', page: 10 },
     { cx: 155, cy: 348, label: 'Stickies', page: 11 },
@@ -2492,6 +2496,79 @@ function StreamPage() {
               })}
             </div>
           </div>
+
+          {/* Daily Plan */}
+          {(() => {
+            const hasPlan = data.dailyPlan?.date === todayKey && data.dailyPlan?.plan;
+            const [planLoading, setPlanLoading] = useState(false);
+            const [planOpen, setPlanOpen] = useState(true);
+
+            const generatePlan = async () => {
+              if (!data.settings?.apiKey || planLoading) return;
+              setPlanLoading(true);
+              try {
+                const ctx = data.profile.context || {};
+                const ctxStr = Object.entries(ctx).map(([k,v]) => `${k}: ${v}`).join(', ');
+                const prompt = `Based on everything you know, create a short daily plan for today (${dateStr}). Consider:
+- Profile: ${data.profile.name}, vegan: ${data.profile.vegan}, skin: ${data.profile.skinType}
+- Context: ${ctxStr || 'none'}
+- Active todos: ${data.planner.todos.filter(t => !t.done).map(t => t.text).join(', ') || 'none'}
+- Today's events: ${(data.planner.events[todayKey] || []).map(e => e.time + ' ' + e.text).join(', ') || 'none'}
+- Meals planned: B: ${data.kitchen.mealPlan.breakfast || '?'}, L: ${data.kitchen.mealPlan.lunch || '?'}, D: ${data.kitchen.mealPlan.dinner || '?'}
+- Skincare AM: ${data.selfCare.skincare.morning.join(', ') || 'not set'}
+- Workout: ${data.gym.workoutPlan[0]?.name || 'none'}
+- Stickies: ${(data.stickies || []).filter(s => s.text).map(s => s.text).join(', ') || 'none'}
+- Recent journal mood: ${(data.journal.entries.slice(-1)[0]?.mood) || 'unknown'}
+
+Reply with ONLY a short daily plan — time blocks with brief items. Use simple lines like:
+☀️ morning
+- skincare routine
+- breakfast: [meal]
+
+Keep it to 8-12 lines max. Warm, personal tone. Reference their actual data.`;
+
+                const res = await fetch('https://api.anthropic.com/v1/messages', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', 'x-api-key': data.settings.apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+                  body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 400, messages: [{ role: 'user', content: prompt }] }),
+                });
+                const json = await res.json();
+                const plan = json.content?.[0]?.text || '';
+                if (plan) dispatch({ type: 'SAVE_DAILY_PLAN', date: todayKey, plan });
+              } catch {}
+              setPlanLoading(false);
+            };
+
+            return (
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <SectionLabel>my day</SectionLabel>
+                </div>
+                {hasPlan ? (
+                  <div className="glass-card px-4 py-3">
+                    <button onClick={() => setPlanOpen(!planOpen)} className="flex items-center justify-between w-full" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                      <span style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--primary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1 }}>today's plan ✦</span>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" style={{ transform: planOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    {planOpen && (
+                      <div style={{ marginTop: 8 }}>
+                        <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--dark)', lineHeight: 1.8, whiteSpace: 'pre-line' }}>{data.dailyPlan.plan}</p>
+                        <button onClick={generatePlan} style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer', marginTop: 8, padding: 0 }}>regenerate</button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <button onClick={generatePlan} disabled={planLoading || !data.settings?.apiKey} className="glass-card w-full" style={{ padding: '14px 16px', cursor: 'pointer', border: '1.5px dashed rgba(0,0,0,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                    {planLoading ? (
+                      <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--muted)' }}>planning your day...</span>
+                    ) : (
+                      <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--primary)' }}>✦ plan my day</span>
+                    )}
+                  </button>
+                )}
+              </div>
+            );
+          })()}
 
           <div className="grid grid-cols-2 gap-3">
             <div className="glass-card px-3.5 py-3">
@@ -4569,7 +4646,7 @@ function App() {
     });
   }, [data.settings?.oneSignalAppId]);
 
-  const staticPages = [StreamPage, PlannerPage, JournalPage, KitchenPage, GymPage, SelfCarePage, StudyPage, TrackerPage, CareerPage, NotebookPage, SegmentBuilderPage, StickiesPage];
+  const staticPages = [StreamPage, PlannerPage, KitchenPage, GymPage, SelfCarePage, StudyPage, TrackerPage, CareerPage, JournalPage, NotebookPage, SegmentBuilderPage, StickiesPage];
   const pages = [...staticPages, ...customSegments.map(s => getSegPage(s.id))];
   const pageKeys = [...staticPages.map((_, i) => `static-${i}`), ...customSegments.map(s => `seg-${s.id}`)];
 
