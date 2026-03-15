@@ -1093,6 +1093,7 @@ const DEFAULT_DATA = {
     experiences: [],
   },
   segments: [],
+  pageNotes: {},
   stickies: [],
   dots: { workout: {}, skincare: {}, study: {}, meals: {}, water: {} },
   notebook: {
@@ -1327,6 +1328,14 @@ function dataReducer(state, action) {
     case 'DISMISS_MEMORY': {
       return { ...state, memory: { pending: (state.memory?.pending || []).filter(p => p.id !== action.id) } };
     }
+    case 'UPDATE_PAGE_NOTE': {
+      const notes = { ...(state.pageNotes || {}) };
+      const page = (action.page || '').toLowerCase();
+      const note = (action.note || '').trim();
+      if (!page) return state;
+      if (!note) { delete notes[page]; } else { notes[page] = note; }
+      return { ...state, pageNotes: notes };
+    }
     case 'ADD_STICKY': {
       return { ...state, stickies: [{ id: Date.now(), text: '', color: action.color || 'yellow', createdAt: new Date().toISOString() }, ...(state.stickies || [])] };
     }
@@ -1448,6 +1457,13 @@ function generateBrainMd(d) {
   if (entries.length) {
     lines.push('## Recent Journal');
     entries.forEach(e => lines.push(`- **${e.date}**${e.mood ? ' (' + e.mood + ')' : ''}: ${e.body.slice(0, 200)}`));
+    lines.push('');
+  }
+
+  const pn = d.pageNotes || {};
+  if (Object.keys(pn).length) {
+    lines.push('## AI Notes (per page)');
+    Object.entries(pn).forEach(([page, note]) => lines.push(`- **${page}**: ${note.slice(0, 150)}`));
     lines.push('');
   }
 
@@ -2029,6 +2045,28 @@ function PageDots({ currentPage, totalPages, onDotClick, pageLabels }) {
    SHARED UI COMPONENTS
    ══════════════════════════════════════════ */
 
+function PageNote({ page }) {
+  const { data, dispatch } = useContext(DataCtx);
+  const [open, setOpen] = useState(false);
+  const note = (data.pageNotes || {})[page];
+  if (!note) return null;
+  return (
+    <div style={{ marginBottom: 10 }}>
+      <button onClick={() => setOpen(!open)} className="flex items-center gap-1.5 w-full" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+        <span style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: 1.2, fontWeight: 600 }}>pebble's notes ✦</span>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" style={{ transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      {open && (
+        <div style={{ marginTop: 6, padding: '8px 12px', background: 'color-mix(in srgb, var(--primary) 5%, var(--bg))', borderRadius: 8, borderLeft: '2px solid var(--primary)' }}>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--dark)', lineHeight: 1.6, whiteSpace: 'pre-line', margin: 0 }}>{note}</p>
+          <button onClick={() => dispatch({ type: 'UPDATE_PAGE_NOTE', page, note: '' })}
+            style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer', marginTop: 6, padding: 0 }}>clear note</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SectionLabel({ children, right }) {
   return (
     <div className="flex items-center justify-between mb-2.5">
@@ -2228,6 +2266,7 @@ Here is everything you know about the user:
 - Job applications: ${(data.career?.applications || []).map(a => a.company + ' - ' + a.role + ' (' + a.status + ')').join(', ') || 'none'}
 - Recent journal entries: ${(data.journal.entries || []).slice(-5).map(e => `[${e.date}${e.mood ? ', ' + e.mood : ''}] ${e.body.slice(0, 120)}`).join(' | ') || 'none'}
 - Stickies (personal notes, wishes, ideas — weave these into your suggestions naturally when relevant): ${(data.stickies || []).filter(s => s.text).map(s => `"${s.text}"`).join(', ') || 'none'}
+- Your existing page notes: ${Object.keys(data.pageNotes || {}).length ? Object.entries(data.pageNotes).map(([p,n]) => `[${p}] ${n.slice(0,100)}`).join(' | ') : 'none'}
 Always be warm, concise, and specific to this user. When you notice a sticky is relevant to what the user is asking about (e.g. a sticky says "try pilates" and they're talking about workouts), bring it up naturally — like "btw you mentioned wanting to try pilates!" Don't force stickies into every response, only when they genuinely fit.
 
 When the user asks you to add, update, or change their data, append an <actions> block at the very end of your reply (never inline). Format:
@@ -2261,6 +2300,7 @@ Available actions:
 - UPDATE_PROFILE: {type, fields: {name?, vegan?, skinType?}} — update the user's profile (name, diet, skin type)
 - UPDATE_CONTEXT: {type, key, fact} — save or UPDATE a personal fact in the user's knowledge base. The "key" is a short category tag (e.g. "skincare:cleanser", "allergy:food", "preference:workout-time", "goal:career"). If the same key already exists, the old value is REPLACED — so always reuse the same key when updating info (e.g. if the user switches cleansers, use key "skincare:cleanser" again and it overwrites)
 - SEND_NOTIFICATION: {type, title, body} — send a push notification to the user's phone (use for reminders, streak alerts, deadline nudges, or when the user asks you to remind them of something)
+- UPDATE_PAGE_NOTE: {type, page, note} — save a short AI note/suggestion on a specific page. Pages: "stream", "planner", "journal", "kitchen", "gym", "selfcare", "study", "tracker", "career", "notebook", "stickies". Use this to leave tips, product recs, suggestions, or follow-up ideas that the user asked about but shouldn't go in their actual data. Keep notes SHORT (2-4 bullet points max). To clear a note, send empty string. The note persists until updated — so only update when you have new/better info, don't repeat the same note
 
 You can include multiple actions in the array. Only include <actions> when explicitly modifying data. Today's date is ${todayKey}.
 
@@ -2421,6 +2461,7 @@ function StreamPage() {
       <WavyFrame>
         <div className="flex flex-col justify-center flex-1 py-4">
           <p style={{ fontFamily: 'var(--font-display)', fontSize: 24, color: 'var(--dark)' }}>{greeting}, {data.profile.name.toLowerCase()}</p>
+          <PageNote page="stream" />
           <p style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--muted)', marginTop: 4 }}>{dateStr}</p>
 
           <div className="flex items-center gap-3 mt-3 mb-6">
@@ -2518,6 +2559,7 @@ function PlannerPage() {
       <WavyFrame>
         <div className="flex flex-col flex-1 py-4">
           <p className="page-title" style={{ marginBottom: 8 }}>planner</p>
+          <PageNote page="planner" />
 
           {/* Week calendar */}
           <div className="glass-card px-3 py-3 mb-3">
@@ -2654,6 +2696,7 @@ function KitchenPage() {
       <WavyFrame>
         <div className="flex flex-col flex-1 py-4">
           <p className="page-title" style={{ marginBottom: 8 }}>kitchen</p>
+          <PageNote page="kitchen" />
 
           <div className="glass-card px-4 py-4 mb-4">
             <div className="flex items-end justify-between mb-3">
@@ -2825,6 +2868,7 @@ function GymPage() {
         <div className="flex flex-col flex-1 py-4">
           <div className="flex items-center justify-between mb-3">
             <p className="page-title" style={{ marginBottom: 0 }}>gym</p>
+            <PageNote page="gym" />
             <div className="flex gap-1.5">
               {['plan', 'classes'].map(t => (
                 <button key={t} onClick={() => setTab(t)}
@@ -3002,6 +3046,7 @@ function TrackerPage() {
       <WavyFrame>
         <div className="flex flex-col py-4" style={{ gap: 12 }}>
           <p className="page-title" style={{ marginBottom: 0 }}>tracker</p>
+          <PageNote page="tracker" />
 
           {/* Month nav */}
           <div className="flex items-center justify-between">
@@ -3280,6 +3325,7 @@ function SelfCarePage() {
       <WavyFrame>
         <div className="flex flex-col flex-1 py-4">
           <p className="page-title" style={{ marginBottom: 8 }}>self-care</p>
+          <PageNote page="selfcare" />
 
           <div className="flex gap-2 mb-4">
             {['morning', 'evening'].map(tab => (
@@ -3360,6 +3406,7 @@ function StudyPage() {
         <div className="flex flex-col flex-1 py-4">
           <div className="flex items-center gap-3 mb-4">
             <p className="page-title" style={{ marginBottom: 0 }}>study</p>
+            <PageNote page="study" />
             {streak > 0 && (
               <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full" style={{ background: 'var(--accent-light)' }}>
                 <span style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--accent)' }}>{streak}d</span>
@@ -3479,6 +3526,7 @@ function CareerPage() {
       <WavyFrame>
         <div className="flex flex-col flex-1 py-4">
           <p className="page-title" style={{ marginBottom: 16 }}>career</p>
+          <PageNote page="career" />
 
           {/* Target Role */}
           <SectionLabel>target role</SectionLabel>
@@ -3948,6 +3996,7 @@ function NotebookPage() {
       <WavyFrame>
         <div className="flex flex-col justify-center flex-1 py-4">
           <p className="page-title" style={{ marginBottom: 12 }}>pebble's picks</p>
+          <PageNote page="notebook" />
 
           <div className="glass-card px-5 py-5 mb-4" style={{ textAlign: 'center' }}>
             <p style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: 'var(--dark)', fontStyle: 'italic', lineHeight: 1.6, marginTop: 12, marginBottom: 8 }}>"{quote}"</p>
