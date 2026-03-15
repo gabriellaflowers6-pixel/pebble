@@ -2639,8 +2639,12 @@ ${(data.plans || []).length ? '\nActive plans: ' + (data.plans || []).map(p => p
           </div>
         </div>
       </>)}
-      <MemoryTray />
-      <div className="chat-bar border-t px-4 py-2.5 flex items-center gap-2 flex-shrink-0" style={{ borderColor: 'rgba(0,0,0,0.04)' }}>
+      {(data.memory?.pending || []).length > 0 && (
+        <div style={{ position: 'relative', zIndex: 45 }}>
+          <MemoryTray />
+        </div>
+      )}
+      <div className="chat-bar border-t px-4 py-2.5 flex items-center gap-2 flex-shrink-0" style={{ borderColor: 'rgba(0,0,0,0.04)', position: 'relative', zIndex: 45 }}>
         <input type="text" value={msg} onChange={e => setMsg(e.target.value)}
           placeholder="talk to pebble..."
           className="flex-1 outline-none"
