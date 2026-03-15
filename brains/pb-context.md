@@ -143,6 +143,28 @@ memory: { pending[] }
 - Chat overlay: blurred bg, last 10 messages, "thinking..." indicator
 - Swipe right on chat bar area to toggle
 
+### Multi-Step Planning (Layer 3 — basic)
+- User asks AI to plan something ("help me prep for my interview", "plan my Sunday")
+- AI breaks into 5-8 actionable steps, emits `<plan>{"title":"...","steps":["..."]}</plan>` block
+- `ADD_PLAN`, `TOGGLE_PLAN_STEP`, `DELETE_PLAN` reducer actions
+- Plans show as persistent checklist cards on Stream page with progress bars
+- AI sees active plans + progress in system prompt, can reference them in future chats
+- Haptic feedback on step toggles
+
+### Auto-Reconnect (URL Hash Sync)
+- Gist ID, token, and API key encoded in URL hash fragment: `#g=...&t=...&k=...`
+- `getHashCreds()` reads keys from hash on init — overrides localStorage (most reliable source)
+- `updateHashCreds()` keeps hash in sync whenever settings change
+- **"📎 copy sync link"** button in Settings copies the full URL with keys baked in
+- Bookmark that URL on phone → even if Safari wipes localStorage, opening the bookmark auto-loads keys and pulls data from Gist
+- Hash fragment never sent to servers (stays client-side only)
+
+### Pebble Nav Glass Marbles
+- `PEBBLE_COLORS` array: 12 unique colors matching pebble-jar.html marble gradients
+- Each room gets its own color: teal (stream), lavender (planner), sage (kitchen), coral (gym), rose (selfcare), indigo (study), orange (tracker), steel (career), amber (journal), lime (picks), terracotta (build), mint (stickies)
+- Radial gradient + specular highlights for transparent glass marble look
+- Active marble has glow shadow
+
 ### GitHub Pages Deployment
 - **Live URL:** `https://gabriellaflowers6-pixel.github.io/pebble/pebble-app.html`
 - **Repo:** `https://github.com/gabriellaflowers6-pixel/pebble`
@@ -153,8 +175,15 @@ memory: { pending[] }
 ## Pebble AI Vision — Three Layers
 
 1. **Knowledge Base** (DONE) — keyed memory, system prompt injection, memory tray, Gist brain sync, per-page AI notes
-2. **Tool Use** (DONE — basic) — 4 browser-native tools (weather, dictionary, timezone, quotes). Time-of-day context. Smart reminders. Voice input.
-3. **Agent Mode** (future) — multi-step autonomous tasks, user approves before execution. Would need Netlify Functions for: recipe search, web search, nutrition lookup, calendar OAuth, gym booking.
+2. **Tool Use** (DONE) — 4 browser-native tools (weather, dictionary, timezone, quotes). Time-of-day context. Smart reminders. Voice input.
+3. **Agent Mode** (STARTED) — multi-step planning with persistent checklists. AI breaks goals into steps, user checks them off over time. Future: Netlify Functions for recipe search, web search, nutrition lookup, calendar OAuth, gym booking.
+
+## Gabby's Preferences
+- **Books**: Song of Achilles, Circe, Babel (R.F. Kuang), Life of Pi, Martyr! (Kaveh Akbar)
+- **Reading list**: There Is No Antimemetics Division
+- **Taste**: literary fiction, mythological retellings, philosophical/existential themes, lyrical prose
+- **Quotes**: Terence McKenna, Alan Watts, Doctor Who, plus quotes from favorite books
+- **Daily picks**: quote + fun fact + book-leaning recommendation
 
 ## Not Yet Built (future sessions)
 - [ ] Weekly review — AI summarizes the week every Sunday
@@ -163,4 +192,4 @@ memory: { pending[] }
 - [ ] Kitchen: AI meal suggestions
 - [ ] Stats room: year-at-a-glance dot grid view
 - [ ] Tier 2 tools (need Netlify proxy): recipe search, web search, nutrition lookup
-- [ ] Layer 3: calendar OAuth, email, gym booking, multi-step agent tasks
+- [ ] Layer 3 advanced: calendar OAuth, email, gym booking, full autonomous agent tasks
