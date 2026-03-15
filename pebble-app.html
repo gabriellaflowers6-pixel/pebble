@@ -1710,6 +1710,9 @@ const icons = {
   barChart: <><path d="M12 20V10M18 20V4M6 20v-4"/></>,
   x: <><path d="M18 6L6 18M6 6l12 12"/></>,
   check: <><path d="M20 6L9 17l-5-5"/></>,
+  expand: <><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></>,
+  collapse: <><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></>,
+  clipboard: <><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></>,
 };
 
 /* ── Date Helpers ── */
@@ -2443,6 +2446,7 @@ function ChatBar() {
   const { setCardQuiz } = useContext(QuizCtx);
   const [msg, setMsg] = useState('');
   const [chatOpen, setChatOpen] = useState(false);
+  const [chatExpanded, setChatExpanded] = useState(false);
   const [sending, setSending] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef(null);
@@ -2486,7 +2490,7 @@ function ChatBar() {
     if (msgsRef.current) {
       requestAnimationFrame(() => { if (msgsRef.current) msgsRef.current.scrollTop = msgsRef.current.scrollHeight; });
     }
-  }, [data.chat.messages]);
+  }, [data.chat.messages, chatOpen, chatExpanded]);
 
   const sendMessage = async () => {
     if (!msg.trim() || sending) return;
@@ -2672,12 +2676,62 @@ ${(data.plans || []).length ? '\nActive plans: ' + (data.plans || []).map(p => p
 
   return (
     <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} style={{ position: 'relative' }}>
-      {chatOpen && (data.chat.messages.length > 0) && (<>
+      {/* Expanded full-screen chat */}
+      {chatExpanded && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100, background: 'var(--bg)', display: 'flex', flexDirection: 'column', animation: 'slideUp 0.25s ease' }}>
+          <div className="flex items-center justify-between px-5 pt-5 pb-3" style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+            <p style={{ fontFamily: 'var(--font-display)', fontSize: 20, color: 'var(--dark)' }}>chat</p>
+            <button onClick={() => setChatExpanded(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--dark)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{icons.collapse}</svg>
+            </button>
+          </div>
+          <div ref={msgsRef} style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
+            {data.chat.messages.length === 0 ? (
+              <p style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--muted)', textAlign: 'center', marginTop: 40 }}>no messages yet</p>
+            ) : data.chat.messages.map((m, i) => (
+              <ChatBubble key={m.time || i} msg={m} />
+            ))}
+            {sending && (
+              <div className="mb-2 flex justify-start">
+                <div style={{ padding: '8px 12px', borderRadius: 16, background: 'var(--card-bg)', border: '1px solid rgba(0,0,0,0.06)', fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--muted)' }}>thinking...</div>
+              </div>
+            )}
+          </div>
+          <div className="px-4 pb-5 pt-2" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+            <div className="flex items-center gap-2">
+              <input type="text" value={msg} onChange={e => setMsg(e.target.value)}
+                placeholder="talk to pebble..."
+                className="flex-1 outline-none"
+                style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 999, padding: '10px 16px', fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--dark)' }}
+                onKeyDown={e => e.key === 'Enter' && sendMessage()} />
+              {hasSpeechAPI && (
+                <button className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer flex-shrink-0"
+                  style={{ background: isListening ? 'var(--primary)' : 'rgba(0,0,0,0.04)', border: isListening ? '2px solid var(--primary)' : '1px solid rgba(0,0,0,0.08)', transition: 'all 0.15s' }}
+                  onClick={toggleVoice}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={isListening ? 'white' : 'var(--muted)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                </button>
+              )}
+              <button className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer flex-shrink-0"
+                style={{ background: 'var(--primary)', opacity: msg.trim() ? 1 : 0.4, transition: 'opacity 0.15s' }}
+                onClick={() => { navigator.vibrate?.(10); sendMessage(); }} disabled={!msg.trim()}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Normal chat overlay (not expanded) */}
+      {!chatExpanded && chatOpen && (data.chat.messages.length > 0) && (<>
         <div onClick={() => setChatOpen(false)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 30 }} />
         <div ref={msgsRef} className="absolute bottom-14 left-0 right-0 z-40" style={{ maxHeight: 320, overflowY: 'auto', background: 'color-mix(in srgb, var(--bg) 95%, transparent)', backdropFilter: 'blur(12px)', borderTop: '1px solid rgba(0,0,0,0.06)', padding: '0' }}>
-          {/* Close bar — full width tap target */}
-          <div onClick={() => setChatOpen(false)} style={{ position: 'sticky', top: 0, zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8px 0 4px', cursor: 'pointer', background: 'color-mix(in srgb, var(--bg) 95%, transparent)' }}>
-            <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(0,0,0,0.15)' }} />
+          {/* Close bar + expand button */}
+          <div style={{ position: 'sticky', top: 0, zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8px 0 4px', cursor: 'pointer', background: 'color-mix(in srgb, var(--bg) 95%, transparent)' }}>
+            <div onClick={() => setChatOpen(false)} style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+              <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(0,0,0,0.15)' }} />
+            </div>
+            <button onClick={() => { setChatExpanded(true); setChatOpen(false); }} style={{ position: 'absolute', right: 12, background: 'none', border: 'none', cursor: 'pointer', padding: 4, opacity: 0.5 }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--dark)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{icons.expand}</svg>
+            </button>
           </div>
           <div style={{ padding: '4px 16px 12px' }}>
           {data.chat.messages.slice(-10).map((m, i) => (
@@ -3309,6 +3363,16 @@ function KitchenPage() {
   const [editingTarget, setEditingTarget] = useState(false);
   const [editingCal, setEditingCal] = useState(null);
   const [generatingMeals, setGeneratingMeals] = useState(false);
+  const [groceryExpanded, setGroceryExpanded] = useState(false);
+  const [copyToast, setCopyToast] = useState(false);
+
+  const copyGrocery = () => {
+    const items = grocery.filter(g => !g.done).map(g => `- ${g.text}`);
+    const done = grocery.filter(g => g.done).map(g => `✓ ${g.text}`);
+    const text = ['Shopping List:', ...items, ...(done.length ? ['', 'Done:', ...done] : [])].join('\n');
+    navigator.clipboard.writeText(text).then(() => { setCopyToast(true); setTimeout(() => setCopyToast(false), 1500); });
+    navigator.vibrate?.(10);
+  };
 
   const generateMeals = async () => {
     const apiKey = data.settings?.apiKey;
@@ -3407,7 +3471,17 @@ function KitchenPage() {
             ))}
           </div>
 
-          <SectionLabel right={grocery.length > 0 ? `${grocery.filter(g => g.done).length}/${grocery.length}` : ''}>grocery list</SectionLabel>
+          <div className="flex items-center justify-between mb-2.5">
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 2 }}>grocery list</p>
+            <div className="flex items-center gap-2">
+              {grocery.length > 0 && <p style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--muted)' }}>{grocery.filter(g => g.done).length}/{grocery.length}</p>}
+              {grocery.length > 0 && (
+                <button onClick={() => setGroceryExpanded(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, opacity: 0.5 }}>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">{icons.expand}</svg>
+                </button>
+              )}
+            </div>
+          </div>
           <div className="glass-card px-4 py-3 mb-2 overflow-y-auto" style={{ maxHeight: 100 }}>
             {grocery.length === 0 ? (
               <p style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--muted)', textAlign: 'center' }}>no items yet</p>
@@ -3431,6 +3505,60 @@ function KitchenPage() {
             <button onClick={() => { if (newGrocery.trim()) { dispatch({ type: 'ADD_GROCERY', text: newGrocery.trim() }); setNewGrocery(''); } }}
               style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)', fontSize: 16, opacity: newGrocery.trim() ? 1 : 0.3 }}>+</button>
           </div>
+
+          {/* Expanded grocery overlay */}
+          {groceryExpanded && (
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100, background: 'var(--bg)', display: 'flex', flexDirection: 'column', animation: 'slideUp 0.25s ease' }}>
+              <div className="flex items-center justify-between px-5 pt-5 pb-3" style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+                <p style={{ fontFamily: 'var(--font-display)', fontSize: 20, color: 'var(--dark)' }}>grocery list</p>
+                <div className="flex items-center gap-3">
+                  {grocery.length > 0 && (
+                    <button onClick={copyGrocery} style={{ background: 'var(--primary-light)', border: 'none', borderRadius: 999, padding: '6px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{icons.clipboard}</svg>
+                      <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--primary)' }}>{copyToast ? 'copied!' : 'copy all'}</span>
+                    </button>
+                  )}
+                  <button onClick={() => setGroceryExpanded(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--dark)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{icons.collapse}</svg>
+                  </button>
+                </div>
+              </div>
+              {grocery.filter(g => g.done).length > 0 && (
+                <div className="px-5 pt-2">
+                  <button onClick={() => { grocery.forEach((g, i) => { if (g.done) dispatch({ type: 'DELETE_GROCERY', index: i }); }); }}
+                    style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--accent)', background: 'var(--accent-light)', border: 'none', borderRadius: 999, padding: '3px 10px', cursor: 'pointer' }}>
+                    clear completed
+                  </button>
+                </div>
+              )}
+              <div style={{ flex: 1, overflowY: 'auto', padding: '12px 20px' }}>
+                {grocery.length === 0 ? (
+                  <p style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--muted)', textAlign: 'center', marginTop: 40 }}>no items yet</p>
+                ) : grocery.map((item, i) => (
+                  <div key={i} className="flex items-center gap-3 py-3" style={{ borderBottom: '1px solid rgba(0,0,0,0.04)' }}>
+                    <div className={`checkbox ${item.done ? 'done' : ''}`} style={{ width: 18, height: 18 }} onClick={() => { navigator.vibrate?.(10); dispatch({ type: 'TOGGLE_GROCERY', index: i }); }}>
+                      {item.done && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">{icons.check}</svg>}
+                    </div>
+                    <span style={{ fontFamily: 'var(--font-body)', fontSize: 15, color: item.done ? 'var(--muted)' : 'var(--dark)', textDecoration: item.done ? 'line-through' : 'none', flex: 1 }}>{item.text}</span>
+                    <button onClick={() => dispatch({ type: 'DELETE_GROCERY', index: i })} style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.3, padding: 4 }}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{icons.x}</svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <div className="px-5 pb-5 pt-2" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                <div className="flex items-center gap-2" style={{ background: 'var(--card-bg)', borderRadius: 999, padding: '8px 16px', border: '1px solid rgba(0,0,0,0.06)' }}>
+                  <input type="text" value={newGrocery} onChange={e => setNewGrocery(e.target.value)}
+                    placeholder="add item..." onKeyDown={e => { if (e.key === 'Enter' && newGrocery.trim()) { dispatch({ type: 'ADD_GROCERY', text: newGrocery.trim() }); setNewGrocery(''); } }}
+                    className="flex-1 outline-none"
+                    style={{ background: 'transparent', border: 'none', fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--dark)' }} />
+                  <button onClick={() => { if (newGrocery.trim()) { dispatch({ type: 'ADD_GROCERY', text: newGrocery.trim() }); setNewGrocery(''); } }}
+                    style={{ background: 'var(--primary)', border: 'none', cursor: 'pointer', color: 'white', width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, opacity: newGrocery.trim() ? 1 : 0.4 }}>+</button>
+                </div>
+                <p style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--muted)', textAlign: 'center', marginTop: 8 }}>{grocery.filter(g => !g.done).length} remaining · {grocery.filter(g => g.done).length} done</p>
+              </div>
+            </div>
+          )}
         </div>
       </WavyFrame>
     </div>
