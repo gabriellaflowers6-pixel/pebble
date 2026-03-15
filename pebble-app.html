@@ -2689,9 +2689,9 @@ ${(data.plans || []).length ? '\nActive plans: ' + (data.plans || []).map(p => p
 
   return (
     <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} style={{ position: 'relative' }}>
-      {/* Expanded full-screen chat */}
-      {chatExpanded && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100, background: 'var(--bg)', display: 'flex', flexDirection: 'column', animation: 'slideUp 0.25s ease' }}>
+      {/* Expanded full-screen chat — portaled to phone-frame so it covers nav + chat bar */}
+      {chatExpanded && ReactDOM.createPortal(
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 200, background: 'var(--bg)', display: 'flex', flexDirection: 'column', animation: 'slideUp 0.25s ease' }}>
           <div className="flex items-center justify-between px-5 pt-5 pb-3" style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
             <p style={{ fontFamily: 'var(--font-display)', fontSize: 20, color: 'var(--dark)' }}>chat</p>
             <button onClick={() => setChatExpanded(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
@@ -2731,7 +2731,8 @@ ${(data.plans || []).length ? '\nActive plans: ' + (data.plans || []).map(p => p
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.querySelector('.phone-frame')
       )}
       {/* Normal chat overlay (not expanded) */}
       {!chatExpanded && chatOpen && (data.chat.messages.length > 0) && (<>
@@ -3571,9 +3572,9 @@ function KitchenPage() {
               style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)', fontSize: 16, opacity: newGrocery.trim() ? 1 : 0.3 }}>+</button>
           </div>
 
-          {/* Expanded grocery overlay */}
-          {groceryExpanded && (
-            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100, background: 'var(--bg)', display: 'flex', flexDirection: 'column', animation: 'slideUp 0.25s ease' }}>
+          {/* Expanded grocery overlay — portaled to phone-frame so it covers nav + chat */}
+          {groceryExpanded && ReactDOM.createPortal(
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 200, background: 'var(--bg)', display: 'flex', flexDirection: 'column', animation: 'slideUp 0.25s ease' }}>
               <div className="flex items-center justify-between px-5 pt-5 pb-3" style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
                 <p style={{ fontFamily: 'var(--font-display)', fontSize: 20, color: 'var(--dark)' }}>grocery list</p>
                 <div className="flex items-center gap-3">
@@ -3637,7 +3638,8 @@ function KitchenPage() {
                 </div>
                 <p style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--muted)', textAlign: 'center', marginTop: 8 }}>{grocery.filter(g => !g.done).length} remaining · {grocery.filter(g => g.done).length} done</p>
               </div>
-            </div>
+            </div>,
+            document.querySelector('.phone-frame')
           )}
         </div>
       </WavyFrame>
