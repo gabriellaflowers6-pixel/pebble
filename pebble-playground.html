@@ -1,0 +1,2329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pebble — Design Playground</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Caveat:wght@400;600;700&family=Klee+One&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Mono:wght@300;400;500&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600;700&family=Lora:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@300;400;500;600&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Work+Sans:wght@300;400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Base palette */
+    --bg: #F5F0E6;
+    --primary: #4A6741;
+    --accent: #E8F0E4;
+    --text: #E08B76;
+    --muted: #8B7355;
+    --card-bg: rgba(255,255,250,0.85);
+    --tab-active-bg: #4A6741;
+    /* Typography */
+    --brand-font: 'Cormorant Garamond', serif;
+    --heading-font: 'Playfair Display', serif;
+    --body-font: 'DM Mono', monospace;
+    --brand-size: 35px;
+    --heading-size: 18px;
+    --body-size: 12px;
+    --label-size: 9px;
+    --stat-size: 27px;
+    --icon-size: 20px;
+    /* Spacing & Shape */
+    --stroke-width: 1.5;
+    --icon-stroke: 1.8;
+    --border-radius: 14px;
+    --card-radius: 16px;
+    --card-padding: 16px;
+    --spacing: 12px;
+    --checkbox-shape: 50%;
+    --btn-fill: transparent;
+    --btn-fill-done: var(--primary);
+    /* Card borders */
+    --card-border-color: transparent;
+    --card-border-width: 0px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #111; font-family: 'Inter', -apple-system, sans-serif; color: #e0e0e0; min-height: 100vh; display: flex; }
+
+  /* ============= LAYOUT ============= */
+  .playground { display: flex; width: 100%; min-height: 100vh; }
+  .controls-panel {
+    width: 380px; min-width: 380px; background: #1a1a1a;
+    border-right: 1px solid #333;
+    overflow-y: auto; padding: 20px 0;
+    scrollbar-width: thin; scrollbar-color: #444 #1a1a1a;
+  }
+  .controls-panel::-webkit-scrollbar { width: 6px; }
+  .controls-panel::-webkit-scrollbar-track { background: #1a1a1a; }
+  .controls-panel::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+
+  .preview-area {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    padding: 40px; background: #111;
+    flex-direction: column; gap: 20px;
+    position: sticky; top: 0; height: 100vh; overflow: hidden;
+  }
+
+  /* ============= CONTROLS ============= */
+  .panel-header { padding: 0 20px 16px; border-bottom: 1px solid #333; }
+  .panel-title { font-size: 14px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #fff; }
+  .panel-subtitle { font-size: 11px; color: #666; margin-top: 4px; letter-spacing: 0.5px; }
+
+  .control-section { border-bottom: 1px solid #262626; padding: 16px 20px; }
+  .control-section:last-child { border-bottom: none; }
+
+  .section-title {
+    font-size: 10px; font-weight: 600; letter-spacing: 2px;
+    text-transform: uppercase; color: #888; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: #333; }
+
+  .control-row {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px; gap: 10px;
+  }
+  .control-row:last-child { margin-bottom: 0; }
+  .control-label { font-size: 11px; color: #aaa; white-space: nowrap; min-width: 80px; }
+  .control-right { display: flex; align-items: center; gap: 8px; flex: 1; justify-content: flex-end; }
+
+  /* Color picker */
+  .color-input-wrap { display: flex; align-items: center; gap: 6px; }
+  input[type="color"] {
+    -webkit-appearance: none; appearance: none;
+    width: 32px; height: 24px; border: 1px solid #444; border-radius: 4px;
+    cursor: pointer; background: transparent; padding: 0;
+  }
+  input[type="color"]::-webkit-color-swatch-wrapper { padding: 2px; }
+  input[type="color"]::-webkit-color-swatch { border: none; border-radius: 2px; }
+  .color-hex {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #777;
+    width: 70px; background: #222; border: 1px solid #333; border-radius: 4px;
+    padding: 4px 6px; text-align: center; outline: none;
+  }
+  .color-hex:focus { border-color: #555; color: #ccc; }
+
+  /* Select dropdown */
+  select {
+    background: #222; border: 1px solid #333; border-radius: 6px;
+    color: #ccc; font-size: 11px; padding: 6px 8px;
+    font-family: inherit; cursor: pointer; max-width: 180px; outline: none;
+  }
+  select:focus { border-color: #555; }
+
+  /* Range slider */
+  input[type="range"] {
+    -webkit-appearance: none; appearance: none;
+    width: 120px; height: 4px; background: #333;
+    border-radius: 2px; outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 14px; height: 14px;
+    background: #fff; border-radius: 50%; cursor: pointer; border: 2px solid #555;
+  }
+  .range-value {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    color: #777; min-width: 32px; text-align: right;
+  }
+
+  /* Toggle buttons */
+  .toggle-group { display: flex; gap: 2px; background: #222; border-radius: 6px; padding: 2px; }
+  .toggle-btn {
+    font-size: 10px; padding: 5px 10px; border: none; background: transparent;
+    color: #777; cursor: pointer; border-radius: 4px; font-family: inherit; transition: all 0.15s;
+  }
+  .toggle-btn.active { background: #333; color: #fff; }
+  .toggle-btn:hover:not(.active) { color: #aaa; }
+
+  /* Presets */
+  .preset-mode-toggle { display: flex; gap: 2px; background: #222; border-radius: 6px; padding: 2px; margin-bottom: 10px; }
+  .preset-mode-btn {
+    flex: 1; font-size: 10px; padding: 7px 10px; border: none; background: transparent;
+    color: #777; cursor: pointer; border-radius: 4px; font-family: inherit;
+    transition: all 0.15s; text-align: center; letter-spacing: 0.5px;
+  }
+  .preset-mode-btn.active { background: #333; color: #fff; }
+  .preset-mode-btn:hover:not(.active) { color: #aaa; }
+
+  .presets-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+  .preset-btn {
+    padding: 8px 10px; border: 1px solid #333; border-radius: 6px;
+    background: #222; color: #aaa; font-size: 10px; cursor: pointer;
+    font-family: inherit; transition: all 0.15s; text-align: left;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .preset-btn:hover { border-color: #555; color: #fff; }
+  .preset-btn.active { border-color: #666; background: #2a2a2a; color: #fff; }
+  .preset-btn .preset-label { flex: 1; }
+  .preset-swatch { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; border: 1px solid #444; }
+  .preset-palette-strip { display: flex; gap: 1px; flex-shrink: 0; }
+  .preset-palette-dot { width: 6px; height: 14px; border-radius: 1px; }
+  .preset-palette-dot:first-child { border-radius: 2px 0 0 2px; }
+  .preset-palette-dot:last-child { border-radius: 0 2px 2px 0; }
+
+  .quick-mix { margin-top: 12px; padding-top: 10px; border-top: 1px solid #2a2a2a; }
+  .quick-mix-label { font-size: 9px; color: #555; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+  .mix-btn {
+    width: 100%; padding: 9px 12px; border: 1px dashed #444; border-radius: 6px;
+    background: transparent; color: #aaa; font-size: 10px; cursor: pointer;
+    font-family: inherit; transition: all 0.15s; letter-spacing: 0.5px;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .mix-btn:hover { border-color: #888; color: #fff; background: #222; }
+
+  /* ============= ELEMENT COLOR SECTIONS ============= */
+  .el-group { border-bottom: 1px solid #262626; }
+  .el-group:last-child { border-bottom: none; }
+  .el-group-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px 20px; cursor: pointer; user-select: none;
+    transition: background 0.15s;
+  }
+  .el-group-header:hover { background: rgba(255,255,255,0.02); }
+  .el-group-header .arrow {
+    font-size: 8px; color: #666; transition: transform 0.2s; width: 10px;
+  }
+  .el-group-header.open .arrow { transform: rotate(90deg); }
+  .el-group-title {
+    font-size: 10px; font-weight: 500; letter-spacing: 1.5px;
+    text-transform: uppercase; color: #777;
+  }
+  .el-group-dots { display: flex; gap: 3px; margin-left: auto; }
+  .el-group-dot { width: 8px; height: 8px; border-radius: 2px; border: 1px solid #444; }
+  .el-group-body { display: none; padding: 0 20px 14px; }
+  .el-group-body.open { display: block; }
+
+  /* (element row styles moved to unified color bar section below) */
+
+  .el-section-note {
+    font-size: 9px; color: #444; padding: 0 6px; margin-bottom: 10px;
+    font-style: italic; letter-spacing: 0.3px;
+  }
+
+  /* Border width slider inside element group */
+  .el-slider-row {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 8px; padding: 4px 6px;
+  }
+  .el-slider-row .el-label { min-width: 72px; }
+  .el-slider-row input[type="range"] { width: 90px; }
+  .el-slider-row .range-value { font-size: 9px; min-width: 28px; }
+
+  /* ============= EXPORT ============= */
+  .export-btn {
+    width: 100%; padding: 10px; background: #333; border: 1px solid #444;
+    border-radius: 8px; color: #fff; font-size: 11px; cursor: pointer;
+    font-family: inherit; letter-spacing: 1px; text-transform: uppercase;
+    transition: all 0.15s; margin-top: 8px;
+  }
+  .export-btn:hover { background: #444; }
+  .export-btn.claude-btn { background: #2a1a4e; border-color: #5a3d8e; }
+  .export-btn.claude-btn:hover { background: #3a2a5e; }
+  .export-btn.app-btn { background: #1a3a2a; border-color: #4A6741; color: #8BC49A; }
+  .export-btn.app-btn:hover { background: #2a4a3a; }
+
+  /* Saved templates */
+  .save-template-btn {
+    width: 100%; padding: 9px 12px; border: 1px dashed #444; border-radius: 6px;
+    background: transparent; color: #aaa; font-size: 10px; cursor: pointer;
+    font-family: inherit; transition: all 0.15s; letter-spacing: 0.5px;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    margin-bottom: 10px;
+  }
+  .save-template-btn:hover { border-color: #888; color: #fff; background: #222; }
+  .saved-templates-scroll {
+    display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px 8px;
+    scrollbar-width: thin; scrollbar-color: #444 transparent;
+    scroll-snap-type: x mandatory; scroll-behavior: smooth;
+  }
+  .saved-templates-scroll::-webkit-scrollbar { height: 5px; }
+  .saved-templates-scroll::-webkit-scrollbar-track { background: transparent; }
+  .saved-templates-scroll::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+  .template-card {
+    flex-shrink: 0; width: 88px; padding: 8px 8px 6px; background: #222;
+    border: 1px solid #333; border-radius: 8px; cursor: pointer;
+    transition: all 0.15s; position: relative; scroll-snap-align: start;
+  }
+  .template-card:hover { border-color: #555; background: #2a2a2a; }
+  .template-card-colors { display: flex; gap: 1px; margin-bottom: 6px; border-radius: 3px; overflow: hidden; height: 18px; }
+  .template-card-color { flex: 1; }
+  .template-card-name {
+    font-size: 8px; color: #888; text-align: center;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: 0.3px;
+  }
+  .template-card:hover .template-card-name { color: #ccc; }
+  .template-name-input {
+    font-size: 8px; color: #888; text-align: center; width: 100%;
+    background: transparent; border: 1px solid transparent; border-radius: 3px;
+    padding: 1px 2px; outline: none; font-family: inherit; letter-spacing: 0.3px;
+    cursor: pointer;
+  }
+  .template-name-input:hover { border-color: #444; }
+  .template-name-input:focus { border-color: #666; color: #ccc; background: #1a1a1a; cursor: text; }
+  .template-name-input::selection { background: rgba(100,200,255,0.3); }
+  .template-actions {
+    position: absolute; top: 2px; right: 2px;
+    display: flex; gap: 1px; opacity: 0; transition: all 0.15s;
+  }
+  .template-card:hover .template-actions { opacity: 1; }
+  .template-action-btn {
+    width: 16px; height: 16px; border: none; background: transparent;
+    color: #555; font-size: 10px; cursor: pointer; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; line-height: 1;
+  }
+  .template-action-btn:hover { color: #fff; background: rgba(255,255,255,0.1); }
+  .template-action-btn.delete:hover { color: #ff6b6b; background: rgba(255,107,107,0.15); }
+  .templates-empty { font-size: 10px; color: #444; text-align: center; padding: 10px 0; font-style: italic; width: 100%; }
+  .templates-nav { display: flex; align-items: center; gap: 8px; margin-top: 6px; justify-content: center; }
+  .templates-nav-btn {
+    width: 22px; height: 22px; border: 1px solid #333; border-radius: 50%;
+    background: #222; color: #666; font-size: 10px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; line-height: 1;
+  }
+  .templates-nav-btn:hover { border-color: #555; color: #fff; }
+  .templates-count { font-size: 9px; color: #555; letter-spacing: 0.5px; }
+
+  /* Preset management */
+  .preset-delete-btn {
+    position: absolute; top: 2px; right: 2px;
+    width: 16px; height: 16px; border: none; background: transparent;
+    color: #555; font-size: 11px; cursor: pointer; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: all 0.15s; line-height: 1; z-index: 2;
+  }
+  .preset-btn:hover .preset-delete-btn { opacity: 0.6; }
+  .preset-delete-btn:hover { opacity: 1 !important; color: #ff6b6b; background: rgba(255,107,107,0.15); }
+  .preset-name-input {
+    background: transparent; border: none; color: inherit; font: inherit;
+    font-size: 10px; width: 100%; padding: 0; outline: none; cursor: pointer;
+  }
+  .preset-name-input:focus { cursor: text; color: #fff; }
+  .preset-name-input::selection { background: rgba(100,200,255,0.3); }
+
+  /* Editable labels */
+  .el-label-edit {
+    font-size: 10px; color: #888; min-width: 60px; max-width: 72px; letter-spacing: 0.3px;
+    background: transparent; border: 1px solid transparent; border-radius: 3px;
+    padding: 1px 3px; outline: none; font-family: inherit;
+  }
+  .el-label-edit:hover { border-color: #333; }
+  .el-label-edit:focus { border-color: #555; color: #ccc; background: #1a1a1a; }
+
+  /* Palette swatches in element groups */
+  .el-palette-wrap { padding: 6px 6px 4px; border-top: 1px solid #222; margin-top: 6px; }
+  .el-palette-section-label { font-size: 8px; color: #555; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+  .el-palette-row { display: flex; gap: 3px; flex-wrap: wrap; margin-bottom: 6px; }
+  .el-palette-swatch {
+    width: 18px; height: 18px; border-radius: 3px; border: 1px solid #333;
+    cursor: pointer; transition: all 0.15s; position: relative;
+  }
+  .el-palette-swatch:hover { border-color: #888; transform: scale(1.2); z-index: 1; }
+  .el-palette-swatch .swatch-tip {
+    display: none; position: absolute; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%);
+    background: #333; color: #ccc; font-size: 8px; padding: 2px 5px; border-radius: 3px;
+    white-space: nowrap; pointer-events: none; z-index: 10;
+  }
+  .el-palette-swatch:hover .swatch-tip { display: block; }
+  .el-row.selected { background: rgba(100,200,255,0.06); outline: 1px solid rgba(100,200,255,0.15); outline-offset: -1px; border-radius: 4px; }
+  .add-color-btn {
+    width: 18px; height: 18px; border-radius: 3px; border: 1px dashed #444;
+    cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+    color: #555; font-size: 12px; transition: all 0.15s; background: transparent;
+  }
+  .add-color-btn:hover { border-color: #888; color: #fff; }
+
+  /* Undo / Redo */
+  .undo-redo { display: flex; gap: 4px; flex-shrink: 0; }
+  .undo-redo-btn {
+    width: 30px; height: 30px; border: 1px solid #333; border-radius: 6px;
+    background: #222; color: #666; font-size: 14px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; font-family: inherit; line-height: 1;
+  }
+  .undo-redo-btn:hover:not(:disabled) { border-color: #555; color: #fff; background: #2a2a2a; }
+  .undo-redo-btn:disabled { opacity: 0.25; cursor: not-allowed; }
+  .undo-redo-btn:active:not(:disabled) { transform: scale(0.92); }
+
+  /* ============= PHONE PREVIEW ============= */
+  .phone-frame {
+    width: 340px; height: 720px; border-radius: 44px;
+    overflow: hidden; position: relative;
+    box-shadow: 0 20px 80px rgba(0,0,0,0.6), inset 0 0 0 2px rgba(255,255,255,0.08);
+    flex-shrink: 0; transition: background 0.3s;
+  }
+  .phone-screen {
+    width: 100%; height: 100%; overflow-y: auto;
+    display: flex; flex-direction: column;
+    padding: 50px 20px 80px; background: var(--bg);
+    transition: background 0.3s; scrollbar-width: none;
+  }
+  .phone-screen::-webkit-scrollbar { display: none; }
+
+  /* Cloud sky */
+  .phone-screen.clouds-active { position: relative; }
+  .phone-screen.clouds-active::before {
+    content: ''; position: absolute;
+    top: 0; left: 0; right: 0; height: 300px;
+    background:
+      radial-gradient(ellipse 130px 85px at 20% 52%, var(--cloud-light, rgba(255,255,255,0.7)) 0%, transparent 70%),
+      radial-gradient(ellipse 100px 65px at 50% 42%, var(--cloud-light, rgba(255,255,255,0.6)) 0%, transparent 65%),
+      radial-gradient(ellipse 170px 95px at 78% 58%, var(--cloud-mid, rgba(255,255,255,0.5)) 0%, transparent 70%),
+      radial-gradient(ellipse 110px 75px at 35% 68%, var(--cloud-mid, rgba(255,255,255,0.4)) 0%, transparent 65%),
+      radial-gradient(ellipse 85px 55px at 88% 38%, var(--cloud-light, rgba(255,255,255,0.5)) 0%, transparent 60%),
+      radial-gradient(ellipse 60px 45px at 10% 35%, var(--cloud-light, rgba(255,255,255,0.35)) 0%, transparent 60%),
+      radial-gradient(ellipse 150px 60px at 60% 75%, var(--cloud-mid, rgba(255,255,255,0.25)) 0%, transparent 70%),
+      linear-gradient(180deg, var(--cloud-sky, #6BA3D6) 0%, var(--cloud-sky, #6BA3D6) 35%, var(--bg) 100%);
+    z-index: 0; pointer-events: none; border-radius: 40px 40px 0 0;
+  }
+  .phone-screen.clouds-active > * { position: relative; z-index: 1; }
+  .phone-screen.clouds-active .p-brand,
+  .phone-screen.clouds-active .p-greeting { text-shadow: 0 1px 8px rgba(0,0,0,0.08); }
+
+  /* ============= PHONE ELEMENTS — FALLBACK PATTERN ============= */
+  /* Each element uses var(--element-override, var(--palette-fallback)) */
+  .p-top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 0 4px; }
+  .p-brand {
+    font-family: var(--brand-font); font-size: var(--brand-size);
+    color: var(--brand-color, var(--primary)); transition: all 0.3s;
+  }
+  .p-date-pill {
+    font-family: var(--body-font); font-size: var(--label-size);
+    color: var(--pill-color, var(--bg));
+    background: var(--pill-bg, var(--primary));
+    padding: 5px 14px; border-radius: 20px; letter-spacing: 1px; transition: all 0.3s;
+  }
+  .p-greeting {
+    font-family: var(--heading-font); font-size: var(--heading-size);
+    color: var(--greeting-color, var(--primary));
+    font-weight: 700; margin-bottom: 4px; padding: 0 4px; transition: all 0.3s;
+  }
+  .p-subtext {
+    font-family: var(--body-font); font-size: var(--label-size);
+    color: var(--subtext-color, var(--muted));
+    letter-spacing: 1px; margin-bottom: 20px; padding: 0 4px; transition: all 0.3s;
+  }
+
+  .p-stats { display: flex; gap: calc(var(--spacing) * 0.7); margin-bottom: 20px; }
+  .p-stat {
+    flex: 1; background: var(--card-bg); border-radius: var(--card-radius);
+    padding: var(--card-padding); text-align: center;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04); transition: all 0.3s;
+  }
+  .p-stat-num {
+    font-family: var(--heading-font); font-size: var(--stat-size);
+    color: var(--stat-num-color, var(--primary));
+    font-weight: 700; line-height: 1; transition: all 0.3s;
+  }
+  .p-stat-label {
+    font-family: var(--body-font); font-size: var(--label-size);
+    color: var(--stat-label-color, var(--muted));
+    letter-spacing: 1px; text-transform: uppercase; margin-top: 4px; transition: all 0.3s;
+  }
+
+  .p-section-label {
+    font-family: var(--body-font); font-size: var(--label-size);
+    color: var(--section-label-color, var(--muted));
+    letter-spacing: 2px; text-transform: uppercase;
+    margin-bottom: 10px; padding: 0 4px; transition: all 0.3s;
+  }
+
+  .p-card {
+    background: var(--card-bg); border-radius: var(--card-radius);
+    padding: var(--card-padding); margin-bottom: var(--spacing);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+    border: var(--card-border-width) solid var(--card-border-color);
+    transition: all 0.3s;
+  }
+  .p-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .p-card-title {
+    font-family: var(--body-font); font-size: var(--label-size);
+    color: var(--card-title-color, var(--muted));
+    letter-spacing: 2px; text-transform: uppercase; transition: all 0.3s;
+  }
+  .p-card-meta {
+    font-family: var(--body-font); font-size: var(--label-size);
+    color: var(--card-meta-color, var(--muted)); transition: all 0.3s;
+  }
+
+  .p-task {
+    display: flex; align-items: center; gap: 10px; padding: 8px 0;
+    font-family: var(--body-font); font-size: var(--body-size);
+    color: var(--task-color, var(--text)); transition: all 0.3s;
+  }
+  .p-checkbox {
+    width: var(--icon-size); height: var(--icon-size);
+    border-radius: var(--checkbox-shape);
+    border: calc(var(--stroke-width) * 1px) solid var(--cb-border, var(--primary));
+    flex-shrink: 0; background: var(--btn-fill); transition: all 0.3s; position: relative;
+  }
+  .p-checkbox.done { background: var(--cb-fill, var(--primary)); }
+  .p-checkbox.done::after {
+    content: ''; position: absolute;
+    top: calc(50% - 5px); left: calc(50% - 3px);
+    width: 5px; height: 9px;
+    border: solid var(--bg); border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+  .p-task-text.done {
+    text-decoration: line-through;
+    color: var(--task-done-color, var(--muted));
+  }
+
+  .p-cal-strip { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
+  .p-cal-day {
+    flex-shrink: 0; width: 44px; height: 60px;
+    border-radius: var(--border-radius);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: var(--bg); gap: 2px; font-family: var(--body-font); transition: all 0.3s;
+  }
+  .p-cal-day-name {
+    font-size: 9px; color: var(--cal-name-color, var(--muted));
+    letter-spacing: 1px; text-transform: uppercase; transition: all 0.3s;
+  }
+  .p-cal-day-num {
+    font-size: 16px; font-weight: 700;
+    color: var(--cal-num-color, var(--primary)); transition: all 0.3s;
+  }
+  .p-cal-day.today { background: var(--today-bg, var(--primary)); }
+  .p-cal-day.today .p-cal-day-name { color: var(--accent); }
+  .p-cal-day.today .p-cal-day-num { color: var(--bg); }
+
+  .p-meal-row { display: flex; gap: 8px; }
+  .p-meal-chip {
+    flex: 1; background: var(--chip-bg, var(--accent));
+    border-radius: var(--border-radius);
+    padding: 12px 8px; text-align: center; transition: all 0.3s;
+  }
+  .p-meal-label {
+    font-family: var(--body-font); font-size: var(--label-size);
+    color: var(--meal-label-color, var(--muted));
+    letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; transition: all 0.3s;
+  }
+  .p-meal-name {
+    font-family: var(--heading-font); font-size: 11px;
+    color: var(--meal-name-color, var(--text));
+    font-weight: 600; transition: all 0.3s;
+  }
+  .p-meal-cal {
+    font-family: var(--body-font); font-size: 9px;
+    color: var(--meal-cal-color, var(--muted));
+    margin-top: 2px; transition: all 0.3s;
+  }
+
+  .p-progress-wrap { margin-top: 12px; display: flex; align-items: center; gap: 10px; }
+  .p-progress-bg {
+    flex: 1; height: 6px;
+    background: var(--progress-track, var(--accent));
+    border-radius: 3px; overflow: hidden; transition: all 0.3s;
+  }
+  .p-progress-fill {
+    height: 100%; width: 62%;
+    background: var(--progress-bar, var(--primary));
+    border-radius: 3px; transition: all 0.3s;
+  }
+  .p-progress-text {
+    font-family: var(--body-font); font-size: 10px;
+    color: var(--progress-text-color, var(--muted)); transition: all 0.3s;
+  }
+
+  .p-tab-bar {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    display: flex; justify-content: center; gap: 6px;
+    padding: 12px 24px 28px; background: var(--bg); transition: all 0.3s;
+  }
+  .p-tab {
+    width: 48px; height: 44px; border-radius: var(--border-radius);
+    display: flex; align-items: center; justify-content: center; transition: all 0.3s;
+  }
+  .p-tab.active { background: var(--tab-active-bg); }
+  .p-tab svg { transition: all 0.3s; }
+
+  .p-divider { width: 100%; height: 1px; background: var(--primary); opacity: 0.15; margin: 4px 0 16px; }
+
+  /* Tracker */
+  .p-tracker { margin-bottom: var(--spacing); }
+  .p-tracker-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .p-tracker-title {
+    font-family: var(--body-font); font-size: var(--label-size);
+    color: var(--tracker-title-color, var(--muted));
+    letter-spacing: 2px; text-transform: uppercase; transition: all 0.3s;
+  }
+  .p-tracker-month {
+    font-family: var(--body-font); font-size: var(--label-size);
+    color: var(--muted); transition: all 0.3s;
+  }
+  .p-tracker-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .p-tracker-label {
+    font-family: var(--body-font); font-size: 9px;
+    color: var(--tracker-label-color, var(--muted));
+    width: 52px; text-align: right; flex-shrink: 0; letter-spacing: 0.5px; transition: all 0.3s;
+  }
+  .p-tracker-dots { display: flex; gap: 3px; flex-wrap: nowrap; }
+  .p-tracker-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    border: calc(var(--stroke-width) * 0.8px) solid var(--dot-border, var(--primary));
+    background: transparent; transition: all 0.3s; flex-shrink: 0; opacity: 0.3;
+  }
+  .p-tracker-dot.filled {
+    background: var(--dot-filled, var(--primary)); opacity: 1;
+  }
+  .p-tracker-dot.half { background: var(--accent); opacity: 0.7; }
+  .p-tracker-dot.today-dot {
+    box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px var(--dot-border, var(--primary));
+    opacity: 1;
+  }
+
+  .preview-hint { font-size: 11px; color: #555; letter-spacing: 1px; text-align: center; }
+
+  /* ============= UNIFIED COLOR BAR ============= */
+  .color-bar { padding: 14px 20px; border-bottom: 1px solid #262626; }
+  .color-bar-label { font-size: 8px; color: #555; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+  .color-bar-row { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+  .color-bar-divider { width: 1px; height: 20px; background: #333; margin: 0 4px; flex-shrink: 0; }
+  .cb-swatch {
+    width: 24px; height: 24px; border-radius: 4px; border: 2px solid #333;
+    cursor: pointer; transition: all 0.15s; position: relative; flex-shrink: 0;
+  }
+  .cb-swatch:hover { border-color: #888; transform: scale(1.15); z-index: 2; }
+  .cb-swatch.active { border-color: #fff; box-shadow: 0 0 0 1px #fff; }
+  .cb-swatch .cb-tip {
+    display: none; position: absolute; bottom: calc(100% + 5px); left: 50%; transform: translateX(-50%);
+    background: #333; color: #ccc; font-size: 8px; padding: 2px 6px; border-radius: 3px;
+    white-space: nowrap; pointer-events: none; z-index: 10;
+  }
+  .cb-swatch:hover .cb-tip { display: block; }
+  .cb-swatch-add {
+    width: 24px; height: 24px; border-radius: 4px; border: 1px dashed #444;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    color: #555; font-size: 14px; transition: all 0.15s; background: transparent; flex-shrink: 0;
+  }
+  .cb-swatch-add:hover { border-color: #888; color: #fff; }
+  .color-bar-hex-row { display: flex; gap: 6px; align-items: center; }
+  .color-bar-hex {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #888;
+    width: 80px; background: #222; border: 1px solid #333; border-radius: 4px;
+    padding: 5px 8px; outline: none;
+  }
+  .color-bar-hex:focus { border-color: #666; color: #ccc; }
+  .color-bar-picker { width: 28px; height: 28px; border: 1px solid #444; border-radius: 4px; cursor: pointer; padding: 0; background: transparent; }
+  .color-bar-picker::-webkit-color-swatch-wrapper { padding: 2px; }
+  .color-bar-picker::-webkit-color-swatch { border: none; border-radius: 2px; }
+  .color-bar-apply {
+    font-size: 9px; padding: 5px 10px; border: 1px solid #444; border-radius: 4px;
+    background: #222; color: #aaa; cursor: pointer; font-family: inherit; transition: all 0.15s;
+  }
+  .color-bar-apply:hover { border-color: #666; color: #fff; }
+  .color-bar-reset {
+    font-size: 9px; padding: 5px 8px; border: 1px solid transparent; border-radius: 4px;
+    background: transparent; color: #555; cursor: pointer; font-family: inherit; transition: all 0.15s;
+  }
+  .color-bar-reset:hover { color: #ff6b6b; }
+
+  /* ============= ELEMENT ROWS (simplified) ============= */
+  .el-row {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 6px; padding: 5px 8px; border-radius: 5px;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .el-row:last-child { margin-bottom: 0; }
+  .el-row:hover { background: rgba(255,255,255,0.03); }
+  .el-row.selected { background: rgba(100,200,255,0.08); outline: 1px solid rgba(100,200,255,0.2); }
+  .el-row.overridden .el-swatch { box-shadow: 0 0 0 1px rgba(100,200,255,0.4); }
+  .el-swatch {
+    width: 20px; height: 20px; border-radius: 4px; border: 1.5px solid #444;
+    cursor: pointer; transition: all 0.15s; flex-shrink: 0;
+  }
+  .el-swatch:hover { border-color: #888; transform: scale(1.15); }
+  .el-label { font-size: 10px; color: #888; flex: 1; letter-spacing: 0.3px; }
+  .el-row.selected .el-label { color: #ccc; }
+  .el-row.overridden .el-label::after { content: ' •'; color: rgba(100,200,255,0.5); }
+
+  /* ============= CLOUD IMAGE OVERLAY ============= */
+  .cloud-thumbs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 8px; }
+  .cloud-thumb {
+    aspect-ratio: 16/10; border-radius: 6px; border: 2px solid #333;
+    cursor: pointer; transition: all 0.15s; overflow: hidden; position: relative;
+    background-size: cover; background-position: center;
+  }
+  .cloud-thumb:hover { border-color: #666; }
+  .cloud-thumb.active { border-color: #fff; box-shadow: 0 0 0 1px #fff; }
+  .cloud-thumb-label {
+    position: absolute; bottom: 0; left: 0; right: 0; padding: 2px 4px;
+    font-size: 7px; color: #fff; text-align: center;
+    background: rgba(0,0,0,0.5); letter-spacing: 0.5px;
+  }
+  .cloud-thumb-none {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; color: #555; background: #1a1a1a;
+  }
+  .cloud-target-toggle { display: flex; gap: 2px; background: #222; border-radius: 6px; padding: 2px; margin-top: 8px; }
+  .cloud-target-btn {
+    flex: 1; font-size: 9px; padding: 6px 8px; border: none; background: transparent;
+    color: #666; cursor: pointer; border-radius: 4px; font-family: inherit;
+    transition: all 0.15s; text-align: center;
+  }
+  .cloud-target-btn.active { background: #333; color: #fff; }
+
+  /* Cloud image overlay on phone background — applied directly as layered background */
+  /* Chat / texting bubbles */
+  .p-chat-view { display: none; flex-direction: column; gap: 8px; padding: 4px 0; }
+  .p-chat-view.active { display: flex; }
+  .p-cards-view.hidden { display: none; }
+  .p-bubble-row { display: flex; }
+  .p-bubble-row.sent { justify-content: flex-end; }
+  .p-bubble-row.received { justify-content: flex-start; }
+  .p-bubble {
+    max-width: 75%; padding: 8px 12px; font-family: var(--body-font);
+    font-size: var(--body-size); line-height: 1.5; transition: all 0.3s;
+  }
+  .p-bubble.sent {
+    background: var(--bubble-sent-bg, var(--primary));
+    color: var(--bubble-sent-color, var(--bg));
+    border-radius: var(--card-radius) var(--card-radius) 4px var(--card-radius);
+  }
+  .p-bubble.received {
+    background: var(--bubble-recv-bg, var(--card-bg));
+    color: var(--bubble-recv-color, var(--text));
+    border-radius: var(--card-radius) var(--card-radius) var(--card-radius) 4px;
+    border: 1px solid rgba(0,0,0,0.06);
+  }
+  .p-bubble-time {
+    font-size: 8px; color: var(--muted); margin-top: 2px;
+    font-family: var(--body-font); transition: all 0.3s;
+  }
+  .p-bubble-row.sent .p-bubble-time { text-align: right; }
+  .p-chat-input-preview {
+    display: flex; align-items: center; gap: 8px; margin-top: 4px;
+    padding: 8px 12px; background: rgba(255,255,255,0.7);
+    border: 1px solid rgba(0,0,0,0.06); border-radius: 999px;
+    font-family: var(--body-font); font-size: var(--body-size);
+    color: var(--muted); transition: all 0.3s;
+  }
+  .p-chat-send-btn {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--primary); display: flex; align-items: center;
+    justify-content: center; flex-shrink: 0;
+  }
+  .p-chat-send-btn svg { stroke: var(--bg); }
+
+  /* Preview mode toggle */
+  .preview-mode-toggle {
+    display: flex; gap: 2px; background: #222; border-radius: 6px;
+    padding: 2px; margin-top: 8px; width: fit-content; margin-left: auto; margin-right: auto;
+  }
+  .preview-mode-btn {
+    font-size: 9px; padding: 5px 12px; border: none; background: transparent;
+    color: #777; cursor: pointer; border-radius: 4px; font-family: inherit;
+    transition: all 0.15s; letter-spacing: 0.5px;
+  }
+  .preview-mode-btn.active { background: #333; color: #fff; }
+  .preview-mode-btn:hover:not(.active) { color: #aaa; }
+
+  /* Card cloud overlay — uses ::after to layer image on top of card bg */
+  .p-card.has-cloud-img { position: relative; }
+  .p-card.has-cloud-img::after {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background-size: cover; background-position: center;
+    pointer-events: none; border-radius: inherit; z-index: 0;
+    background-image: var(--card-cloud-img);
+    opacity: var(--card-cloud-opacity, 0.3);
+  }
+  .p-card.has-cloud-img > * { position: relative; z-index: 1; }
+</style>
+</head>
+<body>
+
+<div class="playground">
+  <!-- ============= CONTROLS ============= -->
+  <div class="controls-panel">
+    <div class="panel-header" style="display:flex;align-items:flex-start;justify-content:space-between;">
+      <div>
+        <div class="panel-title">pebble playground</div>
+        <div class="panel-subtitle">tweak everything — see it live</div>
+      </div>
+      <div class="undo-redo">
+        <button class="undo-redo-btn" id="undo-btn" onclick="undo()" disabled title="Undo (Ctrl+Z)">↩</button>
+        <button class="undo-redo-btn" id="redo-btn" onclick="redo()" disabled title="Redo (Ctrl+Y)">↪</button>
+      </div>
+    </div>
+
+    <!-- PRESETS -->
+    <div class="control-section">
+      <div class="section-title">presets</div>
+      <div class="preset-mode-toggle">
+        <button class="preset-mode-btn active" onclick="setPresetMode('full', this)">full design</button>
+        <button class="preset-mode-btn" onclick="setPresetMode('colors', this)">colors only</button>
+      </div>
+      <div style="font-size:9px;color:#555;margin-bottom:8px;" id="preset-mode-hint">loads everything — fonts, sizes, colors</div>
+      <div class="presets-grid" id="presets-grid">
+        <button class="preset-btn" onclick="applyPreset('blueInk', this)">
+          <span class="preset-swatch" style="background:#1A00FF"></span>
+          <span class="preset-label">blue ink</span>
+          <span class="preset-palette-strip"><span class="preset-palette-dot" style="background:#E8E6E3"></span><span class="preset-palette-dot" style="background:#1A00FF"></span><span class="preset-palette-dot" style="background:#D8D2E8"></span><span class="preset-palette-dot" style="background:#8080BB"></span></span>
+        </button>
+        <button class="preset-btn" onclick="applyPreset('darkInk', this)">
+          <span class="preset-swatch" style="background:#0A0033"></span>
+          <span class="preset-label">dark ink</span>
+          <span class="preset-palette-strip"><span class="preset-palette-dot" style="background:#0A0033"></span><span class="preset-palette-dot" style="background:#F5F3F0"></span><span class="preset-palette-dot" style="background:#150066"></span><span class="preset-palette-dot" style="background:#6060AA"></span></span>
+        </button>
+        <button class="preset-btn" onclick="applyPreset('ghibli', this)">
+          <span class="preset-swatch" style="background:#4A6741"></span>
+          <span class="preset-label">ghibli</span>
+          <span class="preset-palette-strip"><span class="preset-palette-dot" style="background:#EDE8D8"></span><span class="preset-palette-dot" style="background:#4A6741"></span><span class="preset-palette-dot" style="background:#E8F0E4"></span><span class="preset-palette-dot" style="background:#8B7355"></span></span>
+        </button>
+        <button class="preset-btn" onclick="applyPreset('sageSalmon', this)">
+          <span class="preset-swatch" style="background:#C4D8D0"></span>
+          <span class="preset-label">sage & salmon</span>
+          <span class="preset-palette-strip"><span class="preset-palette-dot" style="background:#C4D8D0"></span><span class="preset-palette-dot" style="background:#E08B76"></span><span class="preset-palette-dot" style="background:#3A5E50"></span><span class="preset-palette-dot" style="background:#7A9E90"></span></span>
+        </button>
+        <button class="preset-btn" onclick="applyPreset('blueprint', this)">
+          <span class="preset-swatch" style="background:#6B7CFF"></span>
+          <span class="preset-label">blueprint</span>
+          <span class="preset-palette-strip"><span class="preset-palette-dot" style="background:#FAFAFA"></span><span class="preset-palette-dot" style="background:#6B7CFF"></span><span class="preset-palette-dot" style="background:#F0F2FF"></span><span class="preset-palette-dot" style="background:#B0B8FF"></span></span>
+        </button>
+        <button class="preset-btn" onclick="applyPreset('vintage', this)">
+          <span class="preset-swatch" style="background:#4A5E8A"></span>
+          <span class="preset-label">vintage poster</span>
+          <span class="preset-palette-strip"><span class="preset-palette-dot" style="background:#F5F0E6"></span><span class="preset-palette-dot" style="background:#4A5E8A"></span><span class="preset-palette-dot" style="background:#EDE6D8"></span><span class="preset-palette-dot" style="background:#A09078"></span></span>
+        </button>
+        <button class="preset-btn active" onclick="applyPreset('gabbyA', this)">
+          <span class="preset-swatch" style="background:#4A6741"></span>
+          <span class="preset-label">gabby A</span>
+          <span class="preset-palette-strip"><span class="preset-palette-dot" style="background:#F5F0E6"></span><span class="preset-palette-dot" style="background:#4A6741"></span><span class="preset-palette-dot" style="background:#E8F0E4"></span><span class="preset-palette-dot" style="background:#E08B76"></span></span>
+        </button>
+        <button class="preset-btn" onclick="applyPreset('gabbyB', this)">
+          <span class="preset-swatch" style="background:#E08B76"></span>
+          <span class="preset-label">gabby B</span>
+          <span class="preset-palette-strip"><span class="preset-palette-dot" style="background:#C4D8D0"></span><span class="preset-palette-dot" style="background:#E08B76"></span><span class="preset-palette-dot" style="background:#EDE6D8"></span><span class="preset-palette-dot" style="background:#A09078"></span></span>
+        </button>
+        <button class="preset-btn" onclick="applyPreset('manus', this)">
+          <span class="preset-swatch" style="background:#6BA3D6"></span>
+          <span class="preset-label">manus</span>
+          <span class="preset-palette-strip"><span class="preset-palette-dot" style="background:#FAFAFA"></span><span class="preset-palette-dot" style="background:#1A1A1A"></span><span class="preset-palette-dot" style="background:#6BA3D6"></span><span class="preset-palette-dot" style="background:#999999"></span></span>
+        </button>
+        <button class="preset-btn" onclick="applyPreset('gabbyCloud', this)">
+          <span class="preset-swatch" style="background:#89AAB5"></span>
+          <span class="preset-label">gabby cloud</span>
+          <span class="preset-palette-strip"><span class="preset-palette-dot" style="background:#C4D8D0"></span><span class="preset-palette-dot" style="background:#4A6741"></span><span class="preset-palette-dot" style="background:#89AAB5"></span><span class="preset-palette-dot" style="background:#E08B76"></span></span>
+        </button>
+        <button class="preset-btn" onclick="applyPreset('gabbySunset', this)">
+          <span class="preset-swatch" style="background:#A08878"></span>
+          <span class="preset-label">gabby sunset</span>
+          <span class="preset-palette-strip"><span class="preset-palette-dot" style="background:#C4D8D0"></span><span class="preset-palette-dot" style="background:#4A6741"></span><span class="preset-palette-dot" style="background:#A08878"></span><span class="preset-palette-dot" style="background:#E08B76"></span></span>
+        </button>
+        <button class="preset-btn" onclick="applyPreset('anchoredEmber', this)">
+          <span class="preset-swatch" style="background:#C4602A"></span>
+          <span class="preset-label">anchored ember</span>
+          <span class="preset-palette-strip"><span class="preset-palette-dot" style="background:#FDF4E8"></span><span class="preset-palette-dot" style="background:#C4602A"></span><span class="preset-palette-dot" style="background:#E8903A"></span><span class="preset-palette-dot" style="background:#9A7055"></span></span>
+        </button>
+        <button class="preset-btn" onclick="applyPreset('siliconEmber', this)">
+          <span class="preset-swatch" style="background:#E8641A"></span>
+          <span class="preset-label">silicon ember</span>
+          <span class="preset-palette-strip"><span class="preset-palette-dot" style="background:#FAF7F2"></span><span class="preset-palette-dot" style="background:#E8641A"></span><span class="preset-palette-dot" style="background:#F5E8D8"></span><span class="preset-palette-dot" style="background:#1C2340"></span></span>
+        </button>
+      </div>
+      <div class="quick-mix">
+        <div class="quick-mix-label">feeling adventurous?</div>
+        <button class="mix-btn" onclick="shuffleColors()">🎲 random color mix</button>
+        <button class="mix-btn" onclick="saveAsPreset()" style="margin-top:6px">💾 save current as preset</button>
+      </div>
+    </div>
+
+    <!-- UNIFIED COLOR BAR -->
+    <div class="color-bar" id="color-bar">
+      <div class="color-bar-label">palette — click a swatch, then click an element below</div>
+      <div class="color-bar-row" id="cb-base-row">
+        <!-- Base palette swatches injected by JS -->
+      </div>
+      <div class="color-bar-label" style="margin-top:6px;">saved colors</div>
+      <div class="color-bar-row" id="cb-saved-row">
+        <!-- Saved colors injected by JS -->
+      </div>
+      <div class="color-bar-label" style="margin-top:6px;">preset colors</div>
+      <div class="color-bar-row" id="cb-preset-row">
+        <!-- Unique preset colors injected by JS -->
+      </div>
+      <div class="color-bar-hex-row" style="margin-top:8px;">
+        <input type="color" class="color-bar-picker" id="cb-picker" value="#808080" oninput="cbPickerChanged(this.value)">
+        <input type="text" class="color-bar-hex" id="cb-hex" placeholder="#hex" onkeydown="if(event.key==='Enter') cbApplyHex()">
+        <button class="color-bar-apply" onclick="cbApplyHex()">apply</button>
+        <button class="color-bar-reset" onclick="cbResetSelected()">reset</button>
+        <button class="cb-swatch-add" onclick="cbSaveColor()" title="save this color">+</button>
+      </div>
+    </div>
+
+    <!-- ELEMENT COLORS (generated by JS) -->
+    <div id="element-sections"></div>
+
+    <!-- FONTS -->
+    <div class="control-section">
+      <div class="section-title">fonts</div>
+      <div class="control-row"><span class="control-label">brand</span>
+        <select id="font-brand" onchange="setVar('--brand-font', this.value)">
+          <option value="'Caveat', cursive">Caveat</option>
+          <option value="'Playfair Display', serif">Playfair Display</option>
+          <option value="'Cormorant Garamond', serif" selected>Cormorant Garamond</option>
+          <option value="'Libre Baskerville', serif">Libre Baskerville</option>
+          <option value="'Lora', serif">Lora</option>
+          <option value="'Merriweather', serif">Merriweather</option>
+          <option value="'Source Serif 4', serif">Source Serif 4</option>
+          <option value="'Space Mono', monospace">Space Mono</option>
+          <option value="'DM Mono', monospace">DM Mono</option>
+          <option value="'Work Sans', sans-serif">Work Sans</option>
+          <option value="'Inter', sans-serif">Inter</option>
+          <option value="'Archivo', sans-serif">Archivo</option>
+          <option value="'Klee One', cursive">Klee One</option>
+        </select>
+      </div>
+      <div class="control-row"><span class="control-label">headings</span>
+        <select id="font-heading" onchange="setVar('--heading-font', this.value)">
+          <option value="'Space Mono', monospace">Space Mono</option>
+          <option value="'DM Mono', monospace">DM Mono</option>
+          <option value="'JetBrains Mono', monospace">JetBrains Mono</option>
+          <option value="'IBM Plex Mono', monospace">IBM Plex Mono</option>
+          <option value="'Playfair Display', serif" selected>Playfair Display</option>
+          <option value="'Cormorant Garamond', serif">Cormorant Garamond</option>
+          <option value="'Libre Baskerville', serif">Libre Baskerville</option>
+          <option value="'Lora', serif">Lora</option>
+          <option value="'Work Sans', sans-serif">Work Sans</option>
+          <option value="'Inter', sans-serif">Inter</option>
+          <option value="'Archivo', sans-serif">Archivo</option>
+          <option value="'Caveat', cursive">Caveat</option>
+        </select>
+      </div>
+      <div class="control-row"><span class="control-label">body</span>
+        <select id="font-body" onchange="setVar('--body-font', this.value)">
+          <option value="'Space Mono', monospace">Space Mono</option>
+          <option value="'DM Mono', monospace" selected>DM Mono</option>
+          <option value="'JetBrains Mono', monospace">JetBrains Mono</option>
+          <option value="'IBM Plex Mono', monospace">IBM Plex Mono</option>
+          <option value="'Inter', sans-serif">Inter</option>
+          <option value="'Work Sans', sans-serif">Work Sans</option>
+          <option value="'Archivo', sans-serif">Archivo</option>
+          <option value="'Lora', serif">Lora</option>
+          <option value="'Libre Baskerville', serif">Libre Baskerville</option>
+          <option value="'Klee One', cursive">Klee One</option>
+          <option value="'Cormorant Garamond', serif">Cormorant Garamond</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- SIZING -->
+    <div class="control-section">
+      <div class="section-title">sizing</div>
+      <div class="control-row"><span class="control-label">brand size</span><div class="control-right"><input type="range" id="size-brand" min="16" max="42" value="35" oninput="setVarPx('--brand-size', this.value)"><span class="range-value" id="val-brand">35px</span></div></div>
+      <div class="control-row"><span class="control-label">heading size</span><div class="control-right"><input type="range" id="size-heading" min="12" max="28" value="18" oninput="setVarPx('--heading-size', this.value)"><span class="range-value" id="val-heading">18px</span></div></div>
+      <div class="control-row"><span class="control-label">body size</span><div class="control-right"><input type="range" id="size-body" min="9" max="18" value="12" oninput="setVarPx('--body-size', this.value)"><span class="range-value" id="val-body">12px</span></div></div>
+      <div class="control-row"><span class="control-label">label size</span><div class="control-right"><input type="range" id="size-label" min="7" max="14" value="9" oninput="setVarPx('--label-size', this.value)"><span class="range-value" id="val-label">9px</span></div></div>
+      <div class="control-row"><span class="control-label">stat numbers</span><div class="control-right"><input type="range" id="size-stat" min="16" max="42" value="27" oninput="setVarPx('--stat-size', this.value)"><span class="range-value" id="val-stat">27px</span></div></div>
+      <div class="control-row"><span class="control-label">icon size</span><div class="control-right"><input type="range" id="size-icon" min="14" max="28" value="20" oninput="setVarPx('--icon-size', this.value)"><span class="range-value" id="val-icon">20px</span></div></div>
+      <div class="control-row"><span class="control-label">spacing</span><div class="control-right"><input type="range" id="size-spacing" min="4" max="24" value="12" oninput="setVarPx('--spacing', this.value)"><span class="range-value" id="val-spacing">12px</span></div></div>
+      <div class="control-row"><span class="control-label">card padding</span><div class="control-right"><input type="range" id="size-card-pad" min="8" max="28" value="16" oninput="setVarPx('--card-padding', this.value)"><span class="range-value" id="val-card-pad">16px</span></div></div>
+    </div>
+
+    <!-- STROKES & LINES -->
+    <div class="control-section">
+      <div class="section-title">strokes & lines</div>
+      <div class="control-row"><span class="control-label">border width</span><div class="control-right"><input type="range" id="stroke-border" min="0.5" max="4" step="0.5" value="1.5" oninput="setVar('--stroke-width', this.value); updateRangeLabel('stroke-border','val-stroke','px')"><span class="range-value" id="val-stroke">1.5px</span></div></div>
+      <div class="control-row"><span class="control-label">icon stroke</span><div class="control-right"><input type="range" id="stroke-icon" min="0.5" max="4" step="0.5" value="1.8" oninput="setVar('--icon-stroke', this.value); updateRangeLabel('stroke-icon','val-icon-stroke','px'); updateSVGStrokes()"><span class="range-value" id="val-icon-stroke">1.8px</span></div></div>
+    </div>
+
+    <!-- SHAPES -->
+    <div class="control-section">
+      <div class="section-title">shapes</div>
+      <div class="control-row"><span class="control-label">corners</span><div class="control-right"><input type="range" id="shape-radius" min="0" max="28" value="14" oninput="setVarPx('--border-radius', this.value)"><span class="range-value" id="val-radius">14px</span></div></div>
+      <div class="control-row"><span class="control-label">card corners</span><div class="control-right"><input type="range" id="shape-card-radius" min="0" max="32" value="16" oninput="setVarPx('--card-radius', this.value)"><span class="range-value" id="val-card-radius">16px</span></div></div>
+      <div class="control-row"><span class="control-label">checkboxes</span><div class="toggle-group"><button class="toggle-btn active" onclick="setCheckboxShape('50%', this)">circle</button><button class="toggle-btn" onclick="setCheckboxShape('4px', this)">square</button><button class="toggle-btn" onclick="setCheckboxShape('0px', this); rotateDiamonds(true)">diamond</button></div></div>
+      <div class="control-row"><span class="control-label">buttons</span><div class="toggle-group"><button class="toggle-btn" onclick="setButtonStyle('outlined', this)">outlined</button><button class="toggle-btn active" onclick="setButtonStyle('filled', this)">filled</button></div></div>
+      <div class="control-row"><span class="control-label">sky / clouds</span><div class="toggle-group"><button class="toggle-btn active" id="clouds-off-btn" onclick="toggleClouds(false, this)">off</button><button class="toggle-btn" id="clouds-on-btn" onclick="toggleClouds(true, this)">clouds</button></div></div>
+    </div>
+
+    <!-- CLOUD IMAGE BACKGROUNDS -->
+    <div class="control-section">
+      <div class="section-title">cloud backgrounds</div>
+      <div style="font-size:9px;color:#444;margin-bottom:6px;font-style:italic;">overlay a cloud image on background or cards</div>
+      <div class="cloud-target-toggle">
+        <button class="cloud-target-btn active" onclick="setCloudTarget('bg', this)">background</button>
+        <button class="cloud-target-btn" onclick="setCloudTarget('cards', this)">cards</button>
+        <button class="cloud-target-btn" onclick="setCloudTarget('both', this)">both</button>
+      </div>
+      <div class="cloud-thumbs" id="cloud-thumbs">
+        <div class="cloud-thumb cloud-thumb-none active" onclick="selectCloudImage(null, this)">none</div>
+      </div>
+      <div class="control-row" style="margin-top:10px;">
+        <span class="control-label">opacity</span>
+        <div class="control-right">
+          <input type="range" id="cloud-img-opacity" min="0" max="100" value="30" oninput="setCloudImageOpacity(this.value)">
+          <span class="range-value" id="val-cloud-opacity">30%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SAVED TEMPLATES -->
+    <div class="control-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div class="section-title" style="margin-bottom:0;">your templates</div>
+        <button class="save-template-btn" onclick="saveTemplate()" style="width:auto;margin:0;padding:6px 12px;">+ save</button>
+      </div>
+      <div class="saved-templates-scroll" id="saved-templates">
+        <div class="templates-empty">no saved templates yet</div>
+      </div>
+      <div class="templates-nav" id="templates-nav" style="display:none;">
+        <button class="templates-nav-btn" onclick="scrollTemplates(-1)">‹</button>
+        <span class="templates-count" id="templates-count"></span>
+        <button class="templates-nav-btn" onclick="scrollTemplates(1)">›</button>
+      </div>
+    </div>
+
+    <!-- EXPORT -->
+    <div class="control-section">
+      <div class="section-title">export</div>
+      <button class="export-btn app-btn" onclick="pushToApp()">push to pebble app</button>
+      <button class="export-btn claude-btn" onclick="exportForClaude()">copy design for claude</button>
+      <button class="export-btn" onclick="exportCSS()">copy css variables</button>
+    </div>
+  </div>
+
+  <!-- ============= PREVIEW ============= -->
+  <div class="preview-area">
+    <div class="phone-frame">
+      <div class="phone-screen" id="phone">
+        <div class="p-top-bar">
+          <div class="p-brand">pebble</div>
+          <div class="p-date-pill" id="date-pill">march 2026</div>
+        </div>
+        <div class="p-greeting">saturday, march 8</div>
+        <div class="p-subtext">good morning, gabby</div>
+        <div class="p-stats">
+          <div class="p-stat"><div class="p-stat-num">4</div><div class="p-stat-label">tasks</div></div>
+          <div class="p-stat"><div class="p-stat-num">1240</div><div class="p-stat-label">cals</div></div>
+          <div class="p-stat"><div class="p-stat-num">7</div><div class="p-stat-label">streak</div></div>
+        </div>
+        <div class="p-cards-view" id="cards-view">
+        <div class="p-section-label">today's pebbles</div>
+        <div class="p-card">
+          <div class="p-card-header"><div class="p-card-title">tasks</div><div class="p-card-meta">2 / 4</div></div>
+          <div class="p-task"><div class="p-checkbox done"></div><span class="p-task-text done">record demo video</span></div>
+          <div class="p-task"><div class="p-checkbox done"></div><span class="p-task-text done">polish landing page</span></div>
+          <div class="p-task"><div class="p-checkbox"></div><span class="p-task-text">submit to skool</span></div>
+          <div class="p-task"><div class="p-checkbox"></div><span class="p-task-text">grocery shopping</span></div>
+        </div>
+        <div class="p-card">
+          <div class="p-card-header"><div class="p-card-title">this week</div></div>
+          <div class="p-cal-strip">
+            <div class="p-cal-day"><span class="p-cal-day-name">thu</span><span class="p-cal-day-num">6</span></div>
+            <div class="p-cal-day"><span class="p-cal-day-name">fri</span><span class="p-cal-day-num">7</span></div>
+            <div class="p-cal-day today"><span class="p-cal-day-name">sat</span><span class="p-cal-day-num">8</span></div>
+            <div class="p-cal-day"><span class="p-cal-day-name">sun</span><span class="p-cal-day-num">9</span></div>
+            <div class="p-cal-day"><span class="p-cal-day-name">mon</span><span class="p-cal-day-num">10</span></div>
+            <div class="p-cal-day"><span class="p-cal-day-name">tue</span><span class="p-cal-day-num">11</span></div>
+          </div>
+        </div>
+        <div class="p-card">
+          <div class="p-card-header"><div class="p-card-title">meals today</div><div class="p-card-meta">1240 / 1800</div></div>
+          <div class="p-meal-row">
+            <div class="p-meal-chip"><div class="p-meal-label">brkfst</div><div class="p-meal-name">smoothie</div><div class="p-meal-cal">380 cal</div></div>
+            <div class="p-meal-chip"><div class="p-meal-label">lunch</div><div class="p-meal-name">buddha bowl</div><div class="p-meal-cal">520 cal</div></div>
+            <div class="p-meal-chip"><div class="p-meal-label">dinner</div><div class="p-meal-name">plan...</div><div class="p-meal-cal">—</div></div>
+          </div>
+          <div class="p-progress-wrap"><div class="p-progress-bg"><div class="p-progress-fill"></div></div><div class="p-progress-text">62%</div></div>
+        </div>
+        <div class="p-section-label">march tracker</div>
+        <div class="p-card">
+          <div class="p-tracker">
+            <div class="p-tracker-header"><div class="p-tracker-title">daily dots</div><div class="p-tracker-month">8 / 31</div></div>
+            <div class="p-tracker-row"><div class="p-tracker-label">workout</div><div class="p-tracker-dots"><div class="p-tracker-dot filled"></div><div class="p-tracker-dot filled"></div><div class="p-tracker-dot"></div><div class="p-tracker-dot filled"></div><div class="p-tracker-dot filled"></div><div class="p-tracker-dot"></div><div class="p-tracker-dot filled"></div><div class="p-tracker-dot today-dot"></div></div></div>
+            <div class="p-tracker-row"><div class="p-tracker-label">skincare</div><div class="p-tracker-dots"><div class="p-tracker-dot filled"></div><div class="p-tracker-dot filled"></div><div class="p-tracker-dot filled"></div><div class="p-tracker-dot filled"></div><div class="p-tracker-dot filled"></div><div class="p-tracker-dot filled"></div><div class="p-tracker-dot filled"></div><div class="p-tracker-dot today-dot"></div></div></div>
+            <div class="p-tracker-row"><div class="p-tracker-label">study</div><div class="p-tracker-dots"><div class="p-tracker-dot filled"></div><div class="p-tracker-dot"></div><div class="p-tracker-dot filled"></div><div class="p-tracker-dot filled"></div><div class="p-tracker-dot"></div><div class="p-tracker-dot filled"></div><div class="p-tracker-dot"></div><div class="p-tracker-dot today-dot"></div></div></div>
+            <div class="p-tracker-row"><div class="p-tracker-label">meals</div><div class="p-tracker-dots"><div class="p-tracker-dot filled"></div><div class="p-tracker-dot filled"></div><div class="p-tracker-dot half"></div><div class="p-tracker-dot filled"></div><div class="p-tracker-dot filled"></div><div class="p-tracker-dot filled"></div><div class="p-tracker-dot half"></div><div class="p-tracker-dot today-dot"></div></div></div>
+            <div class="p-tracker-row"><div class="p-tracker-label">water</div><div class="p-tracker-dots"><div class="p-tracker-dot filled"></div><div class="p-tracker-dot filled"></div><div class="p-tracker-dot filled"></div><div class="p-tracker-dot"></div><div class="p-tracker-dot filled"></div><div class="p-tracker-dot filled"></div><div class="p-tracker-dot filled"></div><div class="p-tracker-dot today-dot"></div></div></div>
+          </div>
+        </div>
+        </div>
+        <div class="p-chat-view" id="chat-view">
+          <div class="p-section-label">texts</div>
+          <div class="p-bubble-row received"><div><div class="p-bubble received">hey! are we still on for tonight?</div><div class="p-bubble-time">2:30 pm</div></div></div>
+          <div class="p-bubble-row sent"><div><div class="p-bubble sent">yes!! so excited</div><div class="p-bubble-time">2:32 pm</div></div></div>
+          <div class="p-bubble-row received"><div><div class="p-bubble received">perfect, i'll pick up snacks on the way. any requests?</div><div class="p-bubble-time">2:33 pm</div></div></div>
+          <div class="p-bubble-row sent"><div><div class="p-bubble sent">ooh yes please get those strawberry mochi from trader joe's</div><div class="p-bubble-time">2:34 pm</div></div></div>
+          <div class="p-bubble-row received"><div><div class="p-bubble received">done! see you at 7</div><div class="p-bubble-time">2:35 pm</div></div></div>
+          <div class="p-bubble-row sent"><div><div class="p-bubble sent">can't wait</div><div class="p-bubble-time">2:35 pm</div></div></div>
+          <div class="p-chat-input-preview">
+            <span style="flex:1;">message...</span>
+            <div class="p-chat-send-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M5 12 L19 12 M13 6 L19 12 L13 18" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          </div>
+        </div>
+        <div class="p-tab-bar" id="tab-bar">
+          <div class="p-tab active"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 10 L11 3 L19 10 L19 19 L3 19 Z" stroke="currentColor" stroke-width="1.8" fill="none" class="tab-icon-path"/></svg></div>
+          <div class="p-tab"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3" y="3" width="16" height="16" rx="3" stroke="currentColor" stroke-width="1.5" fill="none" class="tab-icon-path"/><path d="M3 8 L19 8" stroke="currentColor" stroke-width="1.2" class="tab-icon-path"/></svg></div>
+          <div class="p-tab"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="1.5" fill="none" class="tab-icon-path"/></svg></div>
+          <div class="p-tab"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M4 4 L18 4 M4 9 L14 9 M4 14 L16 14 M4 19 L10 19" stroke="currentColor" stroke-width="1.5" class="tab-icon-path"/></svg></div>
+          <div class="p-tab"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M5 17 L5 8 M10 17 L10 5 M15 17 L15 10" stroke="currentColor" stroke-width="2" class="tab-icon-path"/></svg></div>
+        </div>
+      </div>
+    </div>
+    <div class="preview-hint">change anything on the left — it updates live</div>
+    <div class="preview-mode-toggle">
+      <button class="preview-mode-btn active" onclick="setPreviewMode('cards', this)">cards</button>
+      <button class="preview-mode-btn" onclick="setPreviewMode('texting', this)">texting</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const root = document.documentElement;
+
+  // ============= ELEMENT COLOR SYSTEM =============
+  // Each group has items: { var, fallback (base palette var), label }
+  // Elements use CSS: color: var(--brand-color, var(--primary))
+  // If --brand-color is set inline, it wins. If not, falls back to --primary.
+  const elementGroups = [
+    { id: 'header', title: 'header', items: [
+      { var: '--brand-color', fallback: '--primary', label: 'brand' },
+      { var: '--greeting-color', fallback: '--primary', label: 'greeting' },
+      { var: '--subtext-color', fallback: '--muted', label: 'subtext' },
+      { var: '--pill-bg', fallback: '--primary', label: 'date pill bg' },
+      { var: '--pill-color', fallback: '--bg', label: 'date pill text' },
+    ]},
+    { id: 'cards', title: 'cards', items: [
+      { var: '--card-border-color', fallback: null, label: 'border color', defaultVal: 'transparent' },
+      { var: '--card-title-color', fallback: '--muted', label: 'title' },
+      { var: '--card-meta-color', fallback: '--muted', label: 'meta' },
+    ], hasSlider: { var: '--card-border-width', label: 'border width', min: 0, max: 4, step: 0.5, val: 0, unit: 'px' }},
+    { id: 'tasks', title: 'tasks', items: [
+      { var: '--task-color', fallback: '--text', label: 'text' },
+      { var: '--task-done-color', fallback: '--muted', label: 'done text' },
+      { var: '--cb-border', fallback: '--primary', label: 'checkbox' },
+      { var: '--cb-fill', fallback: '--primary', label: 'checkbox fill' },
+    ]},
+    { id: 'stats', title: 'stats', items: [
+      { var: '--stat-num-color', fallback: '--primary', label: 'numbers' },
+      { var: '--stat-label-color', fallback: '--muted', label: 'labels' },
+      { var: '--section-label-color', fallback: '--muted', label: 'section labels' },
+    ]},
+    { id: 'calendar', title: 'calendar', items: [
+      { var: '--cal-num-color', fallback: '--primary', label: 'numbers' },
+      { var: '--cal-name-color', fallback: '--muted', label: 'day names' },
+      { var: '--today-bg', fallback: '--primary', label: 'today bg' },
+    ]},
+    { id: 'meals', title: 'meals & progress', items: [
+      { var: '--meal-name-color', fallback: '--text', label: 'meal names' },
+      { var: '--meal-label-color', fallback: '--muted', label: 'meal labels' },
+      { var: '--chip-bg', fallback: '--accent', label: 'chip bg' },
+      { var: '--meal-cal-color', fallback: '--muted', label: 'calories' },
+      { var: '--progress-bar', fallback: '--primary', label: 'progress bar' },
+      { var: '--progress-track', fallback: '--accent', label: 'progress track' },
+      { var: '--progress-text-color', fallback: '--muted', label: 'progress %' },
+    ]},
+    { id: 'tracker', title: 'tracker', items: [
+      { var: '--dot-border', fallback: '--primary', label: 'dot border' },
+      { var: '--dot-filled', fallback: '--primary', label: 'dot fill' },
+      { var: '--tracker-label-color', fallback: '--muted', label: 'labels' },
+      { var: '--tracker-title-color', fallback: '--muted', label: 'title' },
+    ]},
+    { id: 'texting', title: 'texting', items: [
+      { var: '--bubble-sent-bg', fallback: '--primary', label: 'sent bubble' },
+      { var: '--bubble-sent-color', fallback: '--bg', label: 'sent text' },
+      { var: '--bubble-recv-bg', fallback: '--card-bg', label: 'received bubble' },
+      { var: '--bubble-recv-color', fallback: '--text', label: 'received text' },
+    ]},
+  ];
+
+  // Collect all element override var names for tracking
+  const allElementVars = [];
+  elementGroups.forEach(g => {
+    g.items.forEach(item => allElementVars.push(item.var));
+    if (g.hasSlider) allElementVars.push(g.hasSlider.var);
+  });
+
+  // Convert any CSS color to hex
+  function colorToHex(val) {
+    if (!val) return '#808080';
+    val = val.trim();
+    if (/^#[0-9a-f]{6}$/i.test(val)) return val;
+    if (/^#[0-9a-f]{3}$/i.test(val)) {
+      return '#' + val[1]+val[1]+val[2]+val[2]+val[3]+val[3];
+    }
+    const m = val.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+    if (m) return '#' + [m[1],m[2],m[3]].map(n => (+n).toString(16).padStart(2,'0')).join('');
+    if (val === 'transparent') return '#000000';
+    // Use a temp element to resolve named colors
+    const d = document.createElement('div');
+    d.style.color = val; document.body.appendChild(d);
+    const rgb = getComputedStyle(d).color; document.body.removeChild(d);
+    const m2 = rgb.match(/\d+/g);
+    if (m2) return '#' + m2.slice(0,3).map(n => (+n).toString(16).padStart(2,'0')).join('');
+    return '#808080';
+  }
+
+  // Get the effective color for an element variable
+  function getEffectiveColor(varName, fallbackVar, defaultVal) {
+    const override = root.style.getPropertyValue(varName).trim();
+    if (override) return override;
+    if (fallbackVar) return getComputedStyle(root).getPropertyValue(fallbackVar).trim();
+    return defaultVal || '#808080';
+  }
+
+  // Build element color sections dynamically (simplified: label + single swatch)
+  function buildElementSections() {
+    const container = document.getElementById('element-sections');
+    for (const group of elementGroups) {
+      const section = document.createElement('div');
+      section.className = 'el-group';
+
+      const header = document.createElement('div');
+      header.className = 'el-group-header';
+      header.innerHTML = `<span class="arrow">▶</span><span class="el-group-title">${group.title}</span>`;
+      header.onclick = function() {
+        this.classList.toggle('open');
+        body.classList.toggle('open');
+      };
+
+      const body = document.createElement('div');
+      body.className = 'el-group-body';
+
+      for (const item of group.items) {
+        const effective = getEffectiveColor(item.var, item.fallback, item.defaultVal);
+        const hex = colorToHex(effective);
+        const isOverridden = root.style.getPropertyValue(item.var).trim() !== '';
+
+        const row = document.createElement('div');
+        row.className = 'el-row' + (isOverridden ? ' overridden' : '');
+        row.dataset.var = item.var;
+        row.dataset.fallback = item.fallback || '';
+        row.dataset.defaultVal = item.defaultVal || '';
+        row.innerHTML = `
+          <div class="el-swatch" style="background:${hex}" title="click to select"></div>
+          <span class="el-label">${item.label}</span>
+        `;
+        row.onclick = function() { selectElRow(this); };
+        body.appendChild(row);
+      }
+
+      // Add slider if group has one
+      if (group.hasSlider) {
+        const s = group.hasSlider;
+        const sliderRow = document.createElement('div');
+        sliderRow.className = 'el-slider-row';
+        sliderRow.innerHTML = `
+          <span class="el-label">${s.label}</span>
+          <input type="range" min="${s.min}" max="${s.max}" step="${s.step}" value="${s.val}"
+            oninput="setVar('${s.var}', this.value + '${s.unit}'); this.nextElementSibling.textContent = this.value + '${s.unit}'">
+          <span class="range-value">${s.val}${s.unit}</span>
+        `;
+        body.appendChild(sliderRow);
+      }
+
+      section.appendChild(header);
+      section.appendChild(body);
+      container.appendChild(section);
+    }
+  }
+
+  // Select an element row — syncs color bar picker/hex to its color
+  function selectElRow(row) {
+    document.querySelectorAll('.el-row.selected').forEach(r => r.classList.remove('selected'));
+    row.classList.add('selected');
+    selectedElRow = row;
+    const effective = getEffectiveColor(row.dataset.var, row.dataset.fallback || null, row.dataset.defaultVal);
+    const hex = colorToHex(effective);
+    document.getElementById('cb-picker').value = hex;
+    document.getElementById('cb-hex').value = hex.toUpperCase();
+  }
+
+  // Apply color to selected element
+  function applyColorToSelected(hex) {
+    if (!selectedElRow) return;
+    root.style.setProperty(selectedElRow.dataset.var, hex);
+    selectedElRow.classList.add('overridden');
+    const swatch = selectedElRow.querySelector('.el-swatch');
+    if (swatch) swatch.style.background = hex;
+    document.getElementById('cb-picker').value = hex;
+    document.getElementById('cb-hex').value = hex.toUpperCase();
+    syncElementPickers();
+    saveState();
+  }
+
+  // Color bar functions
+  function cbPickerChanged(val) {
+    document.getElementById('cb-hex').value = val.toUpperCase();
+    if (selectedElRow) applyColorToSelected(val);
+  }
+  function cbApplyHex() {
+    const hex = document.getElementById('cb-hex').value.trim();
+    if (!/^#[0-9A-Fa-f]{3,6}$/.test(hex)) return;
+    const full = hex.length === 4 ? '#' + hex[1]+hex[1]+hex[2]+hex[2]+hex[3]+hex[3] : hex;
+    document.getElementById('cb-picker').value = full;
+    if (selectedElRow) applyColorToSelected(full);
+  }
+  function cbResetSelected() {
+    if (!selectedElRow) return;
+    root.style.removeProperty(selectedElRow.dataset.var);
+    selectedElRow.classList.remove('overridden');
+    const effective = getEffectiveColor(selectedElRow.dataset.var, selectedElRow.dataset.fallback || null, selectedElRow.dataset.defaultVal);
+    const hex = colorToHex(effective);
+    const swatch = selectedElRow.querySelector('.el-swatch');
+    if (swatch) swatch.style.background = hex;
+    document.getElementById('cb-picker').value = hex;
+    document.getElementById('cb-hex').value = hex.toUpperCase();
+    saveState();
+  }
+  function cbSaveColor() {
+    const hex = document.getElementById('cb-hex').value.trim().toUpperCase();
+    if (!/^#[0-9A-Fa-f]{6}$/.test(hex)) return;
+    const saved = getSavedColors();
+    if (!saved.includes(hex)) {
+      saved.push(hex);
+      setSavedColors(saved);
+      renderColorBar();
+    }
+  }
+
+  function clearAllElementOverrides() {
+    for (const v of allElementVars) {
+      root.style.removeProperty(v);
+    }
+    // Reset card border width
+    root.style.setProperty('--card-border-width', '0px');
+    root.style.setProperty('--card-border-color', 'transparent');
+  }
+
+  // Sync element swatches to show current effective colors
+  function syncElementPickers() {
+    document.querySelectorAll('.el-row').forEach(row => {
+      const effective = getEffectiveColor(row.dataset.var, row.dataset.fallback || null, row.dataset.defaultVal);
+      const hex = colorToHex(effective);
+      const swatch = row.querySelector('.el-swatch');
+      if (swatch) swatch.style.background = hex;
+      if (!row.classList.contains('overridden')) {
+        const override = root.style.getPropertyValue(row.dataset.var).trim();
+        if (override) row.classList.add('overridden');
+        else row.classList.remove('overridden');
+      }
+    });
+  }
+
+  // ============= BASE PALETTE FUNCTIONS =============
+  function setBaseColor(prop, value) {
+    root.style.setProperty(prop, value);
+    updateTabColors();
+    syncElementPickers();
+    renderColorBar();
+    saveState();
+  }
+
+  // ============= COLOR BAR RENDERING =============
+  const basePaletteVars = [
+    { var: '--bg', label: 'background' },
+    { var: '--primary', label: 'primary' },
+    { var: '--accent', label: 'accent' },
+    { var: '--text', label: 'text' },
+    { var: '--muted', label: 'muted' },
+    { var: '--card-bg', label: 'card bg' },
+    { var: '--tab-active-bg', label: 'tab bg' },
+  ];
+
+  function renderColorBar() {
+    // Base palette row
+    const baseRow = document.getElementById('cb-base-row');
+    baseRow.innerHTML = '';
+    for (const bp of basePaletteVars) {
+      const val = root.style.getPropertyValue(bp.var).trim() || getComputedStyle(root).getPropertyValue(bp.var).trim();
+      const hex = colorToHex(val);
+      const sw = document.createElement('div');
+      sw.className = 'cb-swatch';
+      sw.style.background = val;
+      sw.title = bp.label + ': ' + hex;
+      sw.innerHTML = '<span class="cb-tip">' + bp.label + '</span>';
+      sw.onclick = (function(h) { return function() {
+        if (selectedElRow) applyColorToSelected(h);
+      }; })(hex);
+      // Double-click to edit base color directly
+      sw.ondblclick = (function(v, h) { return function(e) {
+        e.stopPropagation();
+        const newColor = prompt('Edit ' + v + ':', h);
+        if (newColor) { setBaseColor(v, newColor); }
+      }; })(bp.var, hex);
+      baseRow.appendChild(sw);
+    }
+
+    // Saved colors row
+    const savedRow = document.getElementById('cb-saved-row');
+    savedRow.innerHTML = '';
+    const savedColors = getSavedColors();
+    for (const c of savedColors) {
+      const sw = document.createElement('div');
+      sw.className = 'cb-swatch';
+      sw.style.background = c;
+      sw.title = c;
+      sw.innerHTML = '<span class="cb-tip">' + c + '</span>';
+      sw.onclick = (function(h) { return function() {
+        if (selectedElRow) applyColorToSelected(h);
+        document.getElementById('cb-picker').value = h;
+        document.getElementById('cb-hex').value = h;
+      }; })(c);
+      // Right-click to remove saved color
+      sw.oncontextmenu = (function(color) { return function(e) {
+        e.preventDefault();
+        if (confirm('Remove saved color ' + color + '?')) {
+          const s = getSavedColors().filter(x => x !== color);
+          setSavedColors(s);
+          renderColorBar();
+        }
+      }; })(c);
+      savedRow.appendChild(sw);
+    }
+    const addBtn = document.createElement('div');
+    addBtn.className = 'cb-swatch-add';
+    addBtn.textContent = '+';
+    addBtn.title = 'save current color';
+    addBtn.onclick = cbSaveColor;
+    savedRow.appendChild(addBtn);
+
+    // Preset colors row
+    const presetRow = document.getElementById('cb-preset-row');
+    presetRow.innerHTML = '';
+    const uniqueColors = getUniquePresetColors();
+    for (const c of uniqueColors.slice(0, 30)) {
+      const sw = document.createElement('div');
+      sw.className = 'cb-swatch';
+      sw.style.background = c;
+      sw.title = c;
+      sw.style.width = '18px';
+      sw.style.height = '18px';
+      sw.innerHTML = '<span class="cb-tip">' + c + '</span>';
+      sw.onclick = (function(h) { return function() {
+        if (selectedElRow) applyColorToSelected(h);
+        document.getElementById('cb-picker').value = h;
+        document.getElementById('cb-hex').value = h;
+      }; })(c);
+      presetRow.appendChild(sw);
+    }
+  }
+
+  // ============= CORE FUNCTIONS =============
+  function setVar(prop, value) {
+    root.style.setProperty(prop, value);
+    updateTabColors();
+    saveState();
+  }
+
+  function setVarPx(prop, value) {
+    root.style.setProperty(prop, value + 'px');
+    const mapping = {
+      '--brand-size': 'val-brand', '--heading-size': 'val-heading',
+      '--body-size': 'val-body', '--label-size': 'val-label',
+      '--stat-size': 'val-stat', '--icon-size': 'val-icon',
+      '--spacing': 'val-spacing', '--card-padding': 'val-card-pad',
+      '--border-radius': 'val-radius', '--card-radius': 'val-card-radius',
+    };
+    if (mapping[prop]) document.getElementById(mapping[prop]).textContent = value + 'px';
+    saveState();
+  }
+
+  function updateRangeLabel(inputId, labelId, suffix) {
+    document.getElementById(labelId).textContent = document.getElementById(inputId).value + suffix;
+  }
+
+  function updateTabColors() {
+    const muted = getComputedStyle(root).getPropertyValue('--muted').trim();
+    const bg = getComputedStyle(root).getPropertyValue('--bg').trim();
+    document.querySelectorAll('.p-tab').forEach(tab => {
+      tab.style.color = tab.classList.contains('active') ? bg : muted;
+    });
+  }
+
+  let isDiamond = false;
+  function setCheckboxShape(radius, btn) {
+    isDiamond = false;
+    root.style.setProperty('--checkbox-shape', radius);
+    document.querySelectorAll('.p-checkbox').forEach(cb => cb.style.transform = 'none');
+    btn.parentElement.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    saveState();
+  }
+  function rotateDiamonds(enable) {
+    isDiamond = enable;
+    document.querySelectorAll('.p-checkbox').forEach(cb => cb.style.transform = enable ? 'rotate(45deg)' : 'none');
+  }
+
+  function setPreviewMode(mode, btn) {
+    const cardsView = document.getElementById('cards-view');
+    const chatView = document.getElementById('chat-view');
+    if (mode === 'texting') {
+      cardsView.classList.add('hidden');
+      chatView.classList.add('active');
+    } else {
+      cardsView.classList.remove('hidden');
+      chatView.classList.remove('active');
+    }
+    btn.parentElement.querySelectorAll('.preview-mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  function setButtonStyle(style, btn) {
+    root.style.setProperty('--btn-fill', 'transparent');
+    root.style.setProperty('--btn-fill-done', style === 'outlined' ? 'transparent' : 'var(--primary)');
+    btn.parentElement.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    saveState();
+  }
+
+  function updateSVGStrokes() {
+    const sw = root.style.getPropertyValue('--icon-stroke') || '1.8';
+    document.querySelectorAll('.tab-icon-path').forEach(p => p.setAttribute('stroke-width', sw));
+  }
+
+  // ============= PRESETS =============
+  const presets = {
+    blueInk: {
+      '--bg': '#E8E6E3', '--primary': '#1A00FF', '--accent': '#D8D2E8',
+      '--text': '#1A00FF', '--muted': '#8080BB', '--card-bg': '#ffffff', '--tab-active-bg': '#1A00FF',
+      '--brand-font': "'Caveat', cursive", '--heading-font': "'Space Mono', monospace", '--body-font': "'Space Mono', monospace",
+      '--brand-size': '28px', '--heading-size': '18px', '--body-size': '12px', '--label-size': '9px', '--stat-size': '28px', '--icon-size': '20px',
+      '--stroke-width': '1.5', '--icon-stroke': '1.8',
+      '--border-radius': '14px', '--card-radius': '20px', '--card-padding': '16px', '--spacing': '12px', '--checkbox-shape': '50%',
+    },
+    darkInk: {
+      '--bg': '#0A0033', '--primary': '#F5F3F0', '--accent': '#150066',
+      '--text': '#D8D2E8', '--muted': '#6060AA', '--card-bg': '#150066', '--tab-active-bg': '#F5F3F0',
+      '--brand-font': "'Caveat', cursive", '--heading-font': "'Space Mono', monospace", '--body-font': "'Space Mono', monospace",
+      '--brand-size': '28px', '--heading-size': '18px', '--body-size': '12px', '--label-size': '9px', '--stat-size': '28px', '--icon-size': '20px',
+      '--stroke-width': '1.5', '--icon-stroke': '1.8',
+      '--border-radius': '14px', '--card-radius': '20px', '--card-padding': '16px', '--spacing': '12px', '--checkbox-shape': '50%',
+    },
+    ghibli: {
+      '--bg': '#EDE8D8', '--primary': '#4A6741', '--accent': '#E8F0E4',
+      '--text': '#4A6741', '--muted': '#8B7355', '--card-bg': 'rgba(255,255,250,0.85)', '--tab-active-bg': '#4A6741',
+      '--brand-font': "'Caveat', cursive", '--heading-font': "'Space Mono', monospace", '--body-font': "'Klee One', cursive",
+      '--brand-size': '28px', '--heading-size': '18px', '--body-size': '12px', '--label-size': '9px', '--stat-size': '28px', '--icon-size': '20px',
+      '--stroke-width': '2', '--icon-stroke': '1.8',
+      '--border-radius': '16px', '--card-radius': '20px', '--card-padding': '16px', '--spacing': '12px', '--checkbox-shape': '50%',
+    },
+    sageSalmon: {
+      '--bg': '#C4D8D0', '--primary': '#E08B76', '--accent': 'rgba(255,255,255,0.35)',
+      '--text': '#3A5E50', '--muted': '#7A9E90', '--card-bg': 'rgba(255,255,255,0.35)', '--tab-active-bg': '#E08B76',
+      '--brand-font': "'Playfair Display', serif", '--heading-font': "'Playfair Display', serif", '--body-font': "'Space Mono', monospace",
+      '--brand-size': '24px', '--heading-size': '18px', '--body-size': '12px', '--label-size': '9px', '--stat-size': '28px', '--icon-size': '20px',
+      '--stroke-width': '1.5', '--icon-stroke': '1.8',
+      '--border-radius': '14px', '--card-radius': '16px', '--card-padding': '16px', '--spacing': '12px', '--checkbox-shape': '50%',
+    },
+    blueprint: {
+      '--bg': '#FAFAFA', '--primary': '#6B7CFF', '--accent': '#F0F2FF',
+      '--text': '#4A4E80', '--muted': '#B0B8FF', '--card-bg': '#ffffff', '--tab-active-bg': '#F0F2FF',
+      '--brand-font': "'DM Mono', monospace", '--heading-font': "'Space Mono', monospace", '--body-font': "'Space Mono', monospace",
+      '--brand-size': '16px', '--heading-size': '18px', '--body-size': '11px', '--label-size': '8px', '--stat-size': '24px', '--icon-size': '18px',
+      '--stroke-width': '1.5', '--icon-stroke': '1.5',
+      '--border-radius': '8px', '--card-radius': '12px', '--card-padding': '16px', '--spacing': '10px', '--checkbox-shape': '4px',
+    },
+    vintage: {
+      '--bg': '#F5F0E6', '--primary': '#4A5E8A', '--accent': '#EDE6D8',
+      '--text': '#3A3A3A', '--muted': '#A09078', '--card-bg': 'rgba(255,252,245,0.7)', '--tab-active-bg': 'rgba(74,94,138,0.1)',
+      '--brand-font': "'Cormorant Garamond', serif", '--heading-font': "'Cormorant Garamond', serif", '--body-font': "'DM Mono', monospace",
+      '--brand-size': '36px', '--heading-size': '16px', '--body-size': '12px', '--label-size': '8px', '--stat-size': '26px', '--icon-size': '18px',
+      '--stroke-width': '1.5', '--icon-stroke': '1.5',
+      '--border-radius': '2px', '--card-radius': '2px', '--card-padding': '14px', '--spacing': '10px', '--checkbox-shape': '0px',
+    },
+    gabbyA: {
+      '--bg': '#F5F0E6', '--primary': '#4A6741', '--accent': '#E8F0E4',
+      '--text': '#E08B76', '--muted': '#8B7355', '--card-bg': 'rgba(255,255,250,0.85)', '--tab-active-bg': '#4A6741',
+      '--brand-font': "'Cormorant Garamond', serif", '--heading-font': "'Playfair Display', serif", '--body-font': "'DM Mono', monospace",
+      '--brand-size': '35px', '--heading-size': '18px', '--body-size': '12px', '--label-size': '9px', '--stat-size': '27px', '--icon-size': '20px',
+      '--stroke-width': '1.5', '--icon-stroke': '1.8',
+      '--border-radius': '14px', '--card-radius': '16px', '--card-padding': '16px', '--spacing': '12px', '--checkbox-shape': '50%',
+      _clouds: true, _cloudSky: '#89AAB5', _cloudLight: 'rgba(232,240,228,0.8)', _cloudMid: 'rgba(196,216,208,0.5)',
+    },
+    gabbyB: {
+      '--bg': '#C4D8D0', '--primary': '#4A6741', '--accent': '#EDE6D8',
+      '--text': '#E08B76', '--muted': '#A09078', '--card-bg': 'rgba(255,252,245,0.7)', '--tab-active-bg': '#F5F3F0',
+      '--brand-font': "'Playfair Display', serif", '--heading-font': "'Archivo', sans-serif", '--body-font': "'Klee One', cursive",
+      '--brand-size': '28px', '--heading-size': '17px', '--body-size': '13px', '--label-size': '9px', '--stat-size': '28px', '--icon-size': '20px',
+      '--stroke-width': '1.5', '--icon-stroke': '1.8',
+      '--border-radius': '14px', '--card-radius': '20px', '--card-padding': '16px', '--spacing': '12px', '--checkbox-shape': '50%',
+    },
+    manus: {
+      '--bg': '#FAFAFA', '--primary': '#1A1A1A', '--accent': '#F0F0F0',
+      '--text': '#333333', '--muted': '#999999', '--card-bg': '#ffffff', '--tab-active-bg': '#1A1A1A',
+      '--brand-font': "'Playfair Display', serif", '--heading-font': "'Playfair Display', serif", '--body-font': "'Inter', sans-serif",
+      '--brand-size': '32px', '--heading-size': '17px', '--body-size': '12px', '--label-size': '9px', '--stat-size': '28px', '--icon-size': '20px',
+      '--stroke-width': '1', '--icon-stroke': '1.5',
+      '--border-radius': '16px', '--card-radius': '20px', '--card-padding': '16px', '--spacing': '12px', '--checkbox-shape': '50%',
+      _clouds: true, _cloudSky: '#6BA3D6', _cloudLight: 'rgba(255,255,255,0.75)', _cloudMid: 'rgba(240,240,250,0.5)',
+    },
+    gabbyCloud: {
+      '--bg': '#C4D8D0', '--primary': '#4A6741', '--accent': '#E8F0E4',
+      '--text': '#E08B76', '--muted': '#8B7355', '--card-bg': 'rgba(255,255,250,0.88)', '--tab-active-bg': '#4A6741',
+      '--brand-font': "'Cormorant Garamond', serif", '--heading-font': "'Playfair Display', serif", '--body-font': "'DM Mono', monospace",
+      '--brand-size': '35px', '--heading-size': '18px', '--body-size': '12px', '--label-size': '9px', '--stat-size': '27px', '--icon-size': '20px',
+      '--stroke-width': '1.5', '--icon-stroke': '1.8',
+      '--border-radius': '14px', '--card-radius': '16px', '--card-padding': '16px', '--spacing': '12px', '--checkbox-shape': '50%',
+      _clouds: true, _cloudSky: '#89AAB5', _cloudLight: 'rgba(232,240,228,0.8)', _cloudMid: 'rgba(196,216,208,0.5)',
+    },
+    gabbySunset: {
+      '--bg': '#C4D8D0', '--primary': '#4A6741', '--accent': '#EDE6D8',
+      '--text': '#E08B76', '--muted': '#8B7355', '--card-bg': 'rgba(255,252,245,0.85)', '--tab-active-bg': '#4A6741',
+      '--brand-font': "'Cormorant Garamond', serif", '--heading-font': "'Playfair Display', serif", '--body-font': "'DM Mono', monospace",
+      '--brand-size': '35px', '--heading-size': '18px', '--body-size': '12px', '--label-size': '9px', '--stat-size': '27px', '--icon-size': '20px',
+      '--stroke-width': '1.5', '--icon-stroke': '1.8',
+      '--border-radius': '14px', '--card-radius': '16px', '--card-padding': '16px', '--spacing': '12px', '--checkbox-shape': '50%',
+      _clouds: true, _cloudSky: '#A08878', _cloudLight: 'rgba(224,139,118,0.55)', _cloudMid: 'rgba(180,140,120,0.4)',
+    },
+    anchoredEmber: {
+      '--bg': '#FDF4E8', '--primary': '#C4602A', '--accent': '#E8903A',
+      '--text': '#2E1C0E', '--muted': '#9A7055', '--card-bg': 'rgba(255,248,238,0.92)', '--tab-active-bg': '#C4602A',
+      '--brand-font': "'Instrument Serif', serif", '--heading-font': "'Instrument Serif', serif", '--body-font': "'DM Sans', sans-serif",
+      '--brand-size': '28px', '--heading-size': '17px', '--body-size': '13px', '--label-size': '9px', '--stat-size': '26px', '--icon-size': '20px',
+      '--stroke-width': '1.5', '--icon-stroke': '1.8',
+      '--border-radius': '16px', '--card-radius': '20px', '--card-padding': '16px', '--spacing': '12px', '--checkbox-shape': '6px',
+      _clouds: true, _cloudSky: '#C8723A', _cloudLight: 'rgba(240,150,80,0.45)', _cloudMid: 'rgba(200,110,60,0.3)',
+    },
+    siliconEmber: {
+      '--bg': '#FAF7F2', '--primary': '#E8641A', '--accent': '#F5E8D8',
+      '--text': '#1C2340', '--muted': '#A09080', '--card-bg': 'rgba(255,252,248,0.95)', '--tab-active-bg': '#E8641A',
+      '--brand-font': "'Syne', sans-serif", '--heading-font': "'DM Sans', sans-serif", '--body-font': "'DM Sans', sans-serif",
+      '--brand-size': '24px', '--heading-size': '16px', '--body-size': '12px', '--label-size': '8px', '--stat-size': '28px', '--icon-size': '20px',
+      '--stroke-width': '1', '--icon-stroke': '1.5',
+      '--border-radius': '12px', '--card-radius': '16px', '--card-padding': '16px', '--spacing': '12px', '--checkbox-shape': '4px',
+      _clouds: true, _cloudSky: '#E8C090', _cloudLight: 'rgba(248,230,200,0.6)', _cloudMid: 'rgba(232,180,120,0.35)',
+    },
+  };
+
+  // ============= MUTABLE PRESET SYSTEM =============
+  function getCustomPresets() { try { return JSON.parse(localStorage.getItem('pebble-custom-presets') || '{}'); } catch { return {}; } }
+  function setCustomPresets(obj) { localStorage.setItem('pebble-custom-presets', JSON.stringify(obj)); }
+  function getDeletedPresetNames() { try { return JSON.parse(localStorage.getItem('pebble-deleted-presets') || '[]'); } catch { return []; } }
+  function setDeletedPresetNames(arr) { localStorage.setItem('pebble-deleted-presets', JSON.stringify(arr)); }
+  function getPresetDisplayNames() { try { return JSON.parse(localStorage.getItem('pebble-preset-names') || '{}'); } catch { return {}; } }
+  function setPresetDisplayNames(obj) { localStorage.setItem('pebble-preset-names', JSON.stringify(obj)); }
+
+  function getPresetDisplayName(key) {
+    const names = getPresetDisplayNames();
+    if (names[key]) return names[key];
+    return key.replace(/([A-Z])/g, ' $1').toLowerCase().trim();
+  }
+
+  function getAllPresets() {
+    const deleted = getDeletedPresetNames();
+    const custom = getCustomPresets();
+    const all = {};
+    for (const [name, data] of Object.entries(presets)) {
+      if (!deleted.includes(name)) all[name] = data;
+    }
+    for (const [name, data] of Object.entries(custom)) {
+      all[name] = data;
+    }
+    return all;
+  }
+
+  function saveAsPreset() {
+    const name = prompt('Preset name:');
+    if (!name) return;
+    const key = name.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const state = {};
+    const allVars = ['--bg','--primary','--accent','--text','--muted','--card-bg','--tab-active-bg',
+      '--brand-font','--heading-font','--body-font',
+      '--brand-size','--heading-size','--body-size','--label-size','--stat-size','--icon-size',
+      '--stroke-width','--icon-stroke','--border-radius','--card-radius','--card-padding','--spacing','--checkbox-shape'];
+    for (const v of allVars) {
+      const val = getComputedStyle(root).getPropertyValue(v).trim();
+      if (val) state[v] = val;
+    }
+    if (cloudsEnabled) {
+      state._clouds = true;
+      state._cloudSky = getComputedStyle(root).getPropertyValue('--cloud-sky').trim();
+      state._cloudLight = getComputedStyle(root).getPropertyValue('--cloud-light').trim();
+      state._cloudMid = getComputedStyle(root).getPropertyValue('--cloud-mid').trim();
+    }
+    const custom = getCustomPresets();
+    custom[key] = state;
+    setCustomPresets(custom);
+    const names = getPresetDisplayNames();
+    names[key] = name;
+    setPresetDisplayNames(names);
+    renderPresets();
+    refreshPaletteSwatches();
+    alert('Preset "' + name + '" saved!');
+  }
+
+  function deletePreset(name) {
+    if (!confirm('Delete this preset?')) return;
+    if (name in presets) {
+      const deleted = getDeletedPresetNames();
+      if (!deleted.includes(name)) deleted.push(name);
+      setDeletedPresetNames(deleted);
+    }
+    const custom = getCustomPresets();
+    if (name in custom) {
+      delete custom[name];
+      setCustomPresets(custom);
+    }
+    renderPresets();
+    refreshPaletteSwatches();
+  }
+
+  function renamePreset(key, newName) {
+    const names = getPresetDisplayNames();
+    names[key] = newName.trim();
+    setPresetDisplayNames(names);
+  }
+
+  function renderPresets() {
+    const grid = document.getElementById('presets-grid');
+    if (!grid) return;
+    const all = getAllPresets();
+    grid.innerHTML = '';
+    for (const [name, p] of Object.entries(all)) {
+      const colors = ['--bg','--primary','--accent','--text','--muted'].map(function(v){ return p[v]; }).filter(Boolean);
+      const displayName = getPresetDisplayName(name);
+      const div = document.createElement('div');
+      div.className = 'preset-btn';
+      div.dataset.preset = name;
+      div.style.position = 'relative';
+      div.onclick = (function(n) {
+        return function(e) {
+          if (e.target.closest('.preset-delete-btn') || e.target.closest('.preset-name-input')) return;
+          applyPreset(n, this);
+          document.querySelectorAll('.preset-btn').forEach(function(b){ b.classList.remove('active'); });
+          this.classList.add('active');
+        };
+      })(name);
+      var escapedName = name.replace(/'/g, "\\'");
+      div.innerHTML =
+        '<div class="preset-delete-btn" onclick="event.stopPropagation(); deletePreset(\'' + escapedName + '\')" title="delete">&times;</div>' +
+        '<span class="preset-swatch" style="background:' + (p['--primary'] || '#888') + '"></span>' +
+        '<input type="text" class="preset-name-input" value="' + displayName + '" ' +
+          'onclick="event.stopPropagation(); this.select()" ' +
+          'onchange="renamePreset(\'' + escapedName + '\', this.value)" ' +
+          'onkeydown="if(event.key===\'Enter\'){this.blur();}">' +
+        '<span class="preset-palette-strip">' + colors.slice(0,4).map(function(c) {
+          return '<span class="preset-palette-dot" style="background:' + c + '"></span>';
+        }).join('') + '</span>';
+      grid.appendChild(div);
+    }
+  }
+
+  let presetMode = 'full';
+
+  function setPresetMode(mode, btn) {
+    presetMode = mode;
+    btn.parentElement.querySelectorAll('.preset-mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('preset-mode-hint').textContent =
+      mode === 'full' ? 'loads everything — fonts, sizes, colors' : 'keeps your fonts & sizes, swaps just colors';
+  }
+
+  function applyPreset(name, btnEl) {
+    if (presetMode === 'colors') { applyColorsOnly(name); }
+    else { loadPreset(name); }
+    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+    if (btnEl) btnEl.classList.add('active');
+  }
+
+  function applyColorsOnly(name) {
+    const p = getAllPresets()[name];
+    if (!p) return;
+    const colorVarsOnly = ['--bg','--primary','--accent','--text','--muted','--card-bg','--tab-active-bg'];
+    for (const prop of colorVarsOnly) { if (p[prop]) root.style.setProperty(prop, p[prop]); }
+    syncBasePalette(p);
+    clearAllElementOverrides();
+    syncElementPickers();
+    updateTabColors();
+    saveState();
+  }
+
+  function shuffleColors() {
+    const allP = getAllPresets();
+    const keys = Object.keys(allP);
+    const colorVars = ['--bg','--primary','--accent','--text','--muted','--card-bg','--tab-active-bg'];
+    for (const v of colorVars) {
+      const rp = keys[Math.floor(Math.random() * keys.length)];
+      if (allP[rp][v]) root.style.setProperty(v, allP[rp][v]);
+    }
+    syncBasePaletteFromRoot();
+    clearAllElementOverrides();
+    syncElementPickers();
+    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+    updateTabColors();
+    saveState();
+  }
+
+  function loadPreset(name) {
+    const p = getAllPresets()[name];
+    if (!p) return;
+    rotateDiamonds(false);
+    clearAllElementOverrides();
+    for (const [prop, value] of Object.entries(p)) {
+      if (!prop.startsWith('_')) root.style.setProperty(prop, value);
+    }
+    if (p._clouds) {
+      setCloudColors(p._cloudSky, p._cloudLight, p._cloudMid);
+      toggleClouds(true, null);
+    } else { toggleClouds(false, null); }
+    syncBasePalette(p);
+    syncControlsToVars(p);
+    syncElementPickers();
+    if (name === 'vintage') rotateDiamonds(true);
+    updateTabColors();
+    saveState();
+  }
+
+  function syncBasePalette(p) {
+    renderColorBar();
+  }
+
+  function syncBasePaletteFromRoot() {
+    renderColorBar();
+  }
+
+  function syncControlsToVars(p) {
+    // Fonts
+    const fontMap = {'--brand-font':'font-brand','--heading-font':'font-heading','--body-font':'font-body'};
+    for (const [prop, id] of Object.entries(fontMap)) {
+      const el = document.getElementById(id);
+      if (el && p[prop]) { for (const o of el.options) { if (o.value === p[prop]) { el.value = p[prop]; break; } } }
+    }
+    // Ranges
+    const rangeMap = {
+      '--brand-size': {i:'size-brand',l:'val-brand'}, '--heading-size': {i:'size-heading',l:'val-heading'},
+      '--body-size': {i:'size-body',l:'val-body'}, '--label-size': {i:'size-label',l:'val-label'},
+      '--stat-size': {i:'size-stat',l:'val-stat'}, '--icon-size': {i:'size-icon',l:'val-icon'},
+      '--spacing': {i:'size-spacing',l:'val-spacing'}, '--card-padding': {i:'size-card-pad',l:'val-card-pad'},
+      '--border-radius': {i:'shape-radius',l:'val-radius'}, '--card-radius': {i:'shape-card-radius',l:'val-card-radius'},
+    };
+    for (const [prop, ids] of Object.entries(rangeMap)) {
+      if (p[prop]) {
+        const num = parseInt(p[prop]);
+        const el = document.getElementById(ids.i);
+        const lb = document.getElementById(ids.l);
+        if (el) el.value = num;
+        if (lb) lb.textContent = num + 'px';
+      }
+    }
+    // Strokes
+    if (p['--stroke-width']) { document.getElementById('stroke-border').value = p['--stroke-width']; document.getElementById('val-stroke').textContent = p['--stroke-width']+'px'; }
+    if (p['--icon-stroke']) { document.getElementById('stroke-icon').value = p['--icon-stroke']; document.getElementById('val-icon-stroke').textContent = p['--icon-stroke']+'px'; updateSVGStrokes(); }
+    // Checkbox shape
+    const cs = p['--checkbox-shape'] || '50%';
+    document.querySelectorAll('.control-row .toggle-group').forEach(tg => {
+      if (tg.parentElement.querySelector('.control-label')?.textContent === 'checkboxes') {
+        tg.querySelectorAll('.toggle-btn').forEach(b => {
+          b.classList.remove('active');
+          if ((cs === '50%' && b.textContent === 'circle') || (cs === '4px' && b.textContent === 'square') || (cs === '0px' && b.textContent === 'diamond')) b.classList.add('active');
+        });
+      }
+    });
+    // Sync card border slider
+    const borderSlider = document.querySelector('.el-slider-row input[type="range"]');
+    if (borderSlider) { borderSlider.value = 0; borderSlider.nextElementSibling.textContent = '0px'; }
+  }
+
+  // ============= CLOUD IMAGE OVERLAYS =============
+  const cloudImages = [
+    { file: 'images/cloud%201.JPG', label: 'cloud 1' },
+    { file: 'images/cloud%202.JPG', label: 'cloud 2' },
+    { file: 'images/cloud%203.JPG', label: 'cloud 3' },
+    { file: 'images/cloud%204.jpeg', label: 'cloud 4' },
+    { file: 'images/cloud%205.JPG', label: 'cloud 5' },
+    { file: 'images/cloud%206.PNG', label: 'cloud 6' },
+  ];
+  let selectedCloudImg = null;
+  let cloudTarget = 'bg'; // 'bg', 'cards', 'both'
+  let cloudImgOpacity = 0.3;
+
+  function buildCloudThumbs() {
+    const container = document.getElementById('cloud-thumbs');
+    // "none" thumb already in HTML
+    for (const img of cloudImages) {
+      const thumb = document.createElement('div');
+      thumb.className = 'cloud-thumb';
+      thumb.style.backgroundImage = 'url(' + img.file + ')';
+      thumb.innerHTML = '<span class="cloud-thumb-label">' + img.label + '</span>';
+      thumb.onclick = (function(f, el) { return function() { selectCloudImage(f, el); }; })(img.file, thumb);
+      container.appendChild(thumb);
+    }
+  }
+
+  function selectCloudImage(file, thumbEl) {
+    document.querySelectorAll('.cloud-thumb').forEach(t => t.classList.remove('active'));
+    if (thumbEl) thumbEl.classList.add('active');
+    selectedCloudImg = file;
+    applyCloudImage();
+    saveState();
+  }
+
+  function setCloudTarget(target, btn) {
+    cloudTarget = target;
+    btn.parentElement.querySelectorAll('.cloud-target-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    applyCloudImage();
+    saveState();
+  }
+
+  function setCloudImageOpacity(val) {
+    cloudImgOpacity = val / 100;
+    document.getElementById('val-cloud-opacity').textContent = val + '%';
+    applyCloudImage();
+  }
+
+  function hexToRgb(hex) {
+    const h = colorToHex(hex);
+    const r = parseInt(h.slice(1,3), 16);
+    const g = parseInt(h.slice(3,5), 16);
+    const b = parseInt(h.slice(5,7), 16);
+    return { r, g, b };
+  }
+
+  function applyCloudImage() {
+    const phone = document.getElementById('phone');
+
+    // Reset phone background to just the bg color
+    phone.style.removeProperty('background-image');
+    phone.style.removeProperty('background-size');
+    phone.style.removeProperty('background-position');
+    phone.style.removeProperty('background-repeat');
+
+    // Remove card overlays
+    phone.querySelectorAll('.p-card').forEach(card => {
+      card.classList.remove('has-cloud-img');
+      card.style.removeProperty('--card-cloud-img');
+      card.style.removeProperty('--card-cloud-opacity');
+    });
+
+    if (!selectedCloudImg) return;
+
+    // Get the bg color for the opacity overlay
+    const bgColor = getComputedStyle(root).getPropertyValue('--bg').trim();
+    const rgb = hexToRgb(bgColor);
+    const overlayAlpha = 1 - cloudImgOpacity; // invert: high opacity slider = more visible image
+
+    // Background — layer the image under a semi-transparent bg color
+    if (cloudTarget === 'bg' || cloudTarget === 'both') {
+      phone.style.backgroundImage = `linear-gradient(rgba(${rgb.r},${rgb.g},${rgb.b},${overlayAlpha}), rgba(${rgb.r},${rgb.g},${rgb.b},${overlayAlpha})), url(${selectedCloudImg})`;
+      phone.style.backgroundSize = 'cover';
+      phone.style.backgroundPosition = 'center';
+      phone.style.backgroundRepeat = 'no-repeat';
+    }
+
+    // Card overlays — use CSS ::after with custom properties
+    if (cloudTarget === 'cards' || cloudTarget === 'both') {
+      phone.querySelectorAll('.p-card').forEach(card => {
+        card.classList.add('has-cloud-img');
+        card.style.setProperty('--card-cloud-img', 'url(' + selectedCloudImg + ')');
+        card.style.setProperty('--card-cloud-opacity', cloudImgOpacity);
+      });
+    }
+  }
+
+  // ============= CLOUDS =============
+  let cloudsEnabled = false;
+  function toggleClouds(on, btn) {
+    cloudsEnabled = on;
+    const phone = document.getElementById('phone');
+    if (on) phone.classList.add('clouds-active'); else phone.classList.remove('clouds-active');
+    document.getElementById('clouds-on-btn').classList.toggle('active', on);
+    document.getElementById('clouds-off-btn').classList.toggle('active', !on);
+    if (btn) {
+      btn.parentElement.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+    saveState();
+  }
+  function setCloudColors(sky, light, mid) {
+    root.style.setProperty('--cloud-sky', sky);
+    root.style.setProperty('--cloud-light', light);
+    root.style.setProperty('--cloud-mid', mid);
+  }
+
+  // ============= UNDO / REDO =============
+  const baseTrackedVars = [
+    '--bg','--primary','--accent','--text','--muted','--card-bg','--tab-active-bg',
+    '--brand-font','--heading-font','--body-font',
+    '--brand-size','--heading-size','--body-size','--label-size','--stat-size','--icon-size',
+    '--stroke-width','--icon-stroke',
+    '--border-radius','--card-radius','--card-padding','--spacing',
+    '--checkbox-shape','--btn-fill','--btn-fill-done',
+    '--card-border-color','--card-border-width',
+    '--cloud-sky','--cloud-light','--cloud-mid',
+  ];
+  const allTrackedVars = [...baseTrackedVars, ...allElementVars];
+
+  let stateHistory = []; let historyPos = -1; let isUndoRedoing = false; let saveTimer = null;
+
+  function captureState() {
+    const state = {};
+    for (const v of allTrackedVars) state[v] = root.style.getPropertyValue(v);
+    state._isDiamond = isDiamond;
+    state._cloudsEnabled = cloudsEnabled;
+    state._cloudImg = selectedCloudImg;
+    state._cloudTarget = cloudTarget;
+    state._cloudImgOpacity = cloudImgOpacity;
+    return state;
+  }
+
+  function saveState() {
+    if (isUndoRedoing) return;
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      const state = captureState();
+      const prev = historyPos >= 0 ? stateHistory[historyPos] : null;
+      if (prev && JSON.stringify(state) === JSON.stringify(prev)) return;
+      stateHistory = stateHistory.slice(0, historyPos + 1);
+      stateHistory.push(state);
+      if (stateHistory.length > 50) stateHistory.shift();
+      historyPos = stateHistory.length - 1;
+      updateUndoRedoBtns();
+    }, 300);
+  }
+
+  function applyHistoryState(state) {
+    isUndoRedoing = true;
+    for (const v of allTrackedVars) {
+      if (state[v] === '' || state[v] === undefined) root.style.removeProperty(v);
+      else root.style.setProperty(v, state[v]);
+    }
+    if (state._isDiamond) { root.style.setProperty('--checkbox-shape','0px'); rotateDiamonds(true); }
+    else { rotateDiamonds(false); }
+    if (state._cloudsEnabled) toggleClouds(true, null); else toggleClouds(false, null);
+    // Restore cloud image overlay
+    if (state._cloudImg !== undefined) {
+      selectedCloudImg = state._cloudImg;
+      cloudTarget = state._cloudTarget || 'bg';
+      cloudImgOpacity = state._cloudImgOpacity || 0.3;
+      document.getElementById('cloud-img-opacity').value = Math.round(cloudImgOpacity * 100);
+      document.getElementById('val-cloud-opacity').textContent = Math.round(cloudImgOpacity * 100) + '%';
+      applyCloudImage();
+    }
+    syncBasePaletteFromRoot();
+    syncControlsToVars(state);
+    syncElementPickers();
+    // Sync overridden states
+    document.querySelectorAll('.el-row').forEach(row => {
+      const v = row.dataset.var;
+      if (state[v] && state[v] !== '') row.classList.add('overridden');
+      else row.classList.remove('overridden');
+    });
+    updateTabColors();
+    isUndoRedoing = false;
+  }
+
+  function undo() { if (historyPos > 0) { historyPos--; applyHistoryState(stateHistory[historyPos]); updateUndoRedoBtns(); } }
+  function redo() { if (historyPos < stateHistory.length - 1) { historyPos++; applyHistoryState(stateHistory[historyPos]); updateUndoRedoBtns(); } }
+  function updateUndoRedoBtns() {
+    document.getElementById('undo-btn').disabled = historyPos <= 0;
+    document.getElementById('redo-btn').disabled = historyPos >= stateHistory.length - 1;
+  }
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+    if ((e.ctrlKey && e.key === 'y') || (e.metaKey && e.shiftKey && e.key === 'z')) { e.preventDefault(); redo(); }
+  });
+
+  // ============= SAVED TEMPLATES =============
+  function getSavedTemplates() { try { return JSON.parse(localStorage.getItem('pebble-templates') || '[]'); } catch { return []; } }
+  function saveSavedTemplates(t) { localStorage.setItem('pebble-templates', JSON.stringify(t)); }
+
+  function saveTemplate() {
+    const name = prompt('template name:');
+    if (!name) return;
+    const templates = getSavedTemplates();
+    templates.push({ name, state: captureState(), date: Date.now() });
+    saveSavedTemplates(templates);
+    renderSavedTemplates();
+  }
+
+  function loadSavedTemplate(index) {
+    const templates = getSavedTemplates();
+    if (!templates[index]) return;
+    applyHistoryState(templates[index].state);
+    saveState();
+  }
+
+  function deleteTemplate(index, e) {
+    e.stopPropagation();
+    if (!confirm('delete this template?')) return;
+    const templates = getSavedTemplates();
+    templates.splice(index, 1);
+    saveSavedTemplates(templates);
+    renderSavedTemplates();
+  }
+
+  function renameTemplate(index, newName) {
+    const templates = getSavedTemplates();
+    if (!templates[index]) return;
+    templates[index].name = newName.trim();
+    saveSavedTemplates(templates);
+  }
+
+  function updateTemplate(index, e) {
+    e.stopPropagation();
+    const templates = getSavedTemplates();
+    if (!templates[index]) return;
+    if (!confirm('overwrite "' + templates[index].name + '" with current design?')) return;
+    templates[index].state = captureState();
+    templates[index].date = Date.now();
+    saveSavedTemplates(templates);
+    renderSavedTemplates();
+  }
+
+  function renderSavedTemplates() {
+    const container = document.getElementById('saved-templates');
+    const templates = getSavedTemplates();
+    const nav = document.getElementById('templates-nav');
+    if (!templates.length) {
+      container.innerHTML = '<div class="templates-empty">no saved templates yet</div>';
+      nav.style.display = 'none'; return;
+    }
+    container.innerHTML = templates.map((t, i) => {
+      const s = t.state;
+      const colors = [s['--bg'],s['--primary'],s['--accent'],s['--text'],s['--muted']].filter(Boolean);
+      const safeName = (t.name || '').replace(/"/g, '&quot;');
+      return `<div class="template-card" onclick="loadSavedTemplate(${i})">
+        <div class="template-actions">
+          <button class="template-action-btn" onclick="updateTemplate(${i}, event)" title="update with current design">↻</button>
+          <button class="template-action-btn delete" onclick="deleteTemplate(${i}, event)" title="delete">&times;</button>
+        </div>
+        <div class="template-card-colors">${colors.map(c => `<div class="template-card-color" style="background:${c}"></div>`).join('')}</div>
+        <input type="text" class="template-name-input" value="${safeName}"
+          onclick="event.stopPropagation(); this.select()"
+          onchange="renameTemplate(${i}, this.value)"
+          onkeydown="if(event.key==='Enter'){this.blur();}">
+      </div>`;
+    }).join('');
+    nav.style.display = templates.length > 3 ? 'flex' : 'none';
+    document.getElementById('templates-count').textContent = templates.length + ' saved';
+  }
+
+  function scrollTemplates(dir) {
+    const c = document.getElementById('saved-templates');
+    c.scrollBy({ left: dir * 200, behavior: 'smooth' });
+  }
+
+  // ============= EXPORT =============
+  function exportForClaude() {
+    const g = v => getComputedStyle(root).getPropertyValue(v).trim();
+    let out = `PEBBLE DESIGN\n\n── Base Palette ──\nbackground: ${g('--bg')}\nprimary: ${g('--primary')}\naccent: ${g('--accent')}\ntext: ${g('--text')}\nmuted: ${g('--muted')}\ncard bg: ${g('--card-bg')}\ntab active: ${g('--tab-active-bg')}`;
+
+    // Element overrides
+    const overrides = [];
+    document.querySelectorAll('.el-row.overridden').forEach(row => {
+      const v = row.dataset.var;
+      const val = root.style.getPropertyValue(v).trim();
+      const lbl = row.querySelector('.el-label-edit') || row.querySelector('.el-label');
+      if (val) overrides.push(`${lbl ? (lbl.value || lbl.textContent) : row.dataset.var}: ${val}`);
+    });
+    if (overrides.length) out += '\n\n── Element Overrides ──\n' + overrides.join('\n');
+
+    // Card border
+    const bw = g('--card-border-width');
+    const bc = g('--card-border-color');
+    if (bw && bw !== '0px' && bc !== 'transparent') out += `\ncard border: ${bw} ${bc}`;
+
+    out += `\n\n── Fonts ──\nbrand: ${g('--brand-font')}\nheadings: ${g('--heading-font')}\nbody: ${g('--body-font')}`;
+    out += `\n\n── Sizes ──\nbrand: ${g('--brand-size')}\nheading: ${g('--heading-size')}\nbody: ${g('--body-size')}\nlabel: ${g('--label-size')}\nstat: ${g('--stat-size')}\nicon: ${g('--icon-size')}\nspacing: ${g('--spacing')}\ncard padding: ${g('--card-padding')}`;
+    out += `\n\n── Shapes ──\ncorners: ${g('--border-radius')}\ncard corners: ${g('--card-radius')}\ncheckbox: ${isDiamond ? 'diamond' : g('--checkbox-shape') === '50%' ? 'circle' : 'square'}\nstroke: ${g('--stroke-width')}\nicon stroke: ${g('--icon-stroke')}`;
+
+    if (cloudsEnabled) {
+      out += `\n\n── Clouds ──\nsky: ${g('--cloud-sky')}\ncloud light: ${g('--cloud-light')}\ncloud mid: ${g('--cloud-mid')}`;
+    }
+
+    navigator.clipboard.writeText(out).then(() => alert('Copied! Paste this to Claude to share your design.'));
+  }
+
+  function exportCSS() {
+    let css = ':root {\n';
+    for (const v of baseTrackedVars) {
+      const val = getComputedStyle(root).getPropertyValue(v).trim();
+      if (val) css += `  ${v}: ${val};\n`;
+    }
+    // Include active overrides
+    document.querySelectorAll('.el-row.overridden').forEach(row => {
+      const v = row.dataset.var;
+      const val = root.style.getPropertyValue(v).trim();
+      if (val) css += `  ${v}: ${val};\n`;
+    });
+    css += '}';
+    navigator.clipboard.writeText(css).then(() => alert('CSS variables copied!'));
+  }
+
+  // ============= PUSH TO PEBBLE APP =============
+  function pushToApp() {
+    const name = prompt('Theme name for the app:');
+    if (!name) return;
+    const g = v => getComputedStyle(root).getPropertyValue(v).trim();
+
+    // Grab ALL playground values
+    const bgColor = g('--bg');
+    const primaryColor = g('--primary');
+    const accentColor = g('--text'); // playground --text = app --accent
+    const mutedColor = g('--muted');
+    const cardBg = g('--card-bg');
+    const brandFont = g('--brand-font');
+    const headingFont = g('--heading-font');
+    const bodyFont = g('--body-font');
+
+    // Build sky gradient if clouds enabled
+    let cloudSky = 'none', skyHeight = '0px';
+    if (cloudsEnabled) {
+      const sky = g('--cloud-sky') || '#89AAB5';
+      const light = g('--cloud-light') || 'rgba(232,240,228,0.8)';
+      const mid = g('--cloud-mid') || 'rgba(196,216,208,0.5)';
+      cloudSky = `linear-gradient(180deg, ${sky} 0%, ${light} 35%, ${mid} 55%, ${bgColor} 100%)`;
+      skyHeight = '180px';
+    }
+
+    const vars = {
+      // Colors
+      '--bg': bgColor, '--surface': '#FFFEFA',
+      '--primary': primaryColor, '--primary-light': primaryColor + '1A',
+      '--accent': accentColor, '--accent-light': accentColor + '1A',
+      '--dark': '#1A1A2E', '--muted': mutedColor,
+      '--danger': '#E57373',
+      '--card-bg': cardBg,
+      '--card-border': g('--card-border-color') || 'rgba(255,255,255,0.4)',
+      '--card-shadow': 'rgba(26,26,46,0.04)',
+      // Fonts
+      '--font-display': brandFont || headingFont,
+      '--font-body': bodyFont,
+      '--font-mono': bodyFont.includes('Mono') ? bodyFont : "'DM Mono', monospace",
+      // Typography sizes
+      '--brand-size': g('--brand-size'), '--heading-size': g('--heading-size'),
+      '--body-size': g('--body-size'), '--label-size': g('--label-size'),
+      '--stat-size': g('--stat-size'), '--icon-size': g('--icon-size'),
+      // Shapes
+      '--border-radius': g('--border-radius'), '--card-radius': g('--card-radius'),
+      '--card-border-w': g('--card-border-width') || '0px',
+      '--checkbox-shape': g('--checkbox-shape'),
+      '--btn-fill': g('--btn-fill'), '--btn-fill-done': g('--btn-fill-done'),
+      // Strokes
+      '--stroke-width': g('--stroke-width'), '--icon-stroke': g('--icon-stroke'),
+      // Spacing
+      '--card-padding': g('--card-padding'), '--spacing': g('--spacing'),
+      // Sky
+      '--cloud-sky': cloudSky, '--sky-height': skyHeight,
+      // Tab
+      '--tab-active-bg': g('--tab-active-bg'),
+    };
+
+    // Include element-level overrides (only ones that were actually customized)
+    document.querySelectorAll('.el-row.overridden').forEach(row => {
+      const v = row.dataset.var;
+      const val = root.style.getPropertyValue(v).trim();
+      if (val) vars[v] = val;
+    });
+
+    // Strip empty values
+    Object.keys(vars).forEach(k => { if (!vars[k]) delete vars[k]; });
+
+    const theme = {
+      id: 'custom_' + Date.now(),
+      name: name,
+      desc: 'From playground',
+      vars: vars,
+      swatches: [bgColor, primaryColor, accentColor, mutedColor],
+      source: 'playground',
+      date: Date.now(),
+    };
+
+    // Save to shared localStorage
+    let appThemes = [];
+    try { appThemes = JSON.parse(localStorage.getItem('pebble-app-custom-themes') || '[]'); } catch {}
+    appThemes.push(theme);
+    localStorage.setItem('pebble-app-custom-themes', JSON.stringify(appThemes));
+    alert('Pushed to Pebble App! Open pebble-app.html and check Settings → Theme.');
+  }
+
+  // ============= SAVED COLORS & PALETTE =============
+  function getSavedColors() { try { return JSON.parse(localStorage.getItem('pebble-saved-colors') || '[]'); } catch { return []; } }
+  function setSavedColors(colors) { localStorage.setItem('pebble-saved-colors', JSON.stringify(colors)); }
+
+  let selectedElRow = null;
+
+  function saveLabel(input) {
+    const key = 'pebble-label-' + input.dataset.var;
+    const val = input.value.trim();
+    if (val && val !== input.dataset.default) {
+      localStorage.setItem(key, val);
+    } else {
+      localStorage.removeItem(key);
+      input.value = input.dataset.default;
+    }
+  }
+
+  function getUniquePresetColors() {
+    const all = getAllPresets();
+    const seen = new Set();
+    const colors = [];
+    for (const [name, p] of Object.entries(all)) {
+      for (const v of ['--bg','--primary','--accent','--text','--muted']) {
+        if (p[v]) {
+          const hex = colorToHex(p[v]).toUpperCase();
+          if (!seen.has(hex) && hex !== '#000000') {
+            seen.add(hex);
+            colors.push(hex);
+          }
+        }
+      }
+    }
+    return colors;
+  }
+
+  function promptSaveColor() {
+    let defaultColor = '#';
+    if (selectedElRow) {
+      defaultColor = document.getElementById('cb-hex').value || '#';
+    }
+    const color = prompt('Save color:', defaultColor);
+    if (!color) return;
+    const hex = colorToHex(color).toUpperCase();
+    const saved = getSavedColors();
+    if (!saved.includes(hex)) {
+      saved.push(hex);
+      setSavedColors(saved);
+      refreshPaletteSwatches();
+    }
+  }
+
+  function refreshPaletteSwatches() {
+    renderColorBar();
+  }
+
+  function enhanceElementSections() {
+    // Make labels editable
+    document.querySelectorAll('.el-label').forEach(function(label) {
+      const row = label.closest('.el-row');
+      const varName = row ? row.dataset.var : '';
+      const labelKey = 'pebble-label-' + varName;
+      const savedLabel = localStorage.getItem(labelKey);
+      const defaultLabel = label.textContent;
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'el-label-edit';
+      input.value = savedLabel || defaultLabel;
+      input.dataset.var = varName;
+      input.dataset.default = defaultLabel;
+      input.onchange = function() { saveLabel(this); };
+      input.onblur = function() { saveLabel(this); };
+      input.onclick = function(e) { e.stopPropagation(); };
+      label.replaceWith(input);
+    });
+  }
+
+  // ============= INIT =============
+  renderPresets();
+  buildElementSections();
+  enhanceElementSections();
+  renderColorBar();
+  buildCloudThumbs();
+  renderSavedTemplates();
+  updateTabColors();
+
+  // Enable clouds by default (gabbyA preset)
+  setCloudColors('#89AAB5', 'rgba(232,240,228,0.8)', 'rgba(196,216,208,0.5)');
+  toggleClouds(true, null);
+
+  // Capture initial state
+  saveState();
+</script>
+
+</body>
+</html>

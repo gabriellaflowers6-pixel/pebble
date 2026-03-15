@@ -66,7 +66,7 @@
   .swipe-page {
     min-height: 100%;
     display: flex; flex-direction: column;
-    padding: 16px 20px 20px;
+    padding: var(--spacing) 20px 20px;
     position: relative;
   }
 
@@ -108,13 +108,13 @@
   }
 
   /* ── Dots ── */
-  .dot { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--accent); background: transparent; flex-shrink: 0; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; border: var(--stroke-width, 1.5px) solid var(--accent); background: transparent; flex-shrink: 0; }
   .dot.filled { background: var(--accent); border-color: var(--accent); }
   .dot.today { border: 2px solid var(--primary); box-shadow: 0 0 0 2px rgba(74,144,164,0.25); }
   .dot.today.filled { background: var(--primary); border-color: var(--primary); }
 
-  .checkbox { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--primary); flex-shrink: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; }
-  .checkbox.done { background: var(--primary); border-color: var(--primary); }
+  .checkbox { width: 18px; height: 18px; border-radius: var(--checkbox-shape); border: var(--stroke-width, 1.5px) solid var(--primary); flex-shrink: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; background: var(--btn-fill); }
+  .checkbox.done { background: var(--btn-fill-done, var(--primary)); border-color: var(--primary); }
 
   .chat-bar { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); background: color-mix(in srgb, var(--bg) 92%, transparent); }
 
@@ -138,9 +138,9 @@
 
   /* ── Theme swatch ── */
   .theme-swatch {
-    width: 100%; border-radius: 14px; padding: 12px 14px; cursor: pointer;
+    width: 100%; border-radius: var(--border-radius, 14px); padding: var(--card-padding, 12px) 14px; cursor: pointer;
     border: 2px solid transparent; transition: border-color 0.15s, box-shadow 0.15s;
-    display: flex; align-items: center; gap: 12px;
+    display: flex; align-items: center; gap: var(--spacing, 12px);
   }
   .theme-swatch.active { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(74,144,164,0.15); }
   .theme-swatch:hover:not(.active) { border-color: rgba(0,0,0,0.1); }
@@ -149,8 +149,8 @@
 
   /* ── Page title (coquette script style) ── */
   .page-title {
-    font-family: var(--font-display); font-size: 22px; color: var(--dark);
-    margin-bottom: 12px; line-height: 1.2;
+    font-family: var(--font-display); font-size: var(--heading-size, 22px); color: var(--dark);
+    margin-bottom: var(--spacing, 12px); line-height: 1.2;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -158,6 +158,10 @@
     .marble-group, .checkbox, .theme-swatch, .page-dot { transition: none; }
     .swipe-container { scroll-behavior: auto; }
   }
+
+  /* ── Playground element overrides (only active when vars are set) ── */
+  .glass-card [class*="title"], .card-title { color: var(--card-title-color, inherit); }
+  .glass-card [class*="meta"] { color: var(--card-meta-color, inherit); }
 
   /* ══════════════════════════════════════════
      PER-THEME UNIQUE VISUAL ELEMENTS
@@ -935,7 +939,21 @@ function ThemeProvider({ children }) {
     '--card-shadow': 'rgba(26,26,46,0.04)', '--font-display': 'Georgia, serif', '--font-body': 'Calibri, sans-serif',
     '--font-mono': "'JetBrains Mono', monospace", '--cloud-sky': 'none', '--sky-height': '0px',
     '--card-radius': '16px', '--card-border-w': '1px',
+    // Typography sizes
+    '--brand-size': '35px', '--heading-size': '18px', '--body-size': '12px',
+    '--label-size': '9px', '--stat-size': '27px', '--icon-size': '20px',
+    // Shapes & strokes
+    '--border-radius': '14px', '--checkbox-shape': '50%',
+    '--btn-fill': 'transparent', '--btn-fill-done': 'var(--primary)',
+    '--stroke-width': '1.5', '--icon-stroke': '1.8',
+    // Spacing
+    '--card-padding': '16px', '--spacing': '12px',
+    // Tab
+    '--tab-active-bg': 'var(--primary)',
   };
+
+  /* Track extra vars from playground themes so we can clean them up on switch */
+  const extraVarsRef = useRef([]);
 
   const applyTheme = useCallback((id) => {
     let theme = THEMES[id];
@@ -946,6 +964,10 @@ function ThemeProvider({ children }) {
     if (!theme) { id = 'coquette'; theme = THEMES.coquette; }
 
     const root = document.documentElement;
+
+    /* Clear any extra element-override vars from previous playground theme */
+    extraVarsRef.current.forEach(v => root.style.removeProperty(v));
+    extraVarsRef.current = [];
 
     /* Reset ALL vars to defaults first so old theme values don't persist */
     Object.entries(CSS_DEFAULTS).forEach(([k, v]) => root.style.setProperty(k, v));
@@ -965,7 +987,10 @@ function ThemeProvider({ children }) {
       vars['--sky-height'] = '200px';
     }
 
-    Object.entries(vars).forEach(([k, v]) => root.style.setProperty(k, v));
+    Object.entries(vars).forEach(([k, v]) => {
+      root.style.setProperty(k, v);
+      if (!(k in CSS_DEFAULTS)) extraVarsRef.current.push(k);
+    });
     document.body.style.background = '#E8E4DE';
     localStorage.setItem('pebble-theme', id);
     // Also save in credentials backup so theme survives mobile localStorage purges
@@ -995,7 +1020,7 @@ function ThemeProvider({ children }) {
    DATA LAYER — State Management
    ══════════════════════════════════════════ */
 const DEFAULT_DATA = {
-  profile: { name: '', vegan: false, skinType: '', context: '' },
+  profile: { name: '', vegan: false, skinType: '', context: {} },
   planner: { events: {}, todos: [], notes: [] },
   journal: { entries: [] },
   kitchen: {
@@ -1027,7 +1052,7 @@ const DEFAULT_DATA = {
     saves: [],
     dailyPick: { date: '', quote: '', quoteAuthor: '', rec: null },
   },
-  settings: { gistId: '', gistToken: '', apiKey: '', oneSignalAppId: '', oneSignalRestKey: '' },
+  settings: { gistId: '', gistToken: '', apiKey: '', oneSignalAppId: '', oneSignalRestKey: '', jarIcon: 'images/pebble-logo.png', navStyle: 'jar' },
   chat: { messages: [] },
   memory: { pending: [] },
 };
@@ -1271,14 +1296,15 @@ function dataReducer(state, action) {
       return { ...state, profile: { ...state.profile, ...action.fields } };
     }
     case 'UPDATE_CONTEXT': {
-      const existing = (state.profile.context || '').trim();
-      const fact = action.fact.trim();
-      if (existing.includes(fact)) return state;
-      const updated = existing ? existing + '\n- ' + fact : '- ' + fact;
-      return { ...state, profile: { ...state.profile, context: updated } };
+      const ctx = (typeof state.profile.context === 'string') ? {} : { ...state.profile.context };
+      const key = (action.key || '').trim().toLowerCase();
+      const fact = (action.fact || '').trim();
+      if (!key || !fact) return state;
+      ctx[key] = fact;
+      return { ...state, profile: { ...state.profile, context: ctx } };
     }
     case 'LOAD_DATA': {
-      const merged = deepMerge(DEFAULT_DATA, action.data);
+      const merged = migrateContext(deepMerge(DEFAULT_DATA, action.data));
       return { ...merged, settings: { ...merged.settings, ...state.settings } };
     }
     default: return state;
@@ -1288,18 +1314,114 @@ function dataReducer(state, action) {
 const DataCtx = createContext();
 const QuizCtx = createContext();
 
+function migrateContext(data) {
+  const ctx = data?.profile?.context;
+  if (typeof ctx === 'string' && ctx.trim()) {
+    const lines = ctx.split('\n').map(l => l.replace(/^-\s*/, '').trim()).filter(Boolean);
+    const obj = {};
+    lines.forEach((line, i) => {
+      const colonIdx = line.indexOf(':');
+      if (colonIdx > 0 && colonIdx < 40) {
+        const key = line.slice(0, colonIdx).trim().toLowerCase();
+        obj[key] = line.slice(colonIdx + 1).trim();
+      } else {
+        obj['fact_' + (i + 1)] = line;
+      }
+    });
+    data.profile.context = obj;
+  } else if (typeof ctx !== 'object' || ctx === null) {
+    data.profile.context = {};
+  }
+  return data;
+}
+
+// Generate a clean markdown brain file for Claude Project integration
+function generateBrainMd(d) {
+  const lines = ['# Pebble Brain', `*Last synced: ${new Date().toISOString().slice(0, 16)}*`, ''];
+
+  lines.push('## About Me');
+  if (d.profile.name) lines.push(`- Name: ${d.profile.name}`);
+  if (d.profile.vegan) lines.push('- Diet: vegan');
+  if (d.profile.skinType) lines.push(`- Skin type: ${d.profile.skinType}`);
+  lines.push('');
+
+  const ctx = d.profile.context;
+  if (ctx && typeof ctx === 'object' && Object.keys(ctx).length) {
+    lines.push('## Knowledge Base');
+    Object.entries(ctx).forEach(([k, v]) => lines.push(`- **${k}**: ${v}`));
+    lines.push('');
+  }
+
+  const stickies = (d.stickies || []).filter(s => s.text);
+  if (stickies.length) {
+    lines.push('## Stickies (ideas, wishes, notes)');
+    stickies.forEach(s => lines.push(`- ${s.text}`));
+    lines.push('');
+  }
+
+  const activeTodos = d.planner.todos.filter(t => !t.done);
+  if (activeTodos.length) {
+    lines.push('## Active Todos');
+    activeTodos.forEach(t => lines.push(`- [${t.priority || 'med'}] ${t.text}`));
+    lines.push('');
+  }
+
+  if (d.selfCare.skincare.morning.length || d.selfCare.skincare.evening.length) {
+    lines.push('## Skincare');
+    if (d.selfCare.skincare.morning.length) lines.push(`- AM: ${d.selfCare.skincare.morning.join(' > ')}`);
+    if (d.selfCare.skincare.evening.length) lines.push(`- PM: ${d.selfCare.skincare.evening.join(' > ')}`);
+    lines.push('');
+  }
+
+  if (d.study.courses.length) {
+    lines.push('## Study');
+    d.study.courses.forEach(c => lines.push(`- ${c.name} (${c.progress}%, ${c.status})`));
+    lines.push('');
+  }
+
+  if (d.career?.role) {
+    lines.push('## Career');
+    lines.push(`- Goal: ${d.career.role}${d.career.targetDate ? ' by ' + d.career.targetDate : ''}`);
+    if (d.career.skills?.length) lines.push(`- Skills: ${d.career.skills.map(s => s.name + ' (' + s.progress + '%)').join(', ')}`);
+    if (d.career.applications?.length) {
+      lines.push('- Applications:');
+      d.career.applications.forEach(a => lines.push(`  - ${a.company} — ${a.role} (${a.status})`));
+    }
+    lines.push('');
+  }
+
+  if (d.gym.workoutPlan[0]?.name) {
+    lines.push('## Fitness');
+    lines.push(`- Current workout: ${d.gym.workoutPlan[0].name}`);
+    if (d.gym.workoutPlan[0].exercises?.length) lines.push(`- Exercises: ${d.gym.workoutPlan[0].exercises.join(', ')}`);
+    lines.push('');
+  }
+
+  const entries = (d.journal.entries || []).slice(-5);
+  if (entries.length) {
+    lines.push('## Recent Journal');
+    entries.forEach(e => lines.push(`- **${e.date}**${e.mood ? ' (' + e.mood + ')' : ''}: ${e.body.slice(0, 200)}`));
+    lines.push('');
+  }
+
+  return lines.join('\n');
+}
+
 function DataProvider({ children }) {
   const [data, dispatch] = useReducer(dataReducer, null, () => {
     try {
       const saved = localStorage.getItem('pebble-data');
       if (saved) {
-        const parsed = deepMerge(DEFAULT_DATA, JSON.parse(saved));
-        // Restore credentials from backup in case main data was purged/corrupted
+        const parsed = migrateContext(deepMerge(DEFAULT_DATA, JSON.parse(saved)));
+        // Restore credentials + profile from backup in case main data was purged/corrupted
         try {
           const creds = localStorage.getItem('pebble-credentials');
           if (creds) {
             const savedCreds = JSON.parse(creds);
+            const savedProfile = savedCreds._profile;
+            delete savedCreds._profile;
             parsed.settings = { ...parsed.settings, ...savedCreds };
+            if (savedProfile) parsed.profile = { ...parsed.profile, ...savedProfile };
           }
         } catch {}
         return parsed;
@@ -1323,9 +1445,9 @@ function DataProvider({ children }) {
   // Save to localStorage on every change
   useEffect(() => {
     try { localStorage.setItem('pebble-data', JSON.stringify(data)); } catch {}
-    // Backup credentials separately so they survive localStorage purges and Gist loads
+    // Backup credentials + profile separately so they survive localStorage purges and Gist loads
     try {
-      const creds = JSON.stringify(data.settings);
+      const creds = JSON.stringify({ ...data.settings, _profile: data.profile });
       localStorage.setItem('pebble-credentials', creds);
     } catch {}
   }, [data]);
@@ -1334,7 +1456,7 @@ function DataProvider({ children }) {
   useEffect(() => {
     const save = () => {
       try { localStorage.setItem('pebble-data', JSON.stringify(data)); } catch {}
-      try { localStorage.setItem('pebble-credentials', JSON.stringify(data.settings)); } catch {}
+      try { localStorage.setItem('pebble-credentials', JSON.stringify({ ...data.settings, _profile: data.profile })); } catch {}
     };
     document.addEventListener('visibilitychange', save);
     window.addEventListener('pagehide', save);
@@ -1363,11 +1485,12 @@ function DataProvider({ children }) {
     const { gistId, gistToken } = data.settings;
     if (!gistId || !gistToken) return;
     const { settings: _omit, ...safeData } = data;
+    const brainMd = generateBrainMd(data);
     const t = setTimeout(async () => {
       const push = () => fetch(`https://api.github.com/gists/${gistId}`, {
         method: 'PATCH',
         headers: { Authorization: `token ${gistToken}`, 'Content-Type': 'application/json', Accept: 'application/vnd.github+json' },
-        body: JSON.stringify({ files: { 'pebble.json': { content: JSON.stringify(safeData) } } })
+        body: JSON.stringify({ files: { 'pebble.json': { content: JSON.stringify(safeData) }, 'pebble-brain.md': { content: brainMd } } })
       });
       try {
         let res = await push();
@@ -1758,6 +1881,85 @@ function MarbleJar({ open, onClose, onNavigate, currentPage, customSegments, sta
 }
 
 /* ══════════════════════════════════════════
+   TAB NAV — manila folder tabs
+   ══════════════════════════════════════════ */
+function TabNav({ currentPage, onNavigate, pageLabels }) {
+  const scrollRef = useRef(null);
+  const activeRef = useRef(null);
+  useEffect(() => {
+    if (activeRef.current && scrollRef.current) {
+      activeRef.current.scrollIntoView({ inline: 'center', behavior: 'smooth', block: 'nearest' });
+    }
+  }, [currentPage]);
+  return (
+    <div ref={scrollRef} style={{ display: 'flex', overflowX: 'auto', gap: 0, padding: '0 12px', flexShrink: 0, borderBottom: '2px solid var(--card-border)', background: 'var(--bg)', scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}>
+      <style>{`.tab-scroll::-webkit-scrollbar{display:none}`}</style>
+      {pageLabels.map((label, i) => {
+        const active = i === currentPage;
+        return (
+          <button key={i} ref={active ? activeRef : null} onClick={() => onNavigate(i)}
+            style={{
+              fontFamily: 'var(--font-body)', fontSize: 10, letterSpacing: 0.5,
+              padding: '8px 12px 6px', whiteSpace: 'nowrap', cursor: 'pointer',
+              background: active ? 'var(--card-bg)' : 'transparent',
+              color: active ? 'var(--dark)' : 'var(--muted)',
+              border: active ? '2px solid var(--card-border)' : '2px solid transparent',
+              borderBottom: active ? '2px solid var(--card-bg)' : '2px solid transparent',
+              borderRadius: '8px 8px 0 0',
+              marginBottom: -2,
+              fontWeight: active ? 600 : 400,
+              transition: 'all 0.15s',
+              flexShrink: 0,
+            }}>
+            {label.toLowerCase()}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════
+   PEBBLE NAV — labeled pebbles in a row
+   ══════════════════════════════════════════ */
+function PebbleNav({ currentPage, onNavigate, pageLabels }) {
+  const scrollRef = useRef(null);
+  const activeRef = useRef(null);
+  useEffect(() => {
+    if (activeRef.current && scrollRef.current) {
+      activeRef.current.scrollIntoView({ inline: 'center', behavior: 'smooth', block: 'nearest' });
+    }
+  }, [currentPage]);
+  return (
+    <div ref={scrollRef} style={{ display: 'flex', overflowX: 'auto', gap: 8, padding: '8px 16px', flexShrink: 0, scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}>
+      {pageLabels.map((label, i) => {
+        const active = i === currentPage;
+        return (
+          <button key={i} ref={active ? activeRef : null} onClick={() => onNavigate(i)}
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, cursor: 'pointer', background: 'none', border: 'none', padding: 0, flexShrink: 0 }}>
+            <div style={{
+              width: 32, height: 32, borderRadius: '50%',
+              background: active ? 'var(--primary)' : 'var(--accent-light)',
+              border: `${active ? 2.5 : 1.5}px solid ${active ? 'var(--primary)' : 'var(--card-border)'}`,
+              transition: 'all 0.15s',
+              position: 'relative',
+            }}>
+              <div style={{ position: 'absolute', top: 5, left: 7, width: 8, height: 5, borderRadius: '50%', background: 'white', opacity: active ? 0.3 : 0.15 }}/>
+            </div>
+            <span style={{
+              fontFamily: 'var(--font-body)', fontSize: 8, letterSpacing: 0.3,
+              color: active ? 'var(--dark)' : 'var(--muted)',
+              fontWeight: active ? 600 : 400,
+              whiteSpace: 'nowrap',
+            }}>{label.length > 7 ? label.slice(0, 6) + '.' : label.toLowerCase()}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════
    PAGE DOTS (vertical indicator)
    ══════════════════════════════════════════ */
 function PageDots({ currentPage, totalPages, onDotClick, pageLabels }) {
@@ -1790,6 +1992,7 @@ function SectionLabel({ children, right }) {
 }
 
 function Header({ onJarOpen, onSettingsOpen }) {
+  const { data } = useContext(DataCtx);
   return (
     <div className="px-5 pt-12 pb-2 flex items-center justify-between flex-shrink-0">
       <div className="flex items-center gap-2">
@@ -1799,9 +2002,11 @@ function Header({ onJarOpen, onSettingsOpen }) {
         <button onClick={onSettingsOpen} className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer" style={{ transition: 'background 0.15s' }} onMouseEnter={e => e.currentTarget.style.background='var(--primary-light)'} onMouseLeave={e => e.currentTarget.style.background='transparent'} aria-label="Settings">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">{icons.settings}</svg>
         </button>
-        <button onClick={onJarOpen} className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer overflow-hidden" style={{ transition: 'background 0.15s' }} onMouseEnter={e => e.currentTarget.style.background='var(--accent-light)'} onMouseLeave={e => e.currentTarget.style.background='transparent'} aria-label="Open Pebble Jar">
-          <img src="Vintage Typography/home.jpg" alt="Pebble" width="24" height="24" style={{ mixBlendMode: 'multiply', opacity: 0.85 }} />
-        </button>
+        {onJarOpen && (
+          <button onClick={onJarOpen} className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer overflow-hidden" style={{ transition: 'background 0.15s' }} onMouseEnter={e => e.currentTarget.style.background='var(--accent-light)'} onMouseLeave={e => e.currentTarget.style.background='transparent'} aria-label="Open Pebble Jar">
+            <img src={data.settings?.jarIcon || 'images/pebble-logo.png'} alt="Pebble" width="24" height="24" style={{ mixBlendMode: 'multiply', opacity: 0.85, objectFit: 'cover', borderRadius: 4 }} />
+          </button>
+        )}
       </div>
     </div>
   );
@@ -1882,7 +2087,7 @@ function ChatBar() {
         const todayEvents = (data.planner.events[todayKey] || []).map(e => `${e.time} ${e.text}`).join(', ');
         const systemPrompt = `You are Pebble, a warm and intelligent personal life assistant.
 Here is everything you know about the user:
-- Name: ${data.profile.name}, Vegan: ${data.profile.vegan}, Skin type: ${data.profile.skinType}${data.profile.context ? `\n\nPERSONAL CONTEXT (always use this — allergies, preferences, goals, life facts):\n${data.profile.context}` : ''}
+- Name: ${data.profile.name}, Vegan: ${data.profile.vegan}, Skin type: ${data.profile.skinType}${(() => { const ctx = data.profile.context; if (!ctx || typeof ctx !== 'object' || !Object.keys(ctx).length) return ''; return '\n\nPERSONAL CONTEXT (always use this — allergies, preferences, goals, life facts):\n' + Object.entries(ctx).map(([k,v]) => `- [${k}] ${v}`).join('\n'); })()}
 - Active todos: ${data.planner.todos.filter(t => !t.done).map(t => t.text).join(', ')}
 - Today's events: ${todayEvents || 'none'}
 - Today's meals: B: ${data.kitchen.mealPlan.breakfast}, L: ${data.kitchen.mealPlan.lunch}, D: ${data.kitchen.mealPlan.dinner}
@@ -1895,7 +2100,9 @@ Here is everything you know about the user:
 - Career goal: ${(data.career?.role) || 'not set'}${data.career?.targetDate ? ' by ' + data.career.targetDate : ''}
 - Career skills: ${(data.career?.skills || []).map(s => s.name + ' (' + s.progress + '%)').join(', ') || 'none'}
 - Job applications: ${(data.career?.applications || []).map(a => a.company + ' - ' + a.role + ' (' + a.status + ')').join(', ') || 'none'}
-Always be warm, concise, and specific to this user.
+- Recent journal entries: ${(data.journal.entries || []).slice(-5).map(e => `[${e.date}${e.mood ? ', ' + e.mood : ''}] ${e.body.slice(0, 120)}`).join(' | ') || 'none'}
+- Stickies (personal notes, wishes, ideas — weave these into your suggestions naturally when relevant): ${(data.stickies || []).filter(s => s.text).map(s => `"${s.text}"`).join(', ') || 'none'}
+Always be warm, concise, and specific to this user. When you notice a sticky is relevant to what the user is asking about (e.g. a sticky says "try pilates" and they're talking about workouts), bring it up naturally — like "btw you mentioned wanting to try pilates!" Don't force stickies into every response, only when they genuinely fit.
 
 When the user asks you to add, update, or change their data, append an <actions> block at the very end of your reply (never inline). Format:
 <actions>[{"type":"ACTION","key":"value"}]</actions>
@@ -1926,14 +2133,14 @@ Available actions:
 - UPDATE_JOB_STATUS: {type, index, status ("applied"|"interviewing"|"offered"|"rejected")}
 - ADD_CAREER_EXPERIENCE: {type, topic}
 - UPDATE_PROFILE: {type, fields: {name?, vegan?, skinType?}} — update the user's profile (name, diet, skin type)
-- UPDATE_CONTEXT: {type, fact} — save a personal fact to the user's permanent knowledge base (allergies, preferences, life goals, important context)
+- UPDATE_CONTEXT: {type, key, fact} — save or UPDATE a personal fact in the user's knowledge base. The "key" is a short category tag (e.g. "skincare:cleanser", "allergy:food", "preference:workout-time", "goal:career"). If the same key already exists, the old value is REPLACED — so always reuse the same key when updating info (e.g. if the user switches cleansers, use key "skincare:cleanser" again and it overwrites)
 - SEND_NOTIFICATION: {type, title, body} — send a push notification to the user's phone (use for reminders, streak alerts, deadline nudges, or when the user asks you to remind them of something)
 
 You can include multiple actions in the array. Only include <actions> when explicitly modifying data. Today's date is ${todayKey}.
 
 When the user casually mentions important personal facts they did NOT explicitly ask you to save — goals, preferences, health context, life intentions — append a <memory> block at the very end of your reply (after <actions> if present):
 <memory>[{"label":"short human-readable description","payload":{action object}}]</memory>
-Only emit <memory> for stable, genuinely useful facts (allergies, dietary needs, preferences, career goals, life context, intentions). NOT for casual chat, emotions, or things already being saved via <actions>. Use UPDATE_CONTEXT for personal facts: {"type":"UPDATE_CONTEXT","fact":"..."} — this saves to the permanent knowledge base so you always remember it.
+Only emit <memory> for stable, genuinely useful facts (allergies, dietary needs, preferences, career goals, life context, intentions). NOT for casual chat, emotions, or things already being saved via <actions>. Use UPDATE_CONTEXT for personal facts: {"type":"UPDATE_CONTEXT","key":"category:detail","fact":"the value"} — the KEY acts as an ID so updating the same key replaces the old fact instead of duplicating. Use descriptive keys like "skincare:cleanser", "allergy:food", "preference:morning-routine", "goal:weight".
 
 IMPORTANT RULES:
 1. When the user tells you specific information to ADD or UPDATE (e.g. "add cleanser to my morning routine", "my skin type is oily", "add eggs to grocery list"), DO IT IMMEDIATELY with actions. Do NOT ask follow-up questions or start a quiz. Just do it.
@@ -3565,9 +3772,11 @@ function ThemeSwatch({ id, theme, isActive, onSelect, onDelete, isCustom }) {
 function SettingsPanel({ open, onClose }) {
   const { themeId, setTheme, customThemes, deleteCustomTheme } = useContext(ThemeCtx);
   const { data, dispatch } = useContext(DataCtx);
+  const [themeOpen, setThemeOpen] = useState(false);
   if (!open) return null;
 
   const handleDelete = (id) => { if (confirm('Delete this theme?')) deleteCustomTheme(id); };
+  const currentTheme = THEMES[themeId] || customThemes.find(ct => ct.id === themeId) || { name: themeId, swatches: [] };
 
   return (
     <div className="absolute inset-0 z-50 flex flex-col" style={{ background: 'var(--bg)' }}>
@@ -3579,6 +3788,81 @@ function SettingsPanel({ open, onClose }) {
           </button>
         </div>
         <div className="flex-1 overflow-y-auto px-5 pb-8" style={{ WebkitOverflowScrolling: 'touch' }}>
+
+          {/* ── Theme dropdown (first thing) ── */}
+          <div className="glass-card mb-6" style={{ overflow: 'hidden' }}>
+            <button onClick={() => setThemeOpen(!themeOpen)} className="flex items-center justify-between w-full" style={{ padding: '12px 16px', background: 'transparent', border: 'none', cursor: 'pointer' }}>
+              <div className="flex items-center gap-3">
+                <div className="flex gap-1.5">
+                  {(currentTheme.swatches || []).slice(0, 4).map((c, i) => <div key={i} style={{ width: 12, height: 12, borderRadius: '50%', background: c, border: '1px solid rgba(0,0,0,0.08)' }}/>)}
+                </div>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--dark)' }}>{currentTheme.name}</span>
+              </div>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" style={{ transition: 'transform 0.2s', transform: themeOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            {themeOpen && (
+              <div style={{ maxHeight: 320, overflowY: 'auto', padding: '0 12px 12px', borderTop: '1px solid rgba(0,0,0,0.04)' }}>
+                <div className="space-y-1.5" style={{ paddingTop: 8 }}>
+                  {Object.entries(THEMES).map(([id, theme]) => (
+                    <ThemeSwatch key={id} id={id} theme={theme} isActive={themeId === id} onSelect={(id) => { setTheme(id); setThemeOpen(false); }} isCustom={false} />
+                  ))}
+                </div>
+                {customThemes.length > 0 && (
+                  <>
+                    <p style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 12, marginBottom: 6 }}>from playground</p>
+                    <div className="space-y-1.5">
+                      {customThemes.map(ct => (
+                        <ThemeSwatch key={ct.id} id={ct.id} theme={ct} isActive={themeId === ct.id} onSelect={(id) => { setTheme(id); setThemeOpen(false); }} onDelete={handleDelete} isCustom={true} />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* ── Nav style picker ── */}
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>navigation</p>
+          <div className="flex gap-2 mb-6">
+            {[
+              { id: 'jar', label: 'jar', icon: '🫙' },
+              { id: 'tabs', label: 'tabs', icon: '📑' },
+              { id: 'pebbles', label: 'pebbles', icon: '🪨' },
+            ].map(opt => {
+              const active = (data.settings?.navStyle || 'jar') === opt.id;
+              return (
+                <button key={opt.id} onClick={() => dispatch({ type: 'UPDATE_SETTINGS', key: 'navStyle', value: opt.id })}
+                  style={{ flex: 1, padding: '10px 8px', borderRadius: 10, border: active ? '2px solid var(--primary)' : '2px solid rgba(0,0,0,0.06)', background: active ? 'var(--primary-light)' : 'var(--card-bg)', cursor: 'pointer', transition: 'all 0.15s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                  <span style={{ fontSize: 18 }}>{opt.icon}</span>
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: active ? 'var(--primary)' : 'var(--muted)', fontWeight: active ? 600 : 400 }}>{opt.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* ── Jar icon picker (only show when jar nav is active) ── */}
+          {(data.settings?.navStyle || 'jar') === 'jar' && <>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>jar icon</p>
+          <div className="flex gap-2 mb-6" style={{ flexWrap: 'wrap' }}>
+            {[
+              { src: 'images/pebble-logo.png', label: 'bunny' },
+              { src: 'images/icon-bunny-stars.png', label: 'stars' },
+              { src: 'images/icon-sun.png', label: 'sun' },
+              { src: 'images/icon-moon-bunny.png', label: 'moon' },
+              { src: 'images/icon-flower-oval.png', label: 'flower' },
+              { src: 'images/icon-rose.png', label: 'rose' },
+              { src: 'images/icon-tulip-stamp.png', label: 'tulip' },
+              { src: 'images/icon-plant.png', label: 'plant' },
+              { src: 'images/icon-chicken.png', label: 'chicken' },
+            ].map(icon => (
+              <button key={icon.src} onClick={() => dispatch({ type: 'UPDATE_SETTINGS', key: 'jarIcon', value: icon.src })}
+                style={{ width: 44, height: 44, borderRadius: 10, border: (data.settings?.jarIcon || 'images/pebble-logo.png') === icon.src ? '2px solid var(--primary)' : '2px solid rgba(0,0,0,0.06)', padding: 3, background: 'var(--card-bg)', cursor: 'pointer', overflow: 'hidden', transition: 'border-color 0.15s' }}>
+                <img src={icon.src} alt={icon.label} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 6, mixBlendMode: 'multiply' }} />
+              </button>
+            ))}
+          </div>
+          </>}
+
           <p style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>account</p>
           <div className="glass-card px-4 py-3 space-y-3 mb-6">
             <div className="flex items-center justify-between">
@@ -3589,12 +3873,14 @@ function SettingsPanel({ open, onClose }) {
             <div style={{ height: 1, background: 'rgba(0,0,0,0.04)' }}/>
             <div className="flex items-center justify-between">
               <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--dark)' }}>diet</span>
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--muted)' }}>{data.profile.vegan ? 'vegan' : 'no preference'}</span>
+              <span onClick={() => dispatch({ type: 'UPDATE_PROFILE', fields: { vegan: !data.profile.vegan } })} style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--muted)', cursor: 'pointer' }}>{data.profile.vegan ? 'vegan ✓' : 'no preference'}</span>
             </div>
             <div style={{ height: 1, background: 'rgba(0,0,0,0.04)' }}/>
             <div className="flex items-center justify-between">
               <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--dark)' }}>skin type</span>
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--muted)' }}>{data.profile.skinType}</span>
+              <input value={data.profile.skinType} onChange={e => dispatch({ type: 'UPDATE_PROFILE', fields: { skinType: e.target.value } })}
+                placeholder="e.g. combination, oily, dry"
+                style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--muted)', background: 'transparent', border: 'none', textAlign: 'right', outline: 'none', width: 160 }} />
             </div>
           </div>
 
@@ -3602,9 +3888,18 @@ function SettingsPanel({ open, onClose }) {
           <p style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.5, marginBottom: 10 }}>everything pebble always knows about you — allergies, preferences, goals, life context. edit directly or let chat build it.</p>
           <div className="glass-card px-4 py-3 mb-6">
             <textarea
-              value={data.profile.context || ''}
-              onChange={e => dispatch({ type: 'UPDATE_PROFILE', fields: { context: e.target.value } })}
-              placeholder={"- allergic to beets\n- prefer morning workouts\n- building AnchorED\n- lactose intolerant"}
+              value={(() => { const ctx = data.profile.context; if (!ctx || typeof ctx !== 'object') return ''; return Object.entries(ctx).map(([k,v]) => `[${k}] ${v}`).join('\n'); })()}
+              onChange={e => {
+                const lines = e.target.value.split('\n');
+                const obj = {};
+                lines.forEach((line, i) => {
+                  const m = line.match(/^\[([^\]]+)\]\s*(.*)/);
+                  if (m) obj[m[1].trim().toLowerCase()] = m[2].trim();
+                  else if (line.trim()) obj['fact_' + (i + 1)] = line.trim();
+                });
+                dispatch({ type: 'UPDATE_PROFILE', fields: { context: obj } });
+              }}
+              placeholder={"[allergy:food] beets\n[preference:workout] mornings\n[project] building AnchorED\n[diet] lactose intolerant"}
               rows={6}
               style={{ width: '100%', fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--dark)', background: 'transparent', border: 'none', outline: 'none', resize: 'none', lineHeight: 1.7 }} />
           </div>
@@ -3616,7 +3911,7 @@ function SettingsPanel({ open, onClose }) {
               <input type="text" autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck="false"
                 value={data.settings?.apiKey || ''}
                 onChange={e => dispatch({ type: 'UPDATE_SETTINGS', key: 'apiKey', value: e.target.value })}
-                onBlur={() => { try { localStorage.setItem('pebble-credentials', JSON.stringify(data.settings)); } catch {} }}
+                onBlur={() => { try { localStorage.setItem('pebble-credentials', JSON.stringify({ ...data.settings, _profile: data.profile })); } catch {} }}
                 placeholder="sk-ant-..."
                 style={{ width: '100%', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--dark)', background: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 8, padding: '8px 10px', outline: 'none', WebkitTextSecurity: 'disc' }} />
             </div>
@@ -3633,7 +3928,7 @@ function SettingsPanel({ open, onClose }) {
               <input type="text" autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck="false"
                 value={data.settings?.gistToken || ''}
                 onChange={e => dispatch({ type: 'UPDATE_SETTINGS', key: 'gistToken', value: e.target.value })}
-                onBlur={() => { try { localStorage.setItem('pebble-credentials', JSON.stringify(data.settings)); } catch {} }}
+                onBlur={() => { try { localStorage.setItem('pebble-credentials', JSON.stringify({ ...data.settings, _profile: data.profile })); } catch {} }}
                 placeholder="ghp_..."
                 style={{ width: '100%', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--dark)', background: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 8, padding: '8px 10px', outline: 'none', WebkitTextSecurity: 'disc' }} />
             </div>
@@ -3642,10 +3937,11 @@ function SettingsPanel({ open, onClose }) {
               <div className="flex gap-2">
                 <button onClick={async () => {
                   const { settings: _omit, ...safeData } = data;
+                  const brainMd = generateBrainMd(data);
                   const pushOnce = () => fetch(`https://api.github.com/gists/${data.settings.gistId}`, {
                     method: 'PATCH',
                     headers: { Authorization: `token ${data.settings.gistToken}`, 'Content-Type': 'application/json', Accept: 'application/vnd.github+json' },
-                    body: JSON.stringify({ files: { 'pebble.json': { content: JSON.stringify(safeData) } } })
+                    body: JSON.stringify({ files: { 'pebble.json': { content: JSON.stringify(safeData) }, 'pebble-brain.md': { content: brainMd } } })
                   });
                   try {
                     let res = await pushOnce();
@@ -3711,27 +4007,6 @@ function SettingsPanel({ open, onClose }) {
             )}
           </div>
 
-          <p style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>theme</p>
-          <div className="space-y-2.5">
-            {Object.entries(THEMES).map(([id, theme]) => (
-              <ThemeSwatch key={id} id={id} theme={theme} isActive={themeId === id} onSelect={setTheme} isCustom={false} />
-            ))}
-          </div>
-          {customThemes.length > 0 && (
-            <>
-              <p style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 2, marginTop: 28, marginBottom: 12 }}>from playground</p>
-              <div className="space-y-2.5">
-                {customThemes.map(ct => (
-                  <ThemeSwatch key={ct.id} id={ct.id} theme={ct} isActive={themeId === ct.id} onSelect={setTheme} onDelete={handleDelete} isCustom={true} />
-                ))}
-              </div>
-            </>
-          )}
-          {customThemes.length === 0 && (
-            <div className="mt-6 glass-card px-4 py-3 text-center">
-              <p style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--muted)' }}>open the playground and hit "push to pebble app" to add custom themes here</p>
-            </div>
-          )}
 
           <p style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 2, marginTop: 28, marginBottom: 12 }}>open on phone</p>
           <div className="glass-card px-4 py-4 flex flex-col items-center gap-3">
@@ -4026,20 +4301,24 @@ function App() {
   const setPageRef = (i) => (el) => { pageRefs.current[i] = el; };
 
   const allPageLabels = [...PAGE_LABELS, ...customSegments.map(s => s.name)];
+  const navStyle = data.settings?.navStyle || 'jar';
 
   return (
     <QuizCtx.Provider value={{ setCardQuiz }}>
     <div className="phone-frame" data-theme={themeId}>
       {cardQuiz && <CardQuizOverlay quiz={cardQuiz} onClose={() => setCardQuiz(null)} />}
-      <MarbleJar open={jarOpen} onClose={() => setJarOpen(false)} onNavigate={navigateTo} currentPage={currentPage} customSegments={customSegments} staticPageCount={staticPages.length} />
+      {navStyle === 'jar' && <MarbleJar open={jarOpen} onClose={() => setJarOpen(false)} onNavigate={navigateTo} currentPage={currentPage} customSegments={customSegments} staticPageCount={staticPages.length} />}
       <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
 
       <div className={hasSky ? 'cloud-sky' : ''}>
-        <Header onJarOpen={() => setJarOpen(true)} onSettingsOpen={() => setSettingsOpen(true)} />
+        <Header onJarOpen={navStyle === 'jar' ? () => setJarOpen(true) : null} onSettingsOpen={() => setSettingsOpen(true)} />
       </div>
 
+      {navStyle === 'tabs' && <TabNav currentPage={currentPage} onNavigate={navigateTo} pageLabels={allPageLabels} />}
+      {navStyle === 'pebbles' && <PebbleNav currentPage={currentPage} onNavigate={navigateTo} pageLabels={allPageLabels} />}
+
       <div className="swipe-container" ref={containerRef} style={{ position: 'relative' }}>
-        <PageDots currentPage={currentPage} totalPages={pages.length} onDotClick={navigateTo} pageLabels={allPageLabels} />
+        {navStyle === 'jar' && <PageDots currentPage={currentPage} totalPages={pages.length} onDotClick={navigateTo} pageLabels={allPageLabels} />}
         {pages.map((Page, i) => (
           <div key={pageKeys[i]} ref={setPageRef(i)} className="swipe-page-wrap">
             <Page />
