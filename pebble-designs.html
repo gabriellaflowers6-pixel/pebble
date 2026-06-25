@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pebble — Homepage Design Explorations</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Caveat:wght@400;600;700&family=Klee+One&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Mono:wght@300;400;500&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #1a1a1a;
+    font-family: 'Space Mono', monospace;
+    color: #333;
+    padding: 40px 20px;
+  }
+  .page-title {
+    text-align: center; color: #fff; font-size: 14px;
+    letter-spacing: 3px; text-transform: uppercase; margin-bottom: 8px;
+  }
+  .page-subtitle {
+    text-align: center; color: #888; font-size: 12px;
+    letter-spacing: 1px; margin-bottom: 50px;
+  }
+  .designs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 60px; max-width: 1800px; margin: 0 auto; justify-items: center;
+  }
+  .design-card { text-align: center; }
+  .design-label {
+    color: #ccc; font-size: 11px; letter-spacing: 2px;
+    text-transform: uppercase; margin-bottom: 6px;
+  }
+  .design-desc {
+    color: #777; font-size: 11px; margin-bottom: 20px;
+    max-width: 320px; margin-left: auto; margin-right: auto;
+  }
+  .phone {
+    width: 320px; height: 692px; border-radius: 40px;
+    overflow: hidden; position: relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5), inset 0 0 0 2px rgba(255,255,255,0.1);
+  }
+  .phone-screen {
+    width: 100%; height: 100%; overflow: hidden; position: relative;
+  }
+  .hand-drawn { stroke-linecap: round; stroke-linejoin: round; }
+
+  /* ============= SHARED BLUE INK VARS =============
+     ink: #1A00FF (deep ballpoint blue)
+     bg:  #E8E6E3 (warm notebook gray)
+     card: #D8D2E8 (lavender tint)
+     faded: #8080BB (faded ink)
+     dot: #D5D0C8 (empty dot)
+  ================================================== */
+
+  /* ========================================
+     DESIGN 1: CENTERED MINIMAL (blue ink)
+     ======================================== */
+  .d1 .phone-screen {
+    background: #E8E6E3;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 50px 28px 24px;
+  }
+  .d1 .greeting { font-family: 'Caveat', cursive; font-size: 32px; color: #1A00FF; margin-bottom: 2px; }
+  .d1 .date-pill {
+    background: #1A00FF; color: #F5F3F0; font-size: 11px;
+    padding: 6px 16px; border-radius: 20px; letter-spacing: 1px; margin-bottom: 36px;
+  }
+  .d1 .pebble-cluster {
+    display: flex; gap: 12px; flex-wrap: wrap;
+    justify-content: center; margin-bottom: 36px; max-width: 220px;
+  }
+  .d1 .pebble-icon { width: 42px; height: 42px; }
+  .d1 .daily-stats { display: flex; gap: 20px; margin-bottom: 32px; }
+  .d1 .stat { text-align: center; }
+  .d1 .stat-num { font-size: 28px; font-weight: 700; color: #1A00FF; line-height: 1; }
+  .d1 .stat-label { font-size: 9px; color: #8080BB; letter-spacing: 1px; text-transform: uppercase; margin-top: 4px; }
+  .d1 .divider-dots { display: flex; gap: 8px; margin-bottom: 28px; }
+  .d1 .dot { width: 4px; height: 4px; border-radius: 50%; background: #1A00FF; opacity: 0.3; }
+  .d1 .quick-items { width: 100%; display: flex; flex-direction: column; gap: 10px; margin-bottom: auto; }
+  .d1 .quick-item {
+    background: #D8D2E8; border-radius: 14px; padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px; font-size: 12px; color: #1A00FF;
+  }
+  .d1 .quick-item svg { flex-shrink: 0; }
+  .d1 .quick-item-right { margin-left: auto; font-size: 10px; color: #8080BB; }
+  .d1 .add-btn { margin-top: 20px; margin-bottom: 16px; }
+  .d1 .add-btn svg { cursor: pointer; }
+  .d1 .add-label { font-size: 11px; color: #1A00FF; letter-spacing: 1px; margin-top: 6px; }
+  .d1 .tab-bar {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    display: flex; justify-content: center; gap: 8px;
+    padding: 14px 20px 28px; background: #E8E6E3;
+  }
+  .d1 .tab-bar .tab {
+    width: 48px; height: 44px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center; background: transparent;
+  }
+  .d1 .tab-bar .tab.active { background: #1A00FF; }
+  .d1 .tab-bar .tab.active svg path,
+  .d1 .tab-bar .tab.active svg circle,
+  .d1 .tab-bar .tab.active svg rect { stroke: #F5F3F0; }
+
+  /* ========================================
+     DESIGN 2: DOT GRID GARDEN (blue ink)
+     ======================================== */
+  .d2 .phone-screen {
+    background: #E8E6E3;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 50px 20px 24px; position: relative;
+  }
+  .d2 .header-row {
+    display: flex; align-items: center; justify-content: space-between;
+    width: 100%; margin-bottom: 20px; padding: 0 8px;
+  }
+  .d2 .brand { font-family: 'Caveat', cursive; font-size: 26px; color: #1A00FF; }
+  .d2 .month-pill {
+    background: #1A00FF; color: #F5F3F0; font-size: 10px;
+    padding: 5px 14px; border-radius: 20px; letter-spacing: 1px;
+  }
+  .d2 .dot-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    gap: 6px; width: 100%; max-width: 280px; margin-bottom: 24px;
+  }
+  .d2 .grid-dot {
+    width: 100%; aspect-ratio: 1; border-radius: 50%;
+    background: #D5D0C8; display: flex; align-items: center; justify-content: center;
+  }
+  .d2 .grid-dot.filled { background: #D8D2E8; }
+  .d2 .grid-dot.today { background: #1A00FF; box-shadow: 0 0 0 3px #1A00FF30; }
+  .d2 .grid-dot.has-pebble { background: #1A00FF; opacity: 0.6; }
+  .d2 .grid-dot svg { width: 16px; height: 16px; }
+  .d2 .section-label {
+    font-size: 10px; color: #8080BB; letter-spacing: 2px;
+    text-transform: uppercase; align-self: flex-start; padding-left: 10px;
+    margin-bottom: 10px; margin-top: 8px;
+  }
+  .d2 .task-list { width: 100%; display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+  .d2 .task-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; font-size: 12px; color: #1A00FF;
+  }
+  .d2 .task-circle {
+    width: 18px; height: 18px; border-radius: 50%;
+    border: 2px solid #1A00FF; flex-shrink: 0;
+  }
+  .d2 .task-circle.done { background: #1A00FF; position: relative; }
+  .d2 .task-circle.done::after {
+    content: ''; position: absolute; top: 3px; left: 5px;
+    width: 5px; height: 8px; border: solid #F5F3F0;
+    border-width: 0 2px 2px 0; transform: rotate(45deg);
+  }
+  .d2 .task-text.done { text-decoration: line-through; color: #8080BB; }
+  .d2 .meal-card {
+    background: #D8D2E8; border-radius: 16px; padding: 14px 16px;
+    width: 100%; display: flex; align-items: center; gap: 12px;
+  }
+  .d2 .meal-info { flex: 1; }
+  .d2 .meal-name { font-size: 12px; color: #1A00FF; font-weight: 700; margin-bottom: 2px; }
+  .d2 .meal-cal { font-size: 10px; color: #8080BB; }
+  .d2 .meal-icon-box {
+    width: 44px; height: 44px; background: #1A00FF;
+    border-radius: 12px; display: flex; align-items: center; justify-content: center;
+  }
+  .d2 .tab-bar {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    display: flex; justify-content: space-around; padding: 12px 30px 28px; background: #E8E6E3;
+  }
+  .d2 .tab-icon { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .d2 .tab-label { font-size: 8px; color: #8080BB; letter-spacing: 1px; text-transform: uppercase; }
+  .d2 .tab-label.active { color: #1A00FF; }
+
+  /* ========================================
+     DESIGN 3: CARD STACK (blue ink)
+     ======================================== */
+  .d3 .phone-screen {
+    background: #E8E6E3;
+    display: flex; flex-direction: column; padding: 50px 20px 80px; overflow-y: auto;
+  }
+  .d3 .top-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 24px; padding: 0 4px;
+  }
+  .d3 .brand { font-family: 'Caveat', cursive; font-size: 28px; color: #1A00FF; }
+  .d3 .avatar {
+    width: 36px; height: 36px; border-radius: 50%; background: #D8D2E8;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .d3 .greeting-text { font-size: 12px; color: #8080BB; margin-bottom: 4px; padding: 0 4px; letter-spacing: 1px; }
+  .d3 .today-text { font-size: 18px; color: #1A00FF; font-weight: 700; margin-bottom: 20px; padding: 0 4px; }
+  .d3 .card {
+    background: #fff; border-radius: 20px; padding: 18px;
+    margin-bottom: 12px; box-shadow: 0 2px 12px rgba(26, 0, 255, 0.06);
+  }
+  .d3 .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .d3 .card-title { font-size: 11px; color: #8080BB; letter-spacing: 2px; text-transform: uppercase; }
+  .d3 .card-action { font-size: 10px; color: #8080BB; letter-spacing: 1px; }
+  .d3 .todo-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 0; font-size: 12px; color: #1A00FF;
+  }
+  .d3 .todo-check {
+    width: 20px; height: 20px; border-radius: 6px;
+    border: 2px solid #1A00FF; flex-shrink: 0;
+  }
+  .d3 .todo-check.done { background: #1A00FF; border-color: #1A00FF; position: relative; }
+  .d3 .todo-check.done::after {
+    content: ''; position: absolute; top: 3px; left: 6px;
+    width: 5px; height: 9px; border: solid #fff;
+    border-width: 0 2px 2px 0; transform: rotate(45deg);
+  }
+  .d3 .todo-text.done { text-decoration: line-through; color: #B0B0C8; }
+  .d3 .cal-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+  .d3 .cal-day {
+    flex-shrink: 0; width: 48px; height: 64px; border-radius: 14px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: #E8E6E3; font-size: 10px; color: #8080BB; gap: 4px;
+  }
+  .d3 .cal-day .num { font-size: 18px; font-weight: 700; color: #1A00FF; }
+  .d3 .cal-day.today { background: #1A00FF; color: #D8D2E8; }
+  .d3 .cal-day.today .num { color: #F5F3F0; }
+  .d3 .cal-event {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 0; font-size: 12px; color: #1A00FF;
+  }
+  .d3 .event-dot { width: 8px; height: 8px; border-radius: 50%; background: #1A00FF; opacity: 0.4; flex-shrink: 0; }
+  .d3 .event-time { font-size: 10px; color: #8080BB; margin-left: auto; }
+  .d3 .meal-row { display: flex; gap: 10px; }
+  .d3 .meal-chip { flex: 1; background: #D8D2E8; border-radius: 12px; padding: 12px; text-align: center; }
+  .d3 .meal-chip-label { font-size: 9px; color: #8080BB; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+  .d3 .meal-chip-name { font-size: 11px; color: #1A00FF; font-weight: 700; }
+  .d3 .meal-chip-cal { font-size: 9px; color: #8080BB; margin-top: 2px; }
+  .d3 .progress-bar-bg { height: 6px; background: #D8D2E8; border-radius: 3px; margin-top: 12px; }
+  .d3 .progress-bar-fill { height: 100%; width: 62%; background: #1A00FF; border-radius: 3px; }
+  .d3 .progress-label { font-size: 10px; color: #8080BB; margin-top: 6px; text-align: center; }
+
+  /* ========================================
+     DESIGN 4: DARK INK (blue ink on dark)
+     ======================================== */
+  .d4 .phone-screen {
+    background: #0A0033;
+    display: flex; flex-direction: column; padding: 50px 20px 80px; overflow-y: auto;
+  }
+  .d4 .top-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 28px; padding: 0 4px;
+  }
+  .d4 .brand { font-family: 'Caveat', cursive; font-size: 28px; color: #F5F3F0; }
+  .d4 .date-text { font-size: 10px; color: #8080BB; letter-spacing: 1px; }
+  .d4 .hero-card {
+    background: #F5F3F0; border-radius: 24px; padding: 24px;
+    margin-bottom: 16px; text-align: center;
+  }
+  .d4 .hero-greeting { font-family: 'Caveat', cursive; font-size: 28px; color: #1A00FF; margin-bottom: 8px; }
+  .d4 .hero-summary { font-size: 11px; color: #8080BB; line-height: 1.6; }
+  .d4 .hero-stats {
+    display: flex; justify-content: center; gap: 24px;
+    margin-top: 16px; padding-top: 16px; border-top: 1px solid #D8D2E8;
+  }
+  .d4 .hero-stat-num { font-size: 22px; font-weight: 700; color: #1A00FF; }
+  .d4 .hero-stat-label { font-size: 8px; color: #8080BB; letter-spacing: 1px; text-transform: uppercase; }
+  .d4 .section-title {
+    font-size: 10px; color: #6060AA; letter-spacing: 2px;
+    text-transform: uppercase; margin-bottom: 10px; margin-top: 8px; padding-left: 4px;
+  }
+  .d4 .timeline { position: relative; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; margin-bottom: 16px; }
+  .d4 .timeline::before {
+    content: ''; position: absolute; left: 5px; top: 6px; bottom: 6px;
+    width: 2px; background: #1A00FF40; border-radius: 1px;
+  }
+  .d4 .tl-item {
+    display: flex; align-items: center; gap: 10px; padding: 8px 14px;
+    background: #150066; border-radius: 12px; font-size: 11px;
+    color: #D8D2E8; position: relative;
+  }
+  .d4 .tl-item::before {
+    content: ''; position: absolute; left: -19px; width: 10px; height: 10px;
+    border-radius: 50%; background: #1A00FF; border: 2px solid #0A0033;
+  }
+  .d4 .tl-time { font-size: 10px; color: #6060AA; flex-shrink: 0; width: 44px; }
+  .d4 .tl-text { flex: 1; }
+  .d4 .bottom-cards { display: flex; gap: 10px; }
+  .d4 .mini-card {
+    flex: 1; background: #150066; border-radius: 16px; padding: 16px; text-align: center;
+  }
+  .d4 .mini-card-num { font-size: 24px; font-weight: 700; color: #F5F3F0; }
+  .d4 .mini-card-label { font-size: 8px; color: #6060AA; letter-spacing: 1px; text-transform: uppercase; margin-top: 4px; }
+  .d4 .mini-card-sub { font-size: 10px; color: #8080BB; margin-top: 2px; }
+  .d4 .tab-bar {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    display: flex; justify-content: center; gap: 6px;
+    padding: 12px 24px 28px; background: #0A0033;
+  }
+  .d4 .tab {
+    width: 44px; height: 40px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .d4 .tab.active { background: #F5F3F0; }
+
+  /* ========================================
+     DESIGN 5: STUDIO GHIBLI
+     ======================================== */
+  .d5 .phone-screen {
+    background: linear-gradient(180deg, #D4E8DC 0%, #EDE8D8 50%, #F0E8DA 100%);
+    display: flex; flex-direction: column; padding: 50px 20px 80px; overflow-y: auto;
+  }
+  .d5 .top-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 20px; padding: 0 4px;
+  }
+  .d5 .brand { font-family: 'Caveat', cursive; font-size: 28px; color: #4A6741; }
+  .d5 .weather {
+    font-size: 10px; color: #8B7355; letter-spacing: 1px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .d5 .greeting-area { text-align: center; margin-bottom: 24px; }
+  .d5 .greeting {
+    font-family: 'Caveat', cursive; font-size: 30px; color: #4A6741; margin-bottom: 4px;
+  }
+  .d5 .date-text { font-size: 11px; color: #8B7355; letter-spacing: 1px; }
+  .d5 .scene {
+    display: flex; justify-content: center; gap: 8px; margin-bottom: 24px;
+    padding: 16px 0;
+  }
+  .d5 .card {
+    background: rgba(255, 255, 250, 0.85); border-radius: 20px;
+    padding: 16px; margin-bottom: 12px;
+    box-shadow: 0 2px 12px rgba(74, 103, 65, 0.08);
+    backdrop-filter: blur(4px);
+  }
+  .d5 .card-header {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;
+  }
+  .d5 .card-title {
+    font-size: 11px; color: #8B7355; letter-spacing: 2px;
+    text-transform: uppercase; font-family: 'Space Mono', monospace;
+  }
+  .d5 .card-count { font-size: 10px; color: #A8967E; }
+  .d5 .todo-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 0; font-size: 12px; color: #4A6741;
+    font-family: 'Klee One', cursive;
+  }
+  .d5 .todo-dot {
+    width: 18px; height: 18px; border-radius: 50%;
+    border: 2px solid #4A6741; flex-shrink: 0;
+  }
+  .d5 .todo-dot.done {
+    background: #4A6741; position: relative;
+  }
+  .d5 .todo-dot.done::after {
+    content: ''; position: absolute; top: 3px; left: 5px;
+    width: 5px; height: 8px; border: solid #FFFEFA;
+    border-width: 0 2px 2px 0; transform: rotate(45deg);
+  }
+  .d5 .todo-text.done { text-decoration: line-through; color: #A8C4A0; }
+  .d5 .meal-row { display: flex; gap: 8px; }
+  .d5 .meal-chip {
+    flex: 1; background: #E8F0E4; border-radius: 14px;
+    padding: 12px 8px; text-align: center;
+  }
+  .d5 .meal-label {
+    font-size: 9px; color: #8B7355; letter-spacing: 1px;
+    text-transform: uppercase; margin-bottom: 4px;
+    font-family: 'Space Mono', monospace;
+  }
+  .d5 .meal-name {
+    font-size: 12px; color: #4A6741; font-weight: 600;
+    font-family: 'Klee One', cursive;
+  }
+  .d5 .meal-cal {
+    font-size: 9px; color: #A8967E; margin-top: 2px;
+    font-family: 'Space Mono', monospace;
+  }
+  .d5 .cal-strip { display: flex; gap: 6px; overflow-x: auto; }
+  .d5 .cal-day {
+    flex-shrink: 0; width: 44px; height: 58px; border-radius: 14px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: rgba(255,255,250,0.5); gap: 2px;
+  }
+  .d5 .cal-day-name { font-size: 9px; color: #A8967E; font-family: 'Space Mono', monospace; }
+  .d5 .cal-day-num {
+    font-size: 16px; font-weight: 700; color: #4A6741;
+    font-family: 'Space Mono', monospace;
+  }
+  .d5 .cal-day.today {
+    background: #4A6741; box-shadow: 0 2px 8px rgba(74, 103, 65, 0.3);
+  }
+  .d5 .cal-day.today .cal-day-name { color: #C4DCC0; }
+  .d5 .cal-day.today .cal-day-num { color: #FFFEFA; }
+  .d5 .progress-row {
+    display: flex; align-items: center; gap: 10px; margin-top: 12px;
+  }
+  .d5 .progress-bar-bg {
+    flex: 1; height: 8px; background: #E8F0E4; border-radius: 4px;
+  }
+  .d5 .progress-fill {
+    height: 100%; width: 62%; border-radius: 4px;
+    background: linear-gradient(90deg, #4A6741, #8BAF82);
+  }
+  .d5 .progress-text { font-size: 10px; color: #8B7355; white-space: nowrap; }
+  .d5 .tab-bar {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    display: flex; justify-content: center; gap: 8px;
+    padding: 12px 24px 28px;
+    background: linear-gradient(180deg, transparent, #EDE8D8);
+  }
+  .d5 .tab {
+    width: 48px; height: 44px; border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255,255,250,0.6);
+  }
+  .d5 .tab.active { background: #4A6741; }
+  .d5 .tab.active svg path,
+  .d5 .tab.active svg circle,
+  .d5 .tab.active svg rect { stroke: #FFFEFA; }
+
+  /* ========================================
+     DESIGN 6: 5S CONTENT (teal + salmon)
+     Inspired by 5scontent.com — mint/sage bg,
+     salmon pink accents, elegant serif type.
+     ======================================== */
+  .d6 .phone-screen {
+    background: #C4D8D0;
+    display: flex; flex-direction: column; padding: 50px 20px 80px;
+    overflow-y: auto;
+  }
+  .d6 .top-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 36px; padding: 0 4px;
+  }
+  .d6 .brand {
+    font-family: 'Playfair Display', serif; font-size: 24px;
+    color: #E08B76; font-weight: 600; letter-spacing: 1px;
+  }
+  .d6 .nav-dots { display: flex; gap: 5px; }
+  .d6 .nav-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #E08B76; opacity: 0.5;
+  }
+  .d6 .nav-dot.active { opacity: 1; }
+  .d6 .hero-text {
+    font-family: 'Playfair Display', serif; font-size: 32px;
+    color: #E08B76; line-height: 1.15; margin-bottom: 8px; padding: 0 4px;
+    font-weight: 400;
+  }
+  .d6 .hero-sub {
+    font-family: 'Space Mono', monospace; font-size: 10px;
+    color: #7A9E90; letter-spacing: 2px; text-transform: uppercase;
+    margin-bottom: 32px; padding: 0 4px;
+  }
+  .d6 .divider-line {
+    width: 100%; height: 1px; background: #E08B76; opacity: 0.3;
+    margin-bottom: 24px;
+  }
+  .d6 .section-label {
+    font-family: 'Space Mono', monospace; font-size: 9px;
+    color: #7A9E90; letter-spacing: 3px; text-transform: uppercase;
+    margin-bottom: 12px; padding: 0 4px;
+  }
+  .d6 .task-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 24px; }
+  .d6 .task-row {
+    display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+    font-family: 'Playfair Display', serif; font-size: 14px; color: #3A5E50;
+  }
+  .d6 .task-circle {
+    width: 20px; height: 20px; border-radius: 50%;
+    border: 1.5px solid #E08B76; flex-shrink: 0;
+  }
+  .d6 .task-circle.done { background: #E08B76; position: relative; }
+  .d6 .task-circle.done::after {
+    content: ''; position: absolute; top: 4px; left: 6px;
+    width: 5px; height: 8px; border: solid #C4D8D0;
+    border-width: 0 2px 2px 0; transform: rotate(45deg);
+  }
+  .d6 .task-row.done { color: #7A9E90; text-decoration: line-through; }
+  .d6 .stat-row {
+    display: flex; gap: 8px; margin-bottom: 24px;
+  }
+  .d6 .stat-card {
+    flex: 1; background: rgba(255,255,255,0.35); border-radius: 16px;
+    padding: 16px 12px; text-align: center;
+    backdrop-filter: blur(4px);
+  }
+  .d6 .stat-num {
+    font-family: 'Playfair Display', serif; font-size: 28px;
+    color: #E08B76; font-weight: 600; line-height: 1;
+  }
+  .d6 .stat-label {
+    font-family: 'Space Mono', monospace; font-size: 8px;
+    color: #7A9E90; letter-spacing: 2px; text-transform: uppercase; margin-top: 4px;
+  }
+  .d6 .meal-strip { display: flex; gap: 8px; margin-bottom: 20px; }
+  .d6 .meal-pill {
+    flex: 1; background: #E08B76; border-radius: 24px;
+    padding: 14px 10px; text-align: center;
+  }
+  .d6 .meal-pill-label {
+    font-family: 'Space Mono', monospace; font-size: 8px;
+    color: #F5E0DA; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px;
+  }
+  .d6 .meal-pill-name {
+    font-family: 'Playfair Display', serif; font-size: 12px;
+    color: #fff; font-weight: 600;
+  }
+  .d6 .meal-pill-cal {
+    font-family: 'Space Mono', monospace; font-size: 9px;
+    color: #F5E0DA; margin-top: 2px;
+  }
+  .d6 .progress-strip {
+    background: rgba(255,255,255,0.35); border-radius: 12px;
+    padding: 12px 16px; display: flex; align-items: center; gap: 12px;
+  }
+  .d6 .progress-bar-bg { flex: 1; height: 4px; background: #a8c4b8; border-radius: 2px; }
+  .d6 .progress-bar-fill { height: 100%; width: 62%; background: #E08B76; border-radius: 2px; }
+  .d6 .progress-text {
+    font-family: 'Space Mono', monospace; font-size: 10px; color: #7A9E90;
+    white-space: nowrap;
+  }
+  .d6 .tab-bar {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    display: flex; justify-content: center; gap: 6px;
+    padding: 14px 24px 28px; background: #C4D8D0;
+    border-top: 1px solid rgba(224, 139, 118, 0.2);
+  }
+  .d6 .tab {
+    width: 48px; height: 42px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .d6 .tab.active { background: #E08B76; }
+  .d6 .tab.active svg path,
+  .d6 .tab.active svg circle,
+  .d6 .tab.active svg rect,
+  .d6 .tab.active svg line { stroke: #fff; }
+
+  /* ========================================
+     DESIGN 7: BLUEPRINT (Making Software)
+     Blue line illustrations on white,
+     technical/reference manual feel.
+     NOT the blocky heading font.
+     ======================================== */
+  .d7 .phone-screen {
+    background: #FAFAFA;
+    display: flex; flex-direction: column; padding: 50px 20px 80px;
+    overflow-y: auto; position: relative;
+  }
+  .d7 .top-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 8px; padding: 0 4px;
+  }
+  .d7 .brand {
+    font-family: 'DM Mono', monospace; font-size: 16px;
+    color: #6B7CFF; font-weight: 500; letter-spacing: 2px; text-transform: uppercase;
+  }
+  .d7 .fig-label {
+    font-family: 'DM Mono', monospace; font-size: 8px;
+    color: #B0B8FF; letter-spacing: 1px;
+  }
+  .d7 .blueprint-line {
+    width: 100%; height: 1px;
+    background: repeating-linear-gradient(90deg, #6B7CFF 0, #6B7CFF 4px, transparent 4px, transparent 8px);
+    opacity: 0.3; margin-bottom: 20px;
+  }
+  .d7 .greeting {
+    font-family: 'Space Mono', monospace; font-size: 12px;
+    color: #8890CC; margin-bottom: 4px; padding: 0 4px;
+  }
+  .d7 .date-text {
+    font-family: 'Space Mono', monospace; font-size: 18px;
+    color: #6B7CFF; font-weight: 700; margin-bottom: 20px; padding: 0 4px;
+  }
+  .d7 .illustration-area {
+    display: flex; justify-content: center; margin-bottom: 20px;
+    padding: 8px 0;
+  }
+  .d7 .section-header {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 10px; padding: 0 4px;
+  }
+  .d7 .section-tag {
+    font-family: 'DM Mono', monospace; font-size: 8px;
+    color: #B0B8FF; letter-spacing: 1px; text-transform: uppercase;
+    border: 1px solid #D0D4FF; border-radius: 4px; padding: 2px 6px;
+  }
+  .d7 .section-title {
+    font-family: 'Space Mono', monospace; font-size: 11px;
+    color: #6B7CFF; letter-spacing: 2px; text-transform: uppercase;
+  }
+  .d7 .card {
+    background: #fff; border: 1px solid #E8EAFF; border-radius: 12px;
+    padding: 16px; margin-bottom: 10px;
+  }
+  .d7 .task-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 0; font-family: 'Space Mono', monospace;
+    font-size: 11px; color: #4A4E80;
+  }
+  .d7 .task-box {
+    width: 18px; height: 18px; border-radius: 4px;
+    border: 1.5px solid #6B7CFF; flex-shrink: 0;
+  }
+  .d7 .task-box.done { background: #6B7CFF; position: relative; }
+  .d7 .task-box.done::after {
+    content: ''; position: absolute; top: 2px; left: 5px;
+    width: 5px; height: 8px; border: solid #fff;
+    border-width: 0 2px 2px 0; transform: rotate(45deg);
+  }
+  .d7 .task-text.done { text-decoration: line-through; color: #B0B8FF; }
+  .d7 .cal-strip { display: flex; gap: 6px; overflow-x: auto; }
+  .d7 .cal-day {
+    flex-shrink: 0; width: 42px; height: 56px; border-radius: 8px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    border: 1px solid #E8EAFF; gap: 2px;
+    font-family: 'DM Mono', monospace;
+  }
+  .d7 .cal-day-name { font-size: 8px; color: #B0B8FF; letter-spacing: 1px; text-transform: uppercase; }
+  .d7 .cal-day-num { font-size: 16px; font-weight: 500; color: #6B7CFF; }
+  .d7 .cal-day.today { background: #6B7CFF; border-color: #6B7CFF; }
+  .d7 .cal-day.today .cal-day-name { color: #D0D4FF; }
+  .d7 .cal-day.today .cal-day-num { color: #fff; }
+  .d7 .data-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .d7 .data-cell {
+    flex: 1; border: 1px solid #E8EAFF; border-radius: 10px;
+    padding: 14px 10px; text-align: center;
+  }
+  .d7 .data-num {
+    font-family: 'DM Mono', monospace; font-size: 24px;
+    color: #6B7CFF; font-weight: 500; line-height: 1;
+  }
+  .d7 .data-label {
+    font-family: 'DM Mono', monospace; font-size: 8px;
+    color: #B0B8FF; letter-spacing: 2px; text-transform: uppercase; margin-top: 4px;
+  }
+  .d7 .ref-note {
+    font-family: 'DM Mono', monospace; font-size: 8px;
+    color: #C8CCFF; text-align: right; padding: 0 4px; margin-top: 4px;
+  }
+  .d7 .tab-bar {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    display: flex; justify-content: center; gap: 4px;
+    padding: 12px 20px 28px; background: #FAFAFA;
+    border-top: 1px solid #E8EAFF;
+  }
+  .d7 .tab {
+    width: 46px; height: 40px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid transparent;
+  }
+  .d7 .tab.active { border-color: #6B7CFF; background: #F0F2FF; }
+
+  /* ========================================
+     DESIGN 8: VINTAGE POSTER + BLUEPRINT
+     Marcel "this one" meets Making Software.
+     Cream bg, hand-drawn vintage illustrations,
+     blue technical details, ornate borders.
+     ======================================== */
+  .d8 .phone-screen {
+    background: #F5F0E6;
+    display: flex; flex-direction: column; padding: 50px 20px 80px;
+    overflow-y: auto; position: relative;
+  }
+  .d8 .ornate-border {
+    position: absolute; top: 44px; left: 12px; right: 12px; bottom: 72px;
+    border: 1px solid #C8B89A; border-radius: 4px; pointer-events: none;
+  }
+  .d8 .ornate-border::before {
+    content: ''; position: absolute; top: 3px; left: 3px; right: 3px; bottom: 3px;
+    border: 0.5px solid #D4C4A8; border-radius: 2px;
+  }
+  .d8 .top-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 6px; padding: 0 8px; z-index: 1;
+  }
+  .d8 .brand-area { text-align: center; z-index: 1; margin-bottom: 4px; padding: 0 8px; }
+  .d8 .brand-small {
+    font-family: 'Space Mono', monospace; font-size: 8px;
+    color: #A09078; letter-spacing: 4px; text-transform: uppercase;
+  }
+  .d8 .brand {
+    font-family: 'Cormorant Garamond', serif; font-size: 36px;
+    color: #4A5E8A; font-weight: 600; font-style: italic;
+    line-height: 1.1;
+  }
+  .d8 .brand-tag {
+    font-family: 'DM Mono', monospace; font-size: 7px;
+    color: #A09078; letter-spacing: 3px; text-transform: uppercase;
+    margin-top: 2px;
+  }
+  .d8 .ornate-rule {
+    display: flex; align-items: center; gap: 8px;
+    margin: 12px 8px 16px; z-index: 1;
+  }
+  .d8 .ornate-rule-line { flex: 1; height: 0.5px; background: #C8B89A; }
+  .d8 .ornate-rule-diamond {
+    width: 6px; height: 6px; background: #4A5E8A;
+    transform: rotate(45deg); flex-shrink: 0;
+  }
+  .d8 .date-banner {
+    text-align: center; margin-bottom: 16px; z-index: 1;
+  }
+  .d8 .date-text {
+    font-family: 'Cormorant Garamond', serif; font-size: 14px;
+    color: #4A5E8A; letter-spacing: 2px; font-style: italic;
+  }
+  .d8 .date-sub {
+    font-family: 'DM Mono', monospace; font-size: 9px;
+    color: #A09078; letter-spacing: 1px; margin-top: 2px;
+  }
+  .d8 .illustration-center {
+    display: flex; justify-content: center; margin-bottom: 16px; z-index: 1;
+  }
+  .d8 .card {
+    background: rgba(255,252,245,0.7); border-radius: 2px;
+    padding: 14px 16px; margin: 0 8px 10px; z-index: 1;
+    border: 0.5px solid #D4C4A8;
+  }
+  .d8 .card-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 10px;
+  }
+  .d8 .card-title {
+    font-family: 'Cormorant Garamond', serif; font-size: 14px;
+    color: #4A5E8A; font-weight: 600; font-style: italic;
+  }
+  .d8 .card-fig {
+    font-family: 'DM Mono', monospace; font-size: 7px;
+    color: #B0B8D0; letter-spacing: 1px;
+  }
+  .d8 .task-item {
+    display: flex; align-items: center; gap: 10px; padding: 7px 0;
+    font-family: 'Cormorant Garamond', serif; font-size: 14px; color: #3A3A3A;
+  }
+  .d8 .task-diamond {
+    width: 12px; height: 12px; border: 1.5px solid #4A5E8A;
+    transform: rotate(45deg); flex-shrink: 0;
+  }
+  .d8 .task-diamond.done { background: #4A5E8A; }
+  .d8 .task-text.done { text-decoration: line-through; color: #B0A898; }
+  .d8 .stat-row { display: flex; gap: 8px; margin: 0 8px 10px; z-index: 1; }
+  .d8 .stat-cell {
+    flex: 1; text-align: center; padding: 12px 8px;
+    border: 0.5px solid #D4C4A8; background: rgba(255,252,245,0.7);
+  }
+  .d8 .stat-num {
+    font-family: 'Cormorant Garamond', serif; font-size: 26px;
+    color: #4A5E8A; font-weight: 600; line-height: 1;
+  }
+  .d8 .stat-label {
+    font-family: 'DM Mono', monospace; font-size: 7px;
+    color: #A09078; letter-spacing: 2px; text-transform: uppercase; margin-top: 4px;
+  }
+  .d8 .meal-banner {
+    margin: 0 8px 10px; padding: 14px; z-index: 1;
+    background: #4A5E8A; border-radius: 2px; text-align: center;
+  }
+  .d8 .meal-title {
+    font-family: 'Cormorant Garamond', serif; font-size: 13px;
+    color: #E8E0D4; font-style: italic; letter-spacing: 1px; margin-bottom: 8px;
+  }
+  .d8 .meal-items { display: flex; gap: 16px; justify-content: center; }
+  .d8 .meal-item { text-align: center; }
+  .d8 .meal-name {
+    font-family: 'Cormorant Garamond', serif; font-size: 12px;
+    color: #fff; font-weight: 600;
+  }
+  .d8 .meal-cal {
+    font-family: 'DM Mono', monospace; font-size: 8px;
+    color: #B0B8D0; margin-top: 2px;
+  }
+  .d8 .tab-bar {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    display: flex; justify-content: center; gap: 6px;
+    padding: 12px 24px 28px; background: #F5F0E6;
+  }
+  .d8 .tab {
+    width: 46px; height: 40px; border-radius: 2px;
+    display: flex; align-items: center; justify-content: center;
+    border: 0.5px solid transparent;
+  }
+  .d8 .tab.active { border-color: #4A5E8A; background: rgba(74, 94, 138, 0.08); }
+</style>
+</head>
+<body>
+
+<div class="page-title">pebble</div>
+<div class="page-subtitle">homepage design explorations v3 — blue ink + ghibli + 5s + blueprint + vintage</div>
+
+<div class="designs-grid">
+
+  <!-- ==================== DESIGN 1: CENTERED MINIMAL ==================== -->
+  <div class="design-card">
+    <div class="design-label">design 1 — notebook minimal</div>
+    <div class="design-desc">blue ink on notebook paper. centered, breathing room, hand-drawn doodles, daily stats at a glance</div>
+    <div class="phone d1">
+      <div class="phone-screen">
+        <div class="greeting">hey gabby</div>
+        <div class="date-pill">sat, march 8</div>
+        <div class="pebble-cluster">
+          <svg class="pebble-icon" viewBox="0 0 42 42" fill="none">
+            <path d="M21 6 C14 6, 8 13, 8 21 C8 29, 14 36, 21 36 C28 36, 34 29, 34 21 C34 13, 28 6, 21 6Z" stroke="#1A00FF" stroke-width="2" fill="none" class="hand-drawn"/>
+            <path d="M17 18 C18 15, 24 15, 25 18" stroke="#1A00FF" stroke-width="1.5" fill="none" class="hand-drawn"/>
+            <circle cx="17" cy="22" r="1.5" fill="#1A00FF"/>
+            <circle cx="25" cy="22" r="1.5" fill="#1A00FF"/>
+          </svg>
+          <svg class="pebble-icon" viewBox="0 0 42 42" fill="none">
+            <ellipse cx="21" cy="24" rx="14" ry="11" stroke="#1A00FF" stroke-width="2" fill="none" class="hand-drawn"/>
+            <path d="M21 13 L21 6" stroke="#1A00FF" stroke-width="2" class="hand-drawn"/>
+            <path d="M18 8 C19 5, 23 5, 24 8" stroke="#1A00FF" stroke-width="1.5" fill="none" class="hand-drawn"/>
+            <circle cx="17" cy="23" r="1" fill="#1A00FF"/>
+            <circle cx="25" cy="23" r="1" fill="#1A00FF"/>
+          </svg>
+          <svg class="pebble-icon" viewBox="0 0 42 42" fill="none">
+            <path d="M10 28 C10 18, 14 10, 21 10 C28 10, 32 18, 32 28 C32 32, 28 34, 21 34 C14 34, 10 32, 10 28Z" stroke="#1A00FF" stroke-width="2" fill="none" class="hand-drawn"/>
+            <path d="M16 22 L19 25 L26 18" stroke="#1A00FF" stroke-width="2" fill="none" class="hand-drawn"/>
+          </svg>
+          <svg class="pebble-icon" viewBox="0 0 42 42" fill="none">
+            <path d="M8 21 C8 12, 14 8, 21 8 C30 8, 36 14, 34 23 C32 32, 24 36, 18 34 C12 32, 8 28, 8 21Z" stroke="#1A00FF" stroke-width="2" fill="none" class="hand-drawn"/>
+            <path d="M15 20 Q21 28, 27 20" stroke="#1A00FF" stroke-width="1.5" fill="none" class="hand-drawn"/>
+          </svg>
+        </div>
+        <div class="daily-stats">
+          <div class="stat"><div class="stat-num">3</div><div class="stat-label">tasks</div></div>
+          <div class="stat"><div class="stat-num">1240</div><div class="stat-label">cals</div></div>
+          <div class="stat"><div class="stat-num">2</div><div class="stat-label">meals</div></div>
+          <div class="stat"><div class="stat-num">1</div><div class="stat-label">note</div></div>
+        </div>
+        <div class="divider-dots">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        </div>
+        <div class="quick-items">
+          <div class="quick-item">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2" y="2" width="14" height="14" rx="3" stroke="#1A00FF" stroke-width="1.5" class="hand-drawn"/><path d="M6 9L8 11L12 7" stroke="#1A00FF" stroke-width="1.5" fill="none" class="hand-drawn"/></svg>
+            submit hackathon <span class="quick-item-right">12pm</span>
+          </div>
+          <div class="quick-item">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="#1A00FF" stroke-width="1.5" class="hand-drawn"/><path d="M6 12 Q9 8, 12 12" stroke="#1A00FF" stroke-width="1.5" fill="none" class="hand-drawn"/></svg>
+            tofu stir fry <span class="quick-item-right">420 cal</span>
+          </div>
+          <div class="quick-item">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3 4 L15 4 M3 9 L12 9 M3 14 L10 14" stroke="#1A00FF" stroke-width="1.5" class="hand-drawn"/></svg>
+            app ideas for joyi <span class="quick-item-right">note</span>
+          </div>
+        </div>
+        <div class="add-btn">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+            <path d="M24 4 C14 4, 5 12, 4 22 C3 34, 12 44, 24 44 C36 44, 45 34, 44 22 C43 12, 34 4, 24 4Z" stroke="#1A00FF" stroke-width="2" fill="none" class="hand-drawn"/>
+            <path d="M24 16 L24 32 M16 24 L32 24" stroke="#1A00FF" stroke-width="2" class="hand-drawn"/>
+          </svg>
+        </div>
+        <div class="add-label">drop a pebble</div>
+        <div class="tab-bar">
+          <div class="tab active"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 10 L11 3 L19 10 L19 19 L3 19 Z" stroke="#1A00FF" stroke-width="1.8" fill="none" class="hand-drawn"/></svg></div>
+          <div class="tab"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3" y="3" width="16" height="16" rx="3" stroke="#1A00FF" stroke-width="1.8" fill="none" class="hand-drawn"/><path d="M3 8 L19 8" stroke="#1A00FF" stroke-width="1.5" class="hand-drawn"/></svg></div>
+          <div class="tab"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="8" stroke="#1A00FF" stroke-width="1.8" fill="none" class="hand-drawn"/></svg></div>
+          <div class="tab"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M4 4 L18 4 M4 9 L14 9 M4 14 L16 14 M4 19 L10 19" stroke="#1A00FF" stroke-width="1.8" class="hand-drawn"/></svg></div>
+          <div class="tab"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 3 C7 3, 4 5, 4 8 C4 14, 11 19, 11 19 C11 19, 18 14, 18 8 C18 5, 15 3, 11 3Z" stroke="#1A00FF" stroke-width="1.8" fill="none" class="hand-drawn"/></svg></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== DESIGN 2: DOT GRID ==================== -->
+  <div class="design-card">
+    <div class="design-label">design 2 — dot grid garden</div>
+    <div class="design-desc">the 365 dot view from one year. each dot is a day, filled dots have pebbles. your month growing</div>
+    <div class="phone d2">
+      <div class="phone-screen">
+        <div class="header-row">
+          <div class="brand">pebble</div>
+          <div class="month-pill">march 2026</div>
+        </div>
+        <div class="dot-grid">
+          <div style="font-size:8px;color:#8080BB;text-align:center;line-height:30px;">s</div>
+          <div style="font-size:8px;color:#8080BB;text-align:center;line-height:30px;">m</div>
+          <div style="font-size:8px;color:#8080BB;text-align:center;line-height:30px;">t</div>
+          <div style="font-size:8px;color:#8080BB;text-align:center;line-height:30px;">w</div>
+          <div style="font-size:8px;color:#8080BB;text-align:center;line-height:30px;">t</div>
+          <div style="font-size:8px;color:#8080BB;text-align:center;line-height:30px;">f</div>
+          <div style="font-size:8px;color:#8080BB;text-align:center;line-height:30px;">s</div>
+          <div class="grid-dot has-pebble"></div>
+          <div class="grid-dot has-pebble"></div>
+          <div class="grid-dot filled"></div>
+          <div class="grid-dot has-pebble"></div>
+          <div class="grid-dot has-pebble"></div>
+          <div class="grid-dot filled"></div>
+          <div class="grid-dot has-pebble"></div>
+          <div class="grid-dot today"></div>
+          <div class="grid-dot"></div><div class="grid-dot"></div><div class="grid-dot"></div><div class="grid-dot"></div><div class="grid-dot"></div><div class="grid-dot"></div>
+          <div class="grid-dot"></div><div class="grid-dot"></div><div class="grid-dot"></div><div class="grid-dot"></div><div class="grid-dot"></div><div class="grid-dot"></div><div class="grid-dot"></div>
+          <div class="grid-dot"></div><div class="grid-dot"></div><div class="grid-dot"></div><div class="grid-dot"></div><div class="grid-dot"></div><div class="grid-dot"></div><div class="grid-dot"></div>
+          <div class="grid-dot"></div><div class="grid-dot"></div><div class="grid-dot"></div>
+        </div>
+        <div class="section-label">today's pebbles</div>
+        <div class="task-list">
+          <div class="task-row"><div class="task-circle done"></div><span class="task-text done">finish anchored demo</span></div>
+          <div class="task-row"><div class="task-circle"></div><span class="task-text">submit hackathon by noon</span></div>
+          <div class="task-row"><div class="task-circle"></div><span class="task-text">grocery run</span></div>
+        </div>
+        <div class="section-label">next meal</div>
+        <div class="meal-card">
+          <div class="meal-info">
+            <div class="meal-name">buddha bowl</div>
+            <div class="meal-cal">quinoa, avocado, chickpeas — 520 cal</div>
+          </div>
+          <div class="meal-icon-box">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M4 14 C4 14, 6 8, 12 8 C18 8, 20 14, 20 14" stroke="#F5F3F0" stroke-width="2" class="hand-drawn"/><path d="M3 14 L21 14" stroke="#F5F3F0" stroke-width="2" class="hand-drawn"/><path d="M6 14 C6 18, 9 20, 12 20 C15 20, 18 18, 18 14" stroke="#F5F3F0" stroke-width="2" fill="none" class="hand-drawn"/></svg>
+          </div>
+        </div>
+        <div class="tab-bar">
+          <div class="tab-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="#1A00FF" stroke-width="1.8" fill="none"/><circle cx="10" cy="10" r="2" fill="#1A00FF"/></svg>
+            <span class="tab-label active">home</span>
+          </div>
+          <div class="tab-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="14" height="14" rx="2" stroke="#8080BB" stroke-width="1.5" fill="none"/><path d="M3 7 L17 7" stroke="#8080BB" stroke-width="1.2"/></svg>
+            <span class="tab-label">cal</span>
+          </div>
+          <div class="tab-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 15 L5 8 M10 15 L10 5 M15 15 L15 10" stroke="#8080BB" stroke-width="2" class="hand-drawn"/></svg>
+            <span class="tab-label">stats</span>
+          </div>
+          <div class="tab-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="12" r="6" stroke="#8080BB" stroke-width="1.5" fill="none"/><path d="M10 6 L10 3" stroke="#8080BB" stroke-width="1.5"/></svg>
+            <span class="tab-label">meals</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== DESIGN 3: CARD STACK ==================== -->
+  <div class="design-card">
+    <div class="design-label">design 3 — card stack</div>
+    <div class="design-desc">white cards on notebook paper. each section is its own card. most info-dense. scrollable daily feed</div>
+    <div class="phone d3">
+      <div class="phone-screen">
+        <div class="top-bar">
+          <div class="brand">pebble</div>
+          <div class="avatar">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="7" r="3.5" stroke="#1A00FF" stroke-width="1.5" fill="none" class="hand-drawn"/><path d="M3 16 C3 13, 6 11, 9 11 C12 11, 15 13, 15 16" stroke="#1A00FF" stroke-width="1.5" fill="none" class="hand-drawn"/></svg>
+          </div>
+        </div>
+        <div class="greeting-text">good morning</div>
+        <div class="today-text">saturday, march 8</div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">this week</div><div class="card-action">view all</div></div>
+          <div class="cal-row">
+            <div class="cal-day"><span style="font-size:10px">thu</span><span class="num">6</span></div>
+            <div class="cal-day"><span style="font-size:10px">fri</span><span class="num">7</span></div>
+            <div class="cal-day today"><span style="font-size:10px">sat</span><span class="num">8</span></div>
+            <div class="cal-day"><span style="font-size:10px">sun</span><span class="num">9</span></div>
+            <div class="cal-day"><span style="font-size:10px">mon</span><span class="num">10</span></div>
+          </div>
+          <div style="margin-top:12px">
+            <div class="cal-event"><span class="event-dot"></span> hackathon submission <span class="event-time">12:00pm</span></div>
+            <div class="cal-event"><span class="event-dot" style="opacity:0.8"></span> finals livestream <span class="event-time">6:00pm</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">today's pebbles</div><div class="card-action">2 / 4</div></div>
+          <div class="todo-item"><div class="todo-check done"></div><span class="todo-text done">record demo video</span></div>
+          <div class="todo-item"><div class="todo-check done"></div><span class="todo-text done">polish landing page</span></div>
+          <div class="todo-item"><div class="todo-check"></div><span class="todo-text">submit to skool</span></div>
+          <div class="todo-item"><div class="todo-check"></div><span class="todo-text">grocery shopping</span></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">meals today</div><div class="card-action">1240 / 1800</div></div>
+          <div class="meal-row">
+            <div class="meal-chip"><div class="meal-chip-label">breakfast</div><div class="meal-chip-name">smoothie bowl</div><div class="meal-chip-cal">380 cal</div></div>
+            <div class="meal-chip"><div class="meal-chip-label">lunch</div><div class="meal-chip-name">buddha bowl</div><div class="meal-chip-cal">520 cal</div></div>
+            <div class="meal-chip"><div class="meal-chip-label">dinner</div><div class="meal-chip-name">plan meal</div><div class="meal-chip-cal">—</div></div>
+          </div>
+          <div class="progress-bar-bg"><div class="progress-bar-fill"></div></div>
+          <div class="progress-label">62% of daily goal</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== DESIGN 4: DARK INK ==================== -->
+  <div class="design-card">
+    <div class="design-label">design 4 — dark ink</div>
+    <div class="design-desc">midnight blue background, cream cards, timeline layout. moody night mode for evening use</div>
+    <div class="phone d4">
+      <div class="phone-screen">
+        <div class="top-bar">
+          <div class="brand">pebble</div>
+          <div class="date-text">saturday, march 8</div>
+        </div>
+        <div class="hero-card">
+          <div class="hero-greeting">hey gabby</div>
+          <div class="hero-summary">you have 4 tasks today, 2 meals<br>planned, and 1 event this evening</div>
+          <div class="hero-stats">
+            <div><div class="hero-stat-num">4</div><div class="hero-stat-label">tasks</div></div>
+            <div><div class="hero-stat-num">1240</div><div class="hero-stat-label">cals</div></div>
+            <div><div class="hero-stat-num">7</div><div class="hero-stat-label">streak</div></div>
+          </div>
+        </div>
+        <div class="section-title">today's timeline</div>
+        <div class="timeline">
+          <div class="tl-item"><span class="tl-time">8:00a</span><span class="tl-text">smoothie bowl — 380 cal</span></div>
+          <div class="tl-item"><span class="tl-time">10:00a</span><span class="tl-text">finish demo video</span></div>
+          <div class="tl-item"><span class="tl-time">12:00p</span><span class="tl-text">hackathon submission</span></div>
+          <div class="tl-item"><span class="tl-time">1:00p</span><span class="tl-text">buddha bowl — 520 cal</span></div>
+          <div class="tl-item"><span class="tl-time">6:00p</span><span class="tl-text">finals livestream</span></div>
+        </div>
+        <div class="section-title">at a glance</div>
+        <div class="bottom-cards">
+          <div class="mini-card"><div class="mini-card-num">2/4</div><div class="mini-card-label">tasks</div><div class="mini-card-sub">done today</div></div>
+          <div class="mini-card"><div class="mini-card-num">900</div><div class="mini-card-label">cals left</div><div class="mini-card-sub">plan dinner</div></div>
+          <div class="mini-card"><div class="mini-card-num">3</div><div class="mini-card-label">notes</div><div class="mini-card-sub">this week</div></div>
+        </div>
+        <div class="tab-bar">
+          <div class="tab active"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 9 L10 3 L17 9 L17 17 L3 17 Z" stroke="#1A00FF" stroke-width="1.8" fill="none" class="hand-drawn"/></svg></div>
+          <div class="tab"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="14" height="14" rx="2" stroke="#6060AA" stroke-width="1.5" fill="none"/><path d="M3 7 L17 7" stroke="#6060AA" stroke-width="1.2"/></svg></div>
+          <div class="tab"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="12" r="6" stroke="#6060AA" stroke-width="1.5" fill="none"/><path d="M10 6 L10 3" stroke="#6060AA" stroke-width="1.5"/></svg></div>
+          <div class="tab"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 4 L16 4 M4 8 L12 8 M4 12 L14 12 M4 16 L10 16" stroke="#6060AA" stroke-width="1.5" class="hand-drawn"/></svg></div>
+          <div class="tab"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 15 L5 8 M10 15 L10 5 M15 15 L15 10" stroke="#6060AA" stroke-width="2" class="hand-drawn"/></svg></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== DESIGN 5: STUDIO GHIBLI ==================== -->
+  <div class="design-card">
+    <div class="design-label">design 5 — studio ghibli</div>
+    <div class="design-desc">soft watercolor greens, warm earth tones, nature motifs. cozy totoro/kiki energy. dreamy and warm</div>
+    <div class="phone d5">
+      <div class="phone-screen">
+        <div class="top-bar">
+          <div class="brand">pebble</div>
+          <div class="weather">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 11 C2 11, 1 10, 1 8.5 C1 7, 2.5 6, 4 6 C4 4, 6 2, 8.5 2 C11 2, 13 4, 13 6 C14.5 6, 15 7.5, 15 8.5 C15 10, 14 11, 12 11" stroke="#8B7355" stroke-width="1.2" fill="none" class="hand-drawn"/></svg>
+            72° partly cloudy
+          </div>
+        </div>
+
+        <div class="greeting-area">
+          <div class="greeting">good morning, gabby</div>
+          <div class="date-text">saturday, march 8</div>
+        </div>
+
+        <!-- Ghibli nature scene -->
+        <div class="scene">
+          <svg width="44" height="50" viewBox="0 0 44 50" fill="none">
+            <path d="M22 48 L22 25" stroke="#8B7355" stroke-width="2" class="hand-drawn"/>
+            <path d="M22 25 C16 20, 8 22, 6 16 C4 10, 10 4, 18 8 C20 2, 28 2, 30 8 C36 4, 42 10, 38 16 C36 22, 28 20, 22 25Z" fill="#B8D4A8" stroke="#4A6741" stroke-width="1.5" class="hand-drawn"/>
+            <circle cx="16" cy="14" r="2" fill="#E8F0E4"/>
+            <circle cx="28" cy="12" r="1.5" fill="#E8F0E4"/>
+          </svg>
+          <svg width="32" height="50" viewBox="0 0 32 50" fill="none">
+            <path d="M16 48 L16 32" stroke="#8B7355" stroke-width="1.5" class="hand-drawn"/>
+            <path d="M16 32 C12 28, 6 30, 5 26 C4 22, 8 18, 14 20 C14 16, 20 16, 20 20 C24 18, 28 22, 26 26 C28 30, 20 28, 16 32Z" fill="#C4DCC0" stroke="#4A6741" stroke-width="1.2" class="hand-drawn"/>
+          </svg>
+          <svg width="28" height="50" viewBox="0 0 28 50" fill="none">
+            <path d="M14 48 L14 34" stroke="#A8967E" stroke-width="1.5" class="hand-drawn"/>
+            <ellipse cx="14" cy="30" rx="10" ry="8" fill="#D4E8DC" stroke="#4A6741" stroke-width="1.2"/>
+            <circle cx="10" cy="28" r="1.5" fill="#4A6741"/>
+            <circle cx="18" cy="28" r="1.5" fill="#4A6741"/>
+            <path d="M11 32 Q14 34, 17 32" stroke="#4A6741" stroke-width="1" fill="none" class="hand-drawn"/>
+          </svg>
+        </div>
+
+        <!-- Calendar strip -->
+        <div class="card">
+          <div class="card-header"><div class="card-title">this week</div></div>
+          <div class="cal-strip">
+            <div class="cal-day"><span class="cal-day-name">thu</span><span class="cal-day-num">6</span></div>
+            <div class="cal-day"><span class="cal-day-name">fri</span><span class="cal-day-num">7</span></div>
+            <div class="cal-day today"><span class="cal-day-name">sat</span><span class="cal-day-num">8</span></div>
+            <div class="cal-day"><span class="cal-day-name">sun</span><span class="cal-day-num">9</span></div>
+            <div class="cal-day"><span class="cal-day-name">mon</span><span class="cal-day-num">10</span></div>
+            <div class="cal-day"><span class="cal-day-name">tue</span><span class="cal-day-num">11</span></div>
+          </div>
+        </div>
+
+        <!-- Tasks -->
+        <div class="card">
+          <div class="card-header"><div class="card-title">today's pebbles</div><div class="card-count">2 / 4</div></div>
+          <div class="todo-item"><div class="todo-dot done"></div><span class="todo-text done">record demo video</span></div>
+          <div class="todo-item"><div class="todo-dot done"></div><span class="todo-text done">polish landing page</span></div>
+          <div class="todo-item"><div class="todo-dot"></div><span class="todo-text">submit to skool</span></div>
+          <div class="todo-item"><div class="todo-dot"></div><span class="todo-text">grocery shopping</span></div>
+        </div>
+
+        <!-- Meals -->
+        <div class="card">
+          <div class="card-header"><div class="card-title">meals</div><div class="card-count">1240 / 1800 cal</div></div>
+          <div class="meal-row">
+            <div class="meal-chip"><div class="meal-label">brkfst</div><div class="meal-name">smoothie bowl</div><div class="meal-cal">380</div></div>
+            <div class="meal-chip"><div class="meal-label">lunch</div><div class="meal-name">buddha bowl</div><div class="meal-cal">520</div></div>
+            <div class="meal-chip"><div class="meal-label">dinner</div><div class="meal-name">plan...</div><div class="meal-cal">—</div></div>
+          </div>
+          <div class="progress-row">
+            <div class="progress-bar-bg"><div class="progress-fill"></div></div>
+            <div class="progress-text">62%</div>
+          </div>
+        </div>
+
+        <div class="tab-bar">
+          <div class="tab active"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 10 L11 3 L19 10 L19 19 L3 19 Z" stroke="#4A6741" stroke-width="1.8" fill="none" class="hand-drawn"/></svg></div>
+          <div class="tab"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3" y="3" width="16" height="16" rx="3" stroke="#8B7355" stroke-width="1.5" fill="none"/><path d="M3 8 L19 8" stroke="#8B7355" stroke-width="1.2"/></svg></div>
+          <div class="tab"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="12" r="6" stroke="#8B7355" stroke-width="1.5" fill="none"/><path d="M11 6 L11 3" stroke="#8B7355" stroke-width="1.5"/><path d="M8 4 C9 2, 13 2, 14 4" stroke="#8B7355" stroke-width="1.2" fill="none"/></svg></div>
+          <div class="tab"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M4 4 L18 4 M4 9 L14 9 M4 14 L16 14 M4 19 L10 19" stroke="#8B7355" stroke-width="1.5" class="hand-drawn"/></svg></div>
+          <div class="tab"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M5 15 L5 8 M10 15 L10 5 M15 15 L15 10" stroke="#8B7355" stroke-width="2" class="hand-drawn"/></svg></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== DESIGN 6: 5S CONTENT ==================== -->
+  <div class="design-card">
+    <div class="design-label">design 6 — sage & salmon</div>
+    <div class="design-desc">inspired by 5scontent.com. soft mint/sage bg, salmon pink accents, elegant serif typography. editorial & minimal</div>
+    <div class="phone d6">
+      <div class="phone-screen">
+        <div class="top-bar">
+          <div class="brand">Pebble</div>
+          <div class="nav-dots">
+            <span class="nav-dot active"></span>
+            <span class="nav-dot"></span>
+            <span class="nav-dot"></span>
+          </div>
+        </div>
+        <div class="hero-text">good<br>morning,<br>gabby</div>
+        <div class="hero-sub">saturday, march 8</div>
+        <div class="divider-line"></div>
+        <div class="stat-row">
+          <div class="stat-card">
+            <div class="stat-num">4</div>
+            <div class="stat-label">tasks</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num">1240</div>
+            <div class="stat-label">calories</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num">7</div>
+            <div class="stat-label">streak</div>
+          </div>
+        </div>
+        <div class="section-label">today's pebbles</div>
+        <div class="task-list">
+          <div class="task-row done"><div class="task-circle done"></div>record demo video</div>
+          <div class="task-row done"><div class="task-circle done"></div>polish landing page</div>
+          <div class="task-row"><div class="task-circle"></div>submit to skool</div>
+          <div class="task-row"><div class="task-circle"></div>grocery shopping</div>
+        </div>
+        <div class="divider-line"></div>
+        <div class="section-label">meals</div>
+        <div class="meal-strip">
+          <div class="meal-pill">
+            <div class="meal-pill-label">brkfst</div>
+            <div class="meal-pill-name">smoothie bowl</div>
+            <div class="meal-pill-cal">380 cal</div>
+          </div>
+          <div class="meal-pill">
+            <div class="meal-pill-label">lunch</div>
+            <div class="meal-pill-name">buddha bowl</div>
+            <div class="meal-pill-cal">520 cal</div>
+          </div>
+          <div class="meal-pill" style="background:rgba(224,139,118,0.3);">
+            <div class="meal-pill-label" style="color:#7A9E90;">dinner</div>
+            <div class="meal-pill-name" style="color:#E08B76;">plan...</div>
+            <div class="meal-pill-cal" style="color:#7A9E90;">—</div>
+          </div>
+        </div>
+        <div class="progress-strip">
+          <div class="progress-bar-bg"><div class="progress-bar-fill"></div></div>
+          <div class="progress-text">62%</div>
+        </div>
+        <div class="tab-bar">
+          <div class="tab active"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 10 L11 3 L19 10 L19 19 L3 19 Z" stroke="#E08B76" stroke-width="1.8" fill="none"/></svg></div>
+          <div class="tab"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3" y="3" width="16" height="16" rx="3" stroke="#7A9E90" stroke-width="1.5" fill="none"/><line x1="3" y1="8" x2="19" y2="8" stroke="#7A9E90" stroke-width="1.2"/></svg></div>
+          <div class="tab"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="12" r="6" stroke="#7A9E90" stroke-width="1.5" fill="none"/><line x1="11" y1="6" x2="11" y2="3" stroke="#7A9E90" stroke-width="1.5"/></svg></div>
+          <div class="tab"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M4 4 L18 4 M4 9 L14 9 M4 14 L16 14 M4 19 L10 19" stroke="#7A9E90" stroke-width="1.5"/></svg></div>
+          <div class="tab"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M5 15 L5 8 M10 15 L10 5 M15 15 L15 10" stroke="#7A9E90" stroke-width="2"/></svg></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== DESIGN 7: BLUEPRINT ==================== -->
+  <div class="design-card">
+    <div class="design-label">design 7 — blueprint</div>
+    <div class="design-desc">inspired by makingsoftware.com. blue line illustrations on white, technical reference manual vibe. FIG labels, clean data</div>
+    <div class="phone d7">
+      <div class="phone-screen">
+        <div class="top-bar">
+          <div class="brand">pebble</div>
+          <div class="fig-label">FIG. 001</div>
+        </div>
+        <div class="blueprint-line"></div>
+        <div class="greeting">good morning</div>
+        <div class="date-text">sat, march 8</div>
+        <!-- Technical illustration of a pebble/stone -->
+        <div class="illustration-area">
+          <svg width="180" height="90" viewBox="0 0 180 90" fill="none">
+            <!-- Exploded pebble diagram like making software's floppy disk -->
+            <ellipse cx="90" cy="75" rx="50" ry="12" stroke="#6B7CFF" stroke-width="1" stroke-dasharray="3,3"/>
+            <ellipse cx="90" cy="55" rx="44" ry="18" stroke="#6B7CFF" stroke-width="1.2" fill="none"/>
+            <ellipse cx="90" cy="55" rx="44" ry="18" fill="#F0F2FF"/>
+            <ellipse cx="90" cy="55" rx="44" ry="18" stroke="#6B7CFF" stroke-width="1.2" fill="none"/>
+            <path d="M90 37 L90 15" stroke="#6B7CFF" stroke-width="0.8" stroke-dasharray="3,3"/>
+            <ellipse cx="90" cy="15" rx="30" ry="10" fill="#F0F2FF" stroke="#6B7CFF" stroke-width="1"/>
+            <text x="90" y="18" text-anchor="middle" font-family="DM Mono" font-size="7" fill="#6B7CFF">TASKS</text>
+            <path d="M46 50 L20 35" stroke="#6B7CFF" stroke-width="0.8" stroke-dasharray="3,3"/>
+            <circle cx="15" cy="32" r="10" fill="#F0F2FF" stroke="#6B7CFF" stroke-width="1"/>
+            <text x="15" y="35" text-anchor="middle" font-family="DM Mono" font-size="6" fill="#6B7CFF">CAL</text>
+            <path d="M134 50 L160 35" stroke="#6B7CFF" stroke-width="0.8" stroke-dasharray="3,3"/>
+            <circle cx="165" cy="32" r="10" fill="#F0F2FF" stroke="#6B7CFF" stroke-width="1"/>
+            <text x="165" y="35" text-anchor="middle" font-family="DM Mono" font-size="6" fill="#6B7CFF">MEAL</text>
+            <!-- crosshairs -->
+            <path d="M85 55 L95 55 M90 50 L90 60" stroke="#6B7CFF" stroke-width="0.5" opacity="0.5"/>
+            <!-- dimension line -->
+            <text x="2" y="58" font-family="DM Mono" font-size="6" fill="#B0B8FF" transform="rotate(-90,2,58)">FIG.002</text>
+          </svg>
+        </div>
+        <div class="section-header">
+          <div class="section-tag">sec. 01</div>
+          <div class="section-title">today's tasks</div>
+        </div>
+        <div class="card">
+          <div class="task-item"><div class="task-box done"></div><span class="task-text done">record demo video</span></div>
+          <div class="task-item"><div class="task-box done"></div><span class="task-text done">polish landing page</span></div>
+          <div class="task-item"><div class="task-box"></div><span class="task-text">submit to skool</span></div>
+          <div class="task-item"><div class="task-box"></div><span class="task-text">grocery shopping</span></div>
+        </div>
+        <div class="section-header">
+          <div class="section-tag">sec. 02</div>
+          <div class="section-title">this week</div>
+        </div>
+        <div class="card">
+          <div class="cal-strip">
+            <div class="cal-day"><span class="cal-day-name">thu</span><span class="cal-day-num">6</span></div>
+            <div class="cal-day"><span class="cal-day-name">fri</span><span class="cal-day-num">7</span></div>
+            <div class="cal-day today"><span class="cal-day-name">sat</span><span class="cal-day-num">8</span></div>
+            <div class="cal-day"><span class="cal-day-name">sun</span><span class="cal-day-num">9</span></div>
+            <div class="cal-day"><span class="cal-day-name">mon</span><span class="cal-day-num">10</span></div>
+            <div class="cal-day"><span class="cal-day-name">tue</span><span class="cal-day-num">11</span></div>
+          </div>
+        </div>
+        <div class="data-row">
+          <div class="data-cell">
+            <div class="data-num">1240</div>
+            <div class="data-label">cals</div>
+          </div>
+          <div class="data-cell">
+            <div class="data-num">2/4</div>
+            <div class="data-label">tasks</div>
+          </div>
+          <div class="data-cell">
+            <div class="data-num">7</div>
+            <div class="data-label">streak</div>
+          </div>
+        </div>
+        <div class="ref-note">ref: pebble v0.1 — daily overview module</div>
+        <div class="tab-bar">
+          <div class="tab active"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 9 L10 3 L17 9 L17 17 L3 17 Z" stroke="#6B7CFF" stroke-width="1.5" fill="none"/></svg></div>
+          <div class="tab"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="14" height="14" rx="2" stroke="#B0B8FF" stroke-width="1.2" fill="none"/><path d="M3 7 L17 7" stroke="#B0B8FF" stroke-width="1"/></svg></div>
+          <div class="tab"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="12" r="6" stroke="#B0B8FF" stroke-width="1.2" fill="none"/><path d="M10 6 L10 3" stroke="#B0B8FF" stroke-width="1.2"/></svg></div>
+          <div class="tab"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 4 L16 4 M4 8 L12 8 M4 12 L14 12 M4 16 L10 16" stroke="#B0B8FF" stroke-width="1.2"/></svg></div>
+          <div class="tab"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 15 L5 8 M10 15 L10 5 M15 15 L15 10" stroke="#B0B8FF" stroke-width="1.5"/></svg></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== DESIGN 8: VINTAGE POSTER + BLUEPRINT ==================== -->
+  <div class="design-card">
+    <div class="design-label">design 8 — vintage poster</div>
+    <div class="design-desc">marcel meets making software. warm cream, ornate borders, hand-drawn vintage illustrations, blue technical details. old-world charm</div>
+    <div class="phone d8">
+      <div class="phone-screen">
+        <div class="ornate-border"></div>
+        <div class="top-bar">
+          <span style="font-family:'DM Mono',monospace;font-size:7px;color:#A09078;letter-spacing:1px;">FIG. 001</span>
+          <span style="font-family:'DM Mono',monospace;font-size:7px;color:#A09078;letter-spacing:1px;">EST. 2026</span>
+        </div>
+        <div class="brand-area">
+          <div class="brand-small">your daily</div>
+          <div class="brand">Pebble</div>
+          <div class="brand-tag">personal life planner</div>
+        </div>
+        <div class="ornate-rule">
+          <div class="ornate-rule-line"></div>
+          <div class="ornate-rule-diamond"></div>
+          <div class="ornate-rule-line"></div>
+        </div>
+        <div class="date-banner">
+          <div class="date-text">Saturday, March the Eighth</div>
+          <div class="date-sub">good morning, gabby</div>
+        </div>
+        <!-- Vintage illustration: hand-drawn pebble character with blueprint annotation lines -->
+        <div class="illustration-center">
+          <svg width="140" height="80" viewBox="0 0 140 80" fill="none">
+            <!-- vintage pebble character -->
+            <path d="M70 68 C45 68, 30 55, 30 42 C30 28, 45 18, 70 18 C95 18, 110 28, 110 42 C110 55, 95 68, 70 68Z" stroke="#4A5E8A" stroke-width="1.5" fill="none" class="hand-drawn"/>
+            <circle cx="58" cy="38" r="2.5" fill="#4A5E8A"/>
+            <circle cx="82" cy="38" r="2.5" fill="#4A5E8A"/>
+            <path d="M60 48 Q70 55, 80 48" stroke="#4A5E8A" stroke-width="1.5" fill="none" class="hand-drawn"/>
+            <!-- blueprint annotation lines -->
+            <path d="M30 42 L10 28" stroke="#4A5E8A" stroke-width="0.6" stroke-dasharray="2,2"/>
+            <text x="2" y="26" font-family="DM Mono" font-size="5" fill="#A09078">tasks: 4</text>
+            <path d="M110 42 L130 28" stroke="#4A5E8A" stroke-width="0.6" stroke-dasharray="2,2"/>
+            <text x="118" y="26" font-family="DM Mono" font-size="5" fill="#A09078">meals: 2</text>
+            <path d="M70 18 L70 6" stroke="#4A5E8A" stroke-width="0.6" stroke-dasharray="2,2"/>
+            <text x="70" y="4" text-anchor="middle" font-family="DM Mono" font-size="5" fill="#A09078">streak: 7</text>
+            <!-- small decorative elements -->
+            <circle cx="48" cy="22" r="1" fill="#C8B89A"/>
+            <circle cx="92" cy="22" r="1" fill="#C8B89A"/>
+            <path d="M64 62 Q70 66, 76 62" stroke="#C8B89A" stroke-width="0.8" fill="none"/>
+          </svg>
+        </div>
+        <div class="stat-row">
+          <div class="stat-cell">
+            <div class="stat-num">2/4</div>
+            <div class="stat-label">pebbles</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-num">1240</div>
+            <div class="stat-label">calories</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-num">7</div>
+            <div class="stat-label">day streak</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Today's Tasks</div>
+            <div class="card-fig">FIG. 002</div>
+          </div>
+          <div class="task-item"><div class="task-diamond done"></div><span class="task-text done">record demo video</span></div>
+          <div class="task-item"><div class="task-diamond done"></div><span class="task-text done">polish landing page</span></div>
+          <div class="task-item"><div class="task-diamond"></div><span class="task-text">submit to skool</span></div>
+          <div class="task-item"><div class="task-diamond"></div><span class="task-text">grocery shopping</span></div>
+        </div>
+        <div class="meal-banner">
+          <div class="meal-title">— Today's Menu —</div>
+          <div class="meal-items">
+            <div class="meal-item">
+              <div class="meal-name">smoothie bowl</div>
+              <div class="meal-cal">380 cal</div>
+            </div>
+            <div class="meal-item">
+              <div class="meal-name">buddha bowl</div>
+              <div class="meal-cal">520 cal</div>
+            </div>
+            <div class="meal-item">
+              <div class="meal-name">plan dinner</div>
+              <div class="meal-cal">—</div>
+            </div>
+          </div>
+        </div>
+        <div class="tab-bar">
+          <div class="tab active"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 9 L10 3 L17 9 L17 17 L3 17 Z" stroke="#4A5E8A" stroke-width="1.5" fill="none"/></svg></div>
+          <div class="tab"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="14" height="14" rx="2" stroke="#A09078" stroke-width="1.2" fill="none"/><path d="M3 7 L17 7" stroke="#A09078" stroke-width="1"/></svg></div>
+          <div class="tab"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="12" r="6" stroke="#A09078" stroke-width="1.2" fill="none"/><path d="M10 6 L10 3" stroke="#A09078" stroke-width="1.2"/></svg></div>
+          <div class="tab"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 4 L16 4 M4 8 L12 8 M4 12 L14 12 M4 16 L10 16" stroke="#A09078" stroke-width="1.2"/></svg></div>
+          <div class="tab"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 15 L5 8 M10 15 L10 5 M15 15 L15 10" stroke="#A09078" stroke-width="1.5"/></svg></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div style="text-align:center; margin-top:60px; padding-bottom:40px;">
+  <div style="color:#555; font-size:11px; font-family:'Space Mono',monospace; letter-spacing:1px;">
+    1-4 palette: ink #1A00FF &middot; paper #E8E6E3 &middot; lavender #D8D2E8 &middot; faded #8080BB
+  </div>
+  <div style="color:#555; font-size:11px; font-family:'Space Mono',monospace; letter-spacing:1px; margin-top:6px;">
+    5 palette: forest #4A6741 &middot; earth #8B7355 &middot; mint #D4E8DC &middot; cream #F0E8DA
+  </div>
+  <div style="color:#555; font-size:11px; font-family:'Space Mono',monospace; letter-spacing:1px; margin-top:6px;">
+    6 palette: sage #C4D8D0 &middot; salmon #E08B76 &middot; deep green #3A5E50 &middot; muted green #7A9E90
+  </div>
+  <div style="color:#555; font-size:11px; font-family:'Space Mono',monospace; letter-spacing:1px; margin-top:6px;">
+    7 palette: periwinkle #6B7CFF &middot; white #FAFAFA &middot; faded blue #B0B8FF &middot; navy text #4A4E80
+  </div>
+  <div style="color:#555; font-size:11px; font-family:'Space Mono',monospace; letter-spacing:1px; margin-top:6px;">
+    8 palette: slate blue #4A5E8A &middot; cream #F5F0E6 &middot; warm gold #C8B89A &middot; muted earth #A09078
+  </div>
+  <div style="color:#444; font-size:11px; font-family:'Space Mono',monospace; letter-spacing:1px; margin-top:8px;">
+    fonts: space mono &middot; caveat &middot; klee one &middot; playfair display &middot; dm mono &middot; cormorant garamond
+  </div>
+</div>
+
+</body>
+</html>

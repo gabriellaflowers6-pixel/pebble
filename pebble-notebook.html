@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Pebble — Notebook Edition</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=DM+Mono:wght@400;500&family=Klee+One&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin: 0; background: #E8E0D4; font-family: 'Lora', serif; }
+
+  :root {
+    --paper: #FAF6F0;
+    --paper-warm: #F5EDE3;
+    --ink: #2A2A28;
+    --ink-light: #5A5A5A;
+    --ink-faint: #9A938A;
+    --pencil: #B0A89E;
+    --red-ink: #8B4A4A;
+    --red-ink-light: rgba(139,74,74,0.1);
+    --blue-ink: #4A6A8B;
+    --blue-ink-light: rgba(74,106,139,0.08);
+    --margin-red: rgba(180,80,80,0.2);
+    --rule-color: rgba(74,106,139,0.12);
+    --font-hand: 'Caveat', cursive;
+    --font-body: 'Lora', serif;
+    --font-mono: 'DM Mono', monospace;
+    --line-height: 32px;
+  }
+
+  .phone-frame {
+    width: 375px; max-height: 812px; height: 100vh;
+    background: var(--paper); position: relative; overflow: hidden;
+    margin: 0 auto; border-radius: 0;
+    display: flex; flex-direction: column;
+  }
+  @media (min-width: 500px) {
+    body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px 0; }
+    .phone-frame {
+      border-radius: 40px;
+      box-shadow: 0 25px 80px rgba(0,0,0,0.12), 0 0 0 8px #3A3632;
+      max-height: 812px; height: 812px;
+    }
+  }
+
+  /* ── Swipe Container ── */
+  .swipe-container {
+    flex: 1; overflow-y: auto; scroll-snap-type: y mandatory;
+    -webkit-overflow-scrolling: touch; scroll-behavior: smooth;
+  }
+  .swipe-container::-webkit-scrollbar { display: none; }
+  .swipe-page-wrap { min-height: 100%; scroll-snap-align: start; }
+  .swipe-page {
+    min-height: 100%;
+    display: flex; flex-direction: column;
+    padding: 12px 0 20px;
+    position: relative;
+  }
+
+  /* ── Notebook Paper Lines ── */
+  .notebook-paper {
+    position: relative;
+  }
+  .notebook-paper::before {
+    content: '';
+    position: absolute;
+    left: 52px; top: 0; bottom: 0;
+    width: 1px;
+    background: var(--margin-red);
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  /* Ruled lines background */
+  .ruled-lines {
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent,
+      transparent calc(var(--line-height) - 1px),
+      var(--rule-color) calc(var(--line-height) - 1px),
+      var(--rule-color) var(--line-height)
+    );
+    background-size: 100% var(--line-height);
+    background-position: 0 0;
+  }
+
+  /* ── Page content area (right of margin) ── */
+  .page-content {
+    padding-left: 64px;
+    padding-right: 20px;
+  }
+
+  /* ── Margin notes (left of margin line) ── */
+  .margin-note {
+    position: absolute;
+    left: 12px;
+    width: 36px;
+    text-align: right;
+    font-family: var(--font-hand);
+    font-size: 11px;
+    color: var(--red-ink);
+    opacity: 0.6;
+  }
+
+  /* ── Page Dots (bookmark tabs) ── */
+  .page-tabs {
+    position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+    display: flex; flex-direction: column; gap: 4px; z-index: 10;
+  }
+  .page-tab {
+    width: 12px; height: 24px;
+    background: var(--pencil); opacity: 0.2;
+    border-radius: 4px 0 0 4px;
+    transition: all 0.25s ease;
+    cursor: pointer;
+  }
+  .page-tab.active {
+    opacity: 0.7;
+    background: var(--red-ink);
+    width: 16px;
+  }
+
+  /* ── Notebook checkbox (hand-drawn feel) ── */
+  .nb-checkbox {
+    width: 16px; height: 16px;
+    border: 1.5px solid var(--pencil);
+    border-radius: 2px;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .nb-checkbox.done {
+    border-color: var(--red-ink);
+  }
+  .nb-checkbox.done::after {
+    content: '';
+    position: absolute;
+    width: 10px; height: 5px;
+    border-left: 2px solid var(--red-ink);
+    border-bottom: 2px solid var(--red-ink);
+    transform: rotate(-45deg);
+    top: 3px;
+  }
+
+  /* ── Habit dot (notebook style) ── */
+  .nb-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    border: 1.5px solid var(--pencil);
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .nb-dot.filled {
+    background: var(--red-ink);
+    border-color: var(--red-ink);
+  }
+  .nb-dot.today {
+    border-color: var(--blue-ink);
+    box-shadow: 0 0 0 2px var(--blue-ink-light);
+  }
+  .nb-dot.today.filled {
+    background: var(--blue-ink);
+    border-color: var(--blue-ink);
+  }
+
+  /* ── Section divider (hand-drawn rule) ── */
+  .section-rule {
+    border: none;
+    height: 1px;
+    background: var(--pencil);
+    opacity: 0.25;
+    margin: 16px 0;
+  }
+
+  /* ── Chat bar (journal prompt) ── */
+  .journal-bar {
+    background: var(--paper-warm);
+    border-top: 1px solid rgba(0,0,0,0.06);
+  }
+
+  /* ── Paper style variants ── */
+  .paper-dotted {
+    background-image: radial-gradient(circle, var(--rule-color) 1px, transparent 1px);
+    background-size: var(--line-height) var(--line-height);
+  }
+  .paper-graph {
+    background-image:
+      repeating-linear-gradient(0deg, var(--rule-color) 0px, var(--rule-color) 1px, transparent 1px, transparent var(--line-height)),
+      repeating-linear-gradient(90deg, var(--rule-color) 0px, var(--rule-color) 1px, transparent 1px, transparent var(--line-height));
+  }
+
+  /* ── Marble jar (table of contents) ── */
+  .toc-overlay {
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    background: rgba(250,246,240,0.92);
+  }
+  .toc-enter { animation: fadeIn 0.25s ease-out; }
+  .settings-enter { animation: slideUp 0.2s ease-out; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(100%); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── Streak badge ── */
+  .streak-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: var(--font-hand);
+    font-size: 13px;
+    color: var(--red-ink);
+    padding: 2px 8px;
+    border-bottom: 1px dashed var(--red-ink);
+    opacity: 0.8;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .toc-enter, .settings-enter { animation: none; }
+    .nb-checkbox, .page-tab { transition: none; }
+    .swipe-container { scroll-behavior: auto; }
+  }
+
+  /* ── Paper style selector ── */
+  .paper-btn {
+    padding: 6px 12px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--ink-light);
+    background: transparent;
+    transition: all 0.15s;
+  }
+  .paper-btn.active {
+    border-color: var(--red-ink);
+    color: var(--red-ink);
+    background: var(--red-ink-light);
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useCallback, useRef, createContext, useContext } = React;
+
+/* ══════════════════════════════════════════
+   SAMPLE DATA (same as main app)
+   ══════════════════════════════════════════ */
+const sampleData = {
+  profile: { name: 'Gabby', vegan: true, skinType: 'combination' },
+  dots: {
+    workout:  { '2026-03-01': true, '2026-03-02': true, '2026-03-03': true, '2026-03-04': true, '2026-03-05': true },
+    skincare: { '2026-03-01': true, '2026-03-02': true, '2026-03-03': true, '2026-03-04': true, '2026-03-05': true, '2026-03-06': true, '2026-03-07': true, '2026-03-08': true },
+    study:    { '2026-03-01': true, '2026-03-03': true, '2026-03-05': true, '2026-03-07': true },
+    meals:    { '2026-03-01': true, '2026-03-02': true, '2026-03-03': true, '2026-03-04': true, '2026-03-06': true },
+    water:    { '2026-03-01': true, '2026-03-02': true, '2026-03-03': true, '2026-03-04': true, '2026-03-05': true, '2026-03-06': true },
+  },
+  planner: {
+    todos: [
+      { text: 'record demo video', priority: 'high', done: true },
+      { text: 'polish landing page', priority: 'high', done: true },
+      { text: 'submit to skool', priority: 'high', done: false },
+      { text: 'grocery shopping', priority: 'medium', done: false },
+      { text: 'review pebble PRD', priority: 'medium', done: false },
+      { text: 'call dentist', priority: 'low', done: false },
+      { text: 'organize closet', priority: 'low', done: false },
+    ]
+  },
+  kitchen: {
+    mealPlan: { breakfast: 'smoothie bowl', lunch: 'buddha bowl', dinner: 'plan...' },
+    calorieLog: { breakfast: 380, lunch: 520, dinner: 0 },
+    target: 1800,
+  },
+  gym: { todayWorkout: '30 min yoga flow', exercises: ['sun salutations', 'warrior II flow', 'pigeon pose', 'savasana'] },
+  notebook: {
+    dailyPick: {
+      quote: 'The only way to do great work is to love what you do.',
+      quoteAuthor: 'Steve Jobs',
+      rec: { type: 'movie', title: 'Amélie', reason: 'A warm, whimsical film for your creative week.' },
+    }
+  },
+};
+
+const today = new Date(2026, 2, 9);
+const dayNames = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+const monthNames = ['january','february','march','april','may','june','july','august','september','october','november','december'];
+
+function getStreak(category) {
+  const dots = sampleData.dots[category] || {};
+  let streak = 0;
+  const d = new Date(today);
+  d.setDate(d.getDate() - 1);
+  while (dots[d.toISOString().split('T')[0]]) { streak++; d.setDate(d.getDate() - 1); }
+  return streak;
+}
+
+/* ══════════════════════════════════════════
+   PAPER STYLE CONTEXT
+   ══════════════════════════════════════════ */
+const PaperCtx = createContext();
+
+function PaperProvider({ children }) {
+  const [paperStyle, setPaperStyle] = useState(() => localStorage.getItem('pebble-nb-paper') || 'ruled');
+
+  const changePaper = useCallback((style) => {
+    localStorage.setItem('pebble-nb-paper', style);
+    setPaperStyle(style);
+  }, []);
+
+  return (
+    <PaperCtx.Provider value={{ paperStyle, changePaper }}>
+      {children}
+    </PaperCtx.Provider>
+  );
+}
+
+/* ══════════════════════════════════════════
+   PAGE NAVIGATION
+   ══════════════════════════════════════════ */
+const PAGE_NAMES = ['home', 'tasks', 'meals', 'workout', 'tracker', 'picks'];
+const PAGE_LABELS = ['Home', 'Tasks', 'Meals', 'Workout', 'Tracker', 'Picks'];
+
+/* ══════════════════════════════════════════
+   TABLE OF CONTENTS (replaces Marble Jar)
+   ══════════════════════════════════════════ */
+function TableOfContents({ open, onClose, onNavigate, currentPage }) {
+  if (!open) return null;
+
+  return (
+    <div className="absolute inset-0 z-50 toc-overlay flex flex-col items-center justify-center" onClick={onClose}>
+      <div className="toc-enter" onClick={e => e.stopPropagation()} style={{ width: '80%', maxWidth: 280 }}>
+        {/* Title */}
+        <p style={{ fontFamily: 'var(--font-hand)', fontSize: 32, color: 'var(--ink)', textAlign: 'center', marginBottom: 4 }}>table of contents</p>
+        <div style={{ height: 2, background: 'var(--ink)', opacity: 0.15, marginBottom: 24 }} />
+
+        {/* TOC entries */}
+        <div style={{ paddingLeft: 8 }}>
+          {PAGE_LABELS.map((label, i) => {
+            const isActive = currentPage === i;
+            return (
+              <div
+                key={i}
+                onClick={() => { onNavigate(i); onClose(); }}
+                style={{
+                  display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
+                  padding: '10px 0',
+                  borderBottom: i < PAGE_LABELS.length - 1 ? '1px dotted rgba(0,0,0,0.1)' : 'none',
+                  cursor: 'pointer',
+                }}
+              >
+                <span style={{
+                  fontFamily: 'var(--font-hand)',
+                  fontSize: isActive ? 22 : 18,
+                  color: isActive ? 'var(--red-ink)' : 'var(--ink)',
+                  fontWeight: isActive ? 600 : 400,
+                }}>
+                  {label.toLowerCase()}
+                </span>
+                <span style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 11,
+                  color: 'var(--ink-faint)',
+                  letterSpacing: 1,
+                }}>
+                  {'·'.repeat(12)} {i + 1}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Close hint */}
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--ink-faint)', textAlign: 'center', marginTop: 24, cursor: 'pointer' }} onClick={onClose}>
+          tap outside to close
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════
+   PAGE TABS (bookmark-style, replaces dots)
+   ══════════════════════════════════════════ */
+function PageTabs({ currentPage, totalPages, onTabClick }) {
+  return (
+    <div className="page-tabs">
+      {Array.from({ length: totalPages }, (_, i) => (
+        <div
+          key={i}
+          className={`page-tab ${i === currentPage ? 'active' : ''}`}
+          onClick={() => onTabClick(i)}
+          role="button"
+          aria-label={`Go to ${PAGE_LABELS[i]}`}
+        />
+      ))}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════
+   HEADER
+   ══════════════════════════════════════════ */
+function Header({ onTocOpen, onSettingsOpen }) {
+  return (
+    <div style={{ padding: '44px 20px 8px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+      <h1 style={{ fontFamily: 'var(--font-hand)', fontSize: 30, color: 'var(--ink)', lineHeight: 1.1 }}>pebble</h1>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        <button onClick={onSettingsOpen} style={{ width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: 'transparent', border: 'none' }} aria-label="Settings">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ink-faint)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+          </svg>
+        </button>
+        <button onClick={onTocOpen} style={{ width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: 'transparent', border: 'none' }} aria-label="Table of Contents">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ink-faint)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════
+   JOURNAL BAR (replaces Chat Bar)
+   ══════════════════════════════════════════ */
+function JournalBar() {
+  const [msg, setMsg] = useState('');
+  return (
+    <div className="journal-bar" style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+      <input
+        type="text" value={msg} onChange={e => setMsg(e.target.value)}
+        placeholder="write in your journal..."
+        style={{
+          flex: 1, background: 'transparent',
+          border: 'none', borderBottom: '1px solid var(--pencil)',
+          padding: '8px 4px', fontFamily: 'var(--font-hand)', fontSize: 16,
+          color: 'var(--ink)', outline: 'none',
+        }}
+        onFocus={e => e.target.style.borderBottomColor = 'var(--red-ink)'}
+        onBlur={e => e.target.style.borderBottomColor = 'var(--pencil)'}
+        aria-label="Write in journal"
+      />
+      <button
+        style={{
+          width: 32, height: 32, borderRadius: '50%',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', background: 'transparent', border: '1.5px solid var(--pencil)',
+          opacity: msg.trim() ? 1 : 0.3, transition: 'opacity 0.15s',
+        }}
+        aria-label="Send" disabled={!msg.trim()}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ink-light)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+        </svg>
+      </button>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════
+   NOTEBOOK PAGE WRAPPER
+   ══════════════════════════════════════════ */
+function NotebookPage({ children, marginNote }) {
+  const { paperStyle } = useContext(PaperCtx);
+  const paperClass = paperStyle === 'dotted' ? 'paper-dotted' : paperStyle === 'graph' ? 'paper-graph' : paperStyle === 'ruled' ? 'ruled-lines' : '';
+
+  return (
+    <div className={`swipe-page notebook-paper ${paperClass}`}>
+      {marginNote && (
+        <span className="margin-note" style={{ top: 20 }}>{marginNote}</span>
+      )}
+      <div className="page-content" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/* ── Section Label ── */
+function SectionLabel({ children, right }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 8, marginTop: 4 }}>
+      <p style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--ink-faint)', textTransform: 'uppercase', letterSpacing: 2 }}>{children}</p>
+      {right && <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-faint)' }}>{right}</p>}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════
+   PAGES
+   ══════════════════════════════════════════ */
+
+/* ── Page 0: Home ── */
+function HomePage() {
+  const greeting = 'good morning';
+  const dateStr = `${dayNames[today.getDay()]}, ${monthNames[today.getMonth()]} ${today.getDate()}`;
+  const bestStreak = Math.max(...Object.keys(sampleData.dots).map(k => getStreak(k)));
+  const categories = ['workout', 'skincare', 'study', 'meals', 'water'];
+  const todayKey = today.toISOString().split('T')[0];
+  const doneCount = sampleData.planner.todos.filter(t => t.done).length;
+  const totalCal = Object.values(sampleData.kitchen.calorieLog).reduce((a,b) => a+b, 0);
+
+  return (
+    <NotebookPage marginNote="pg 1">
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingTop: 16, paddingBottom: 16 }}>
+        {/* Date header */}
+        <p style={{ fontFamily: 'var(--font-hand)', fontSize: 28, color: 'var(--ink)', marginBottom: 2 }}>
+          {greeting}, {sampleData.profile.name.toLowerCase()}
+        </p>
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--ink-faint)', fontStyle: 'italic' }}>{dateStr}</p>
+
+        {bestStreak > 0 && (
+          <div style={{ marginTop: 12 }}>
+            <span className="streak-badge">* {bestStreak} day streak</span>
+          </div>
+        )}
+
+        <hr className="section-rule" />
+
+        {/* Today's dots */}
+        <SectionLabel>today's dots</SectionLabel>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', marginBottom: 8 }}>
+          {categories.map(cat => {
+            const filled = sampleData.dots[cat]?.[todayKey];
+            return (
+              <div key={cat} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                <div className={`nb-dot today ${filled ? 'filled' : ''}`} style={{ width: 14, height: 14, cursor: 'pointer' }} />
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--ink-faint)', textTransform: 'uppercase', letterSpacing: 1 }}>{cat.slice(0,4)}</span>
+              </div>
+            );
+          })}
+        </div>
+
+        <hr className="section-rule" />
+
+        {/* Quick stats — written like margin notes */}
+        <div style={{ display: 'flex', gap: 24, padding: '8px 0' }}>
+          <div>
+            <p style={{ fontFamily: 'var(--font-hand)', fontSize: 28, color: 'var(--ink)', lineHeight: 1 }}>
+              {doneCount}/{sampleData.planner.todos.length}
+            </p>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--ink-faint)', marginTop: 4 }}>tasks done</p>
+          </div>
+          <div style={{ width: 1, background: 'var(--pencil)', opacity: 0.2 }} />
+          <div>
+            <p style={{ fontFamily: 'var(--font-hand)', fontSize: 28, color: 'var(--ink)', lineHeight: 1 }}>
+              {totalCal}
+            </p>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--ink-faint)', marginTop: 4 }}>of {sampleData.kitchen.target} cal</p>
+          </div>
+        </div>
+
+        {/* Swipe hint */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 24, opacity: 0.25 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ink-faint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+            <span style={{ fontFamily: 'var(--font-hand)', fontSize: 12, color: 'var(--ink-faint)' }}>keep scrolling</span>
+          </div>
+        </div>
+      </div>
+    </NotebookPage>
+  );
+}
+
+/* ── Page 1: Tasks ── */
+function TasksPage() {
+  const todos = sampleData.planner.todos;
+  const doneCount = todos.filter(t => t.done).length;
+
+  return (
+    <NotebookPage marginNote="pg 2">
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', paddingTop: 16, paddingBottom: 16 }}>
+        <p style={{ fontFamily: 'var(--font-hand)', fontSize: 24, color: 'var(--ink)', marginBottom: 4 }}>to do</p>
+        <SectionLabel right={`${doneCount} / ${todos.length}`}>today's list</SectionLabel>
+
+        <div style={{ flex: 1, paddingTop: 4 }}>
+          {todos.map((task, i) => (
+            <div key={i} style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '8px 0',
+              borderBottom: '1px solid rgba(0,0,0,0.04)',
+              cursor: 'pointer',
+            }}>
+              <div className={`nb-checkbox ${task.done ? 'done' : ''}`} />
+              <span style={{
+                fontFamily: 'var(--font-body)', fontSize: 13,
+                color: task.done ? 'var(--ink-faint)' : 'var(--ink)',
+                textDecoration: task.done ? 'line-through' : 'none',
+                flex: 1,
+              }}>{task.text}</span>
+              {task.priority === 'high' && !task.done && (
+                <span style={{ fontFamily: 'var(--font-hand)', fontSize: 11, color: 'var(--red-ink)' }}>!</span>
+              )}
+              {task.priority === 'medium' && !task.done && (
+                <span style={{ fontFamily: 'var(--font-hand)', fontSize: 11, color: 'var(--ink-faint)' }}>~</span>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Add task */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10,
+          padding: '10px 0', marginTop: 4,
+          opacity: 0.4, cursor: 'pointer',
+        }}>
+          <span style={{ fontFamily: 'var(--font-hand)', fontSize: 18, color: 'var(--ink-light)', lineHeight: 1 }}>+</span>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--ink-faint)', fontStyle: 'italic' }}>add a task...</span>
+        </div>
+      </div>
+    </NotebookPage>
+  );
+}
+
+/* ── Page 2: Meals ── */
+function MealsPage() {
+  const { mealPlan, calorieLog, target } = sampleData.kitchen;
+  const totalCal = Object.values(calorieLog).reduce((a, b) => a + b, 0);
+  const pct = Math.round((totalCal / target) * 100);
+  const meals = [
+    { label: 'breakfast', name: mealPlan.breakfast, cal: calorieLog.breakfast },
+    { label: 'lunch', name: mealPlan.lunch, cal: calorieLog.lunch },
+    { label: 'dinner', name: mealPlan.dinner, cal: calorieLog.dinner },
+  ];
+
+  return (
+    <NotebookPage marginNote="pg 3">
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', paddingTop: 16, paddingBottom: 16 }}>
+        <p style={{ fontFamily: 'var(--font-hand)', fontSize: 24, color: 'var(--ink)', marginBottom: 4 }}>meals</p>
+
+        {/* Calorie count — handwritten big number */}
+        <div style={{ padding: '12px 0 8px', display: 'flex', alignItems: 'baseline', gap: 8 }}>
+          <span style={{ fontFamily: 'var(--font-hand)', fontSize: 42, color: 'var(--ink)', lineHeight: 1 }}>{totalCal}</span>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--ink-faint)' }}>of {target} cal</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--blue-ink)', marginLeft: 'auto' }}>{pct}%</span>
+        </div>
+
+        {/* Progress bar — pencil-drawn style */}
+        <div style={{ height: 6, borderRadius: 1, background: 'rgba(0,0,0,0.04)', marginBottom: 8, overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: `${Math.min(pct, 100)}%`, background: 'var(--ink-light)', borderRadius: 1, transition: 'width 0.3s' }} />
+        </div>
+
+        <hr className="section-rule" />
+
+        {/* Meal list */}
+        <SectionLabel>meal plan</SectionLabel>
+        {meals.map((m, i) => (
+          <div key={i} style={{
+            display: 'flex', alignItems: 'baseline', gap: 12,
+            padding: '10px 0',
+            borderBottom: i < meals.length - 1 ? '1px dotted rgba(0,0,0,0.08)' : 'none',
+            cursor: 'pointer',
+          }}>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--ink-faint)', textTransform: 'uppercase', letterSpacing: 1.5, width: 60 }}>{m.label}</span>
+            <span style={{ fontFamily: 'var(--font-hand)', fontSize: 17, color: 'var(--ink)', flex: 1 }}>{m.name}</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: m.cal > 0 ? 'var(--blue-ink)' : 'var(--ink-faint)' }}>
+              {m.cal > 0 ? `${m.cal}` : '\u2014'}
+            </span>
+          </div>
+        ))}
+      </div>
+    </NotebookPage>
+  );
+}
+
+/* ── Page 3: Workout ── */
+function WorkoutPage() {
+  const { todayWorkout, exercises } = sampleData.gym;
+  const streak = getStreak('workout');
+
+  return (
+    <NotebookPage marginNote="pg 4">
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', paddingTop: 16, paddingBottom: 16 }}>
+        <p style={{ fontFamily: 'var(--font-hand)', fontSize: 24, color: 'var(--ink)', marginBottom: 4 }}>workout</p>
+
+        {/* Today's workout */}
+        <div style={{ padding: '12px 0', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+          <p style={{ fontFamily: 'var(--font-hand)', fontSize: 20, color: 'var(--ink)', marginBottom: 4 }}>{todayWorkout}</p>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--ink-faint)', fontStyle: 'italic' }}>tap to start or ask pebble</p>
+        </div>
+
+        {streak > 0 && (
+          <div style={{ padding: '8px 0' }}>
+            <span className="streak-badge">* {streak} day workout streak</span>
+          </div>
+        )}
+
+        <hr className="section-rule" />
+
+        {/* Exercise list */}
+        <SectionLabel>exercises</SectionLabel>
+        {exercises.map((ex, i) => (
+          <div key={i} style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            padding: '8px 0',
+            borderBottom: '1px solid rgba(0,0,0,0.03)',
+          }}>
+            <span style={{
+              fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-faint)',
+              width: 20, textAlign: 'right',
+            }}>{i + 1}.</span>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--ink)' }}>{ex}</span>
+          </div>
+        ))}
+      </div>
+    </NotebookPage>
+  );
+}
+
+/* ── Page 4: Tracker ── */
+function TrackerPage() {
+  const categories = ['workout', 'skincare', 'study', 'meals', 'water'];
+  const daysInMonth = 31;
+
+  return (
+    <NotebookPage marginNote="pg 5">
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', paddingTop: 16, paddingBottom: 16 }}>
+        <p style={{ fontFamily: 'var(--font-hand)', fontSize: 24, color: 'var(--ink)', marginBottom: 2 }}>tracker</p>
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--ink-faint)', fontStyle: 'italic', marginBottom: 12 }}>march 2026</p>
+
+        <div style={{ flex: 1, overflow: 'auto' }}>
+          {categories.map((cat, ci) => {
+            const dots = sampleData.dots[cat] || {};
+            const streak = getStreak(cat);
+            return (
+              <div key={cat} style={{ marginBottom: ci < categories.length - 1 ? 16 : 0 }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--ink)', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 500 }}>{cat}</span>
+                  {streak > 0 && <span style={{ fontFamily: 'var(--font-hand)', fontSize: 12, color: 'var(--red-ink)' }}>{streak}d streak</span>}
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                  {Array.from({ length: Math.min(daysInMonth, today.getDate()) }, (_, i) => {
+                    const d = new Date(2026, 2, i + 1);
+                    const key = d.toISOString().split('T')[0];
+                    const filled = dots[key];
+                    const isToday = i + 1 === today.getDate();
+                    return (
+                      <div
+                        key={i}
+                        className={`nb-dot ${filled ? 'filled' : ''} ${isToday ? 'today' : ''}`}
+                        style={{ width: 12, height: 12, cursor: 'pointer' }}
+                        title={`${monthNames[2]} ${i + 1}`}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </NotebookPage>
+  );
+}
+
+/* ── Page 5: Picks ── */
+function PicksPage() {
+  const { quote, quoteAuthor, rec } = sampleData.notebook.dailyPick;
+
+  return (
+    <NotebookPage marginNote="pg 6">
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingTop: 16, paddingBottom: 16 }}>
+        <p style={{ fontFamily: 'var(--font-hand)', fontSize: 24, color: 'var(--ink)', marginBottom: 12 }}>pebble's picks</p>
+
+        {/* Quote — written like a journal entry */}
+        <div style={{ padding: '16px 0', borderTop: '1px solid rgba(0,0,0,0.06)', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+          <p style={{
+            fontFamily: 'var(--font-body)', fontSize: 16, color: 'var(--ink)',
+            fontStyle: 'italic', lineHeight: 1.8,
+          }}>
+            {'\u201C'}{quote}{'\u201D'}
+          </p>
+          <p style={{ fontFamily: 'var(--font-hand)', fontSize: 14, color: 'var(--ink-faint)', marginTop: 8, textAlign: 'right' }}>
+            — {quoteAuthor}
+          </p>
+        </div>
+
+        <hr className="section-rule" />
+
+        {/* Recommendation */}
+        <SectionLabel>today's rec</SectionLabel>
+        <div style={{ padding: '8px 0', cursor: 'pointer' }}>
+          <p style={{ fontFamily: 'var(--font-hand)', fontSize: 20, color: 'var(--ink)', marginBottom: 4 }}>{rec.title}</p>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--ink-faint)' }}>
+            {rec.type} — {rec.reason}
+          </p>
+        </div>
+
+        {/* End flourish */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 32, opacity: 0.2 }}>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--ink-faint)', letterSpacing: 8 }}>* * *</span>
+        </div>
+      </div>
+    </NotebookPage>
+  );
+}
+
+/* ══════════════════════════════════════════
+   SETTINGS PANEL
+   ══════════════════════════════════════════ */
+function SettingsPanel({ open, onClose }) {
+  const { paperStyle, changePaper } = useContext(PaperCtx);
+  if (!open) return null;
+
+  const paperOptions = [
+    { id: 'ruled', label: 'Lined' },
+    { id: 'dotted', label: 'Dotted' },
+    { id: 'graph', label: 'Graph' },
+    { id: 'blank', label: 'Blank' },
+  ];
+
+  return (
+    <div className="absolute inset-0 z-50 flex flex-col" style={{ background: 'var(--paper)' }}>
+      <div className="settings-enter flex-1 flex flex-col">
+        <div style={{ padding: '44px 20px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h2 style={{ fontFamily: 'var(--font-hand)', fontSize: 26, color: 'var(--ink)' }}>settings</h2>
+          <button onClick={onClose} style={{ width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: 'transparent', border: 'none' }} aria-label="Close">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <div style={{ flex: 1, overflowY: 'auto', padding: '0 20px 32px', WebkitOverflowScrolling: 'touch' }}>
+          {/* Paper style */}
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--ink-faint)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>paper style</p>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 28, flexWrap: 'wrap' }}>
+            {paperOptions.map(opt => (
+              <button
+                key={opt.id}
+                className={`paper-btn ${paperStyle === opt.id ? 'active' : ''}`}
+                onClick={() => changePaper(opt.id)}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Account */}
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--ink-faint)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>account</p>
+          <div style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+            {[
+              ['name', sampleData.profile.name],
+              ['diet', 'vegan'],
+              ['gist sync', 'not connected'],
+            ].map(([label, value], i) => (
+              <div key={i} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '12px 0',
+                borderBottom: '1px solid rgba(0,0,0,0.04)',
+              }}>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--ink)' }}>{label}</span>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--ink-faint)' }}>{value}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* About */}
+          <div style={{ marginTop: 32, textAlign: 'center' }}>
+            <p style={{ fontFamily: 'var(--font-hand)', fontSize: 16, color: 'var(--ink-faint)' }}>pebble notebook edition</p>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--pencil)', marginTop: 4 }}>a warm notebook for your whole life</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════
+   APP
+   ══════════════════════════════════════════ */
+function App() {
+  const [tocOpen, setTocOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+  const containerRef = useRef(null);
+  const pageRefs = useRef([]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
+            const idx = pageRefs.current.indexOf(entry.target);
+            if (idx !== -1) setCurrentPage(idx);
+          }
+        });
+      },
+      { root: container, threshold: 0.5 }
+    );
+
+    pageRefs.current.forEach(el => { if (el) observer.observe(el); });
+    return () => observer.disconnect();
+  }, []);
+
+  const navigateTo = useCallback((pageIndex) => {
+    const el = pageRefs.current[pageIndex];
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  }, []);
+
+  const setPageRef = (i) => (el) => { pageRefs.current[i] = el; };
+
+  const pages = [HomePage, TasksPage, MealsPage, WorkoutPage, TrackerPage, PicksPage];
+
+  return (
+    <div className="phone-frame">
+      <TableOfContents open={tocOpen} onClose={() => setTocOpen(false)} onNavigate={navigateTo} currentPage={currentPage} />
+      <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+
+      <Header onTocOpen={() => setTocOpen(true)} onSettingsOpen={() => setSettingsOpen(true)} />
+
+      <div className="swipe-container" ref={containerRef} style={{ position: 'relative' }}>
+        <PageTabs currentPage={currentPage} totalPages={6} onTabClick={navigateTo} />
+        {pages.map((Page, i) => (
+          <div key={i} ref={setPageRef(i)} className="swipe-page-wrap">
+            <Page />
+          </div>
+        ))}
+      </div>
+
+      <JournalBar />
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <PaperProvider><App /></PaperProvider>
+);
+</script>
+</body>
+</html>
