@@ -5522,15 +5522,22 @@ function CardQuizOverlay({ quiz, onClose }) {
    ══════════════════════════════════════════ */
 /* ── Español (Veo & Digo) embedded app ── */
 function EspanolPage() {
-  const html = React.useMemo(() => {
-    try {
-      const bytes = Uint8Array.from(atob(window.VEO_DIGO_B64), c => c.charCodeAt(0));
-      return new TextDecoder('utf-8').decode(bytes);
-    } catch (e) { return '<!doctype html><body style="font-family:sans-serif;padding:24px">No se pudo cargar.</body>'; }
+  const [url, setUrl] = React.useState(null);
+  React.useEffect(() => {
+    let cancelled = false, made = null;
+    // Decode the embedded app off the main thread (native base64 via fetch),
+    // so the rest of Pebble paints immediately instead of freezing on a 7MB decode.
+    fetch('data:text/html;charset=utf-8;base64,' + window.VEO_DIGO_B64)
+      .then(r => r.blob())
+      .then(b => { if (cancelled) return; made = URL.createObjectURL(b); setUrl(made); })
+      .catch(() => {});
+    return () => { cancelled = true; if (made) URL.revokeObjectURL(made); };
   }, []);
   return (
     <div className="swipe-page" style={{ padding: 0 }}>
-      <iframe srcDoc={html} title="Veo y Digo" style={{ flex: 1, width: '100%', border: 'none', display: 'block' }} />
+      {url
+        ? <iframe src={url} title="Veo y Digo" style={{ flex: 1, width: '100%', border: 'none', display: 'block' }} />
+        : <div style={{ padding: 24, fontFamily: 'sans-serif', color: '#999' }}>Cargando Español…</div>}
     </div>
   );
 }
