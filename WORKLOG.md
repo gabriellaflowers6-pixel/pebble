@@ -55,3 +55,9 @@ If you find an uncommitted entry from another bot: do not overwrite. Commit it o
 4. **Oz Ch.1 listening mode**: per page → audio (Kokoro, generate), ordena la frase (word-order), ¿qué significa? (meaning), + hand-written comprehension Q. Oz data: `stories.oz1`..`oz8`; oz1 has 18 pages. Then roll out oz2-8.
 
 Audio pipeline: Kokoro via `/opt/homebrew/bin/python3.11` (model ~/.cache/hyperframes/tts), em_alex @0.85, MP3 mono 24k/48k, base64 into `FC_AUDIO` in the Veo source; re-bake = base64 Veo source into `window.VEO_DIGO_B64` in pebble-app.html. Babel is pinned to @7.23.10 (floating CDN broke it).
+
+## ROADMAP additions — 2026-06-27 (later)
+5. **Translator button** — top corner of Pebble (in Header, next to settings/jar). Tap → quick EN↔ES translator panel. Needs Claude key.
+6. **Conversation mode** — toggle that goes FULL-SCREEN; AI holds a live Spanish conversation, speaking aloud WITH synced subtitles (hear + read simultaneously). Needs Claude key.
+   - **Live-voice constraint:** Kokoro (the nice baked voice) is a local Python batch tool, can't run live in the browser. Live options: (a) browser SpeechSynthesis Spanish voice (works in-browser, lower quality), (b) a small local Kokoro HTTP server the app calls (keeps the nice voice, needs the server running), (c) Google TTS once billing is re-enabled. DECISION NEEDED.
+   - Input side TBD: does Gabby SPEAK back (Web Speech recognition / mic) or type? "talk to me ... i can hear it and see it" = at minimum AI→Gabby voice+subtitles; clarify if she wants mic input too.
