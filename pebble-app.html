@@ -2028,47 +2028,43 @@ const PAGE_LABELS = ['Stream', 'Planner', 'Kitchen', 'Gym', 'Self-Care', 'Study'
 function MarbleJar({ open, onClose, onNavigate, currentPage, customSegments, staticPageCount }) {
   if (!open) return null;
 
-  const marbles = [
-    { cx: 90,  cy: 118, label: 'Stream', page: 0 },
-    { cx: 170, cy: 108, label: 'Planner', page: 1 },
-    { cx: 125, cy: 160, label: 'Kitchen', page: 2 },
-    { cx: 68,  cy: 196, label: 'Gym', page: 3 },
-    { cx: 198, cy: 177, label: 'Self-Care', page: 4 },
-    { cx: 128, cy: 226, label: 'Study', page: 5 },
-    { cx: 72,  cy: 260, label: 'Tracker', page: 6 },
-    { cx: 190, cy: 244, label: 'Career', page: 7 },
-    { cx: 126, cy: 294, label: 'Journal', page: 8 },
-    { cx: 196, cy: 320, label: 'Picks', page: 9 },
-    { cx: 80,  cy: 328, label: 'Build', page: 10 },
-    { cx: 155, cy: 348, label: 'Stickies', page: 11 },
+  const segs = customSegments || [];
+  const items = [
+    ...PAGE_LABELS.map((label, i) => ({ label, page: i })),
+    ...segs.map((seg, i) => ({ label: seg.name, page: (staticPageCount || PAGE_LABELS.length) + i })),
   ];
 
-  const segs = customSegments || [];
+  const cols = 3;
+  const colX = [89, 140, 191];
+  const startY = 104;
+  const rowH = 64;
+  const rows = Math.ceil(items.length / cols);
+  const bodyTop = 62;
+  const bodyBottom = startY + (rows - 1) * rowH + 46;
+  const svgW = 280;
+  const svgH = bodyBottom + 24;
 
   return (
     <div className="absolute inset-0 z-50 jar-overlay flex flex-col items-center justify-center" onClick={onClose}>
-      <div className="jar-enter flex flex-col items-center" style={{ overflowY: 'auto', maxHeight: '90vh', paddingBottom: 16 }} onClick={e => e.stopPropagation()}>
-        <p style={{ fontFamily: 'var(--font-display)', fontSize: 26, color: 'var(--dark)', marginBottom: 4, opacity: 0.9 }}>pebble jar</p>
-        <p style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--muted)', marginBottom: 16 }}>tap a marble to go</p>
+      <div className="jar-enter flex flex-col items-center" style={{ overflowY: 'auto', maxHeight: '92vh', paddingBottom: 16 }} onClick={e => e.stopPropagation()}>
+        <p style={{ fontFamily: 'var(--font-display)', fontSize: 26, color: 'var(--dark)', marginBottom: 2, opacity: 0.9 }}>pebble jar</p>
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--muted)', marginBottom: 12 }}>tap a pebble to go</p>
 
-        <svg width="280" height="390" viewBox="0 0 280 390" fill="none" className="hand-drawn">
-          <path d="M90 60 C92 52, 100 48, 140 46 C180 48, 188 52, 190 60" stroke="var(--primary)" strokeWidth="2.2" fill="none" />
-          <path d="M85 64 C120 60, 160 60, 195 64" stroke="var(--primary)" strokeWidth="1.8" fill="none" />
-          <path d="M85 64 C78 80, 48 110, 42 148 C36 186, 38 244, 45 282 C52 322, 80 358, 140 361 C200 358, 228 322, 235 282 C242 244, 244 186, 238 148 C232 110, 202 80, 195 64" stroke="var(--primary)" strokeWidth="2.2" fill="var(--card-bg)" />
-          <path d="M68 116 C62 152, 60 208, 65 252" stroke="var(--primary)" strokeWidth="0.8" strokeOpacity="0.2" fill="none" />
+        <svg width={svgW} height={svgH} viewBox={`0 0 ${svgW} ${svgH}`} fill="none" className="hand-drawn">
+          <rect x="86" y="22" width="108" height="13" rx="6" fill="var(--card-bg)" stroke="var(--primary)" strokeWidth="1.8" />
+          <rect x="80" y="33" width="120" height="20" rx="7" fill="var(--accent-light)" stroke="var(--primary)" strokeWidth="2" />
+          <path d={`M56 ${bodyTop + 4} C56 ${bodyTop - 4} 63 ${bodyTop - 8} 80 ${bodyTop - 8} L200 ${bodyTop - 8} C217 ${bodyTop - 8} 224 ${bodyTop - 4} 224 ${bodyTop + 4} L224 ${bodyBottom - 16} C224 ${bodyBottom - 4} 215 ${bodyBottom + 2} 200 ${bodyBottom + 2} L80 ${bodyBottom + 2} C65 ${bodyBottom + 2} 56 ${bodyBottom - 4} 56 ${bodyBottom - 16} Z`} fill="var(--card-bg)" stroke="var(--primary)" strokeWidth="2.2" />
+          <path d={`M70 ${bodyTop + 22} C64 ${bodyBottom * 0.55} 64 ${bodyBottom * 0.72} 73 ${bodyBottom - 18}`} stroke="var(--primary)" strokeWidth="0.8" strokeOpacity="0.16" fill="none" />
 
-          {marbles.map((m, i) => {
+          {items.map((m, i) => {
+            const c = i % cols, r = Math.floor(i / cols);
+            const x = colX[c], y = startY + r * rowH;
             const isActive = currentPage === m.page;
             return (
-              <g key={i} className="marble-group" onClick={() => { navigator.vibrate?.(10); onNavigate(m.page); onClose(); }}>
-                <circle cx={m.cx} cy={m.cy} r="22"
-                  fill={isActive ? 'var(--primary)' : 'var(--accent-light)'}
-                  stroke="var(--primary)" strokeWidth={isActive ? "2.5" : "1.5"}
-                  opacity={isActive ? 1 : 0.85} />
-                <ellipse cx={m.cx - 5} cy={m.cy - 7} rx="6" ry="3.5" fill="white" opacity={isActive ? 0.3 : 0.2} />
-                <text x={m.cx} y={m.cy + 1} textAnchor="middle" dominantBaseline="middle"
-                  fill={isActive ? 'white' : 'var(--dark)'}
-                  style={{ fontFamily: 'var(--font-body)', fontSize: m.label.length > 7 ? '8px' : '9px', fontWeight: 500, letterSpacing: '0.5px' }}>
+              <g key={i} className="marble-group" style={{ cursor: 'pointer' }} onClick={() => { navigator.vibrate?.(10); onNavigate(m.page); onClose(); }}>
+                <circle cx={x} cy={y} r="21" fill={isActive ? 'var(--primary)' : 'var(--accent-light)'} stroke="var(--primary)" strokeWidth={isActive ? '2.6' : '1.4'} opacity={isActive ? 1 : 0.9} />
+                <ellipse cx={x - 6} cy={y - 7} rx="5.5" ry="3" fill="white" opacity={isActive ? 0.35 : 0.22} />
+                <text x={x} y={y + 33} textAnchor="middle" fill={isActive ? 'var(--primary)' : 'var(--dark)'} style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: isActive ? 700 : 500 }}>
                   {m.label.toLowerCase()}
                 </text>
               </g>
@@ -2076,22 +2072,7 @@ function MarbleJar({ open, onClose, onNavigate, currentPage, customSegments, sta
           })}
         </svg>
 
-        {segs.length > 0 && (
-          <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', maxWidth: 260 }}>
-            {segs.map((seg, i) => {
-              const pageIdx = (staticPageCount || 11) + i;
-              const isActive = currentPage === pageIdx;
-              return (
-                <button key={seg.id} onClick={() => { onNavigate(pageIdx); onClose(); }}
-                  style={{ fontFamily: 'var(--font-body)', fontSize: 11, padding: '6px 14px', borderRadius: 999, background: isActive ? 'var(--primary)' : 'var(--accent-light)', color: isActive ? 'white' : 'var(--dark)', border: `1.5px solid ${isActive ? 'var(--primary)' : 'rgba(0,0,0,0.08)'}`, cursor: 'pointer', transition: 'all 0.15s' }}>
-                  {seg.name.toLowerCase()}
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        <p style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--muted)', marginTop: 12, opacity: 0.5, cursor: 'pointer' }} onClick={onClose}>tap outside to close</p>
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--muted)', marginTop: 6, opacity: 0.5, cursor: 'pointer' }} onClick={onClose}>tap outside to close</p>
       </div>
     </div>
   );
