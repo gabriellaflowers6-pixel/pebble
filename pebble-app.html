@@ -4385,6 +4385,18 @@ function StudyPage() {
             )}
           </div>
 
+          <button onClick={() => window.__goEspanol && window.__goEspanol()} className="glass-card px-4 py-3 mb-4"
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ width: 32, height: 32, borderRadius: 9, background: 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display, serif)', fontWeight: 700, fontSize: 17, lineHeight: 1 }}>ñ</span>
+              <div>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--dark)' }}>Veo &amp; Digo</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>practica español</div>
+              </div>
+            </div>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: 18, color: 'var(--primary)' }}>→</span>
+          </button>
+
           <SectionLabel>courses</SectionLabel>
           <div className="space-y-2 mb-2">
             {data.study.courses.map((course, i) => (
@@ -5614,6 +5626,8 @@ function App() {
     const el = pageRefs.current[pageIndex];
     if (el) el.scrollIntoView({ behavior: 'smooth' });
   }, []);
+  // Español is the last static page — expose a jump for in-app links (e.g. Study page)
+  window.__goEspanol = () => navigateTo(staticPages.length - 1);
 
   const setPageRef = (i) => (el) => { pageRefs.current[i] = el; };
 
