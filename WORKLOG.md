@@ -45,3 +45,13 @@ If you find an uncommitted entry from another bot: do not overwrite. Commit it o
 **Why Kokoro not Google:** the shared `GOOGLE_TTS_API_KEY` (same key anchorED uses, in `anchorEDsite/.env`) now **403s — billing disabled on project #179024390731**. anchorED's voice is likely broken too until billing is re-enabled. Kokoro is local, free, and sounds better.
 **Committed:** YES — this commit
 **Notes for next session:** To extend audio, edit `veo-y-digo-source.html`, run the scratchpad generators (Kokoro via `/opt/homebrew/bin/python3.11`; model cached at `~/.cache/hyperframes/tts`), then `integrate_audio.py` re-bakes into `pebble-app.html`. Voice `em_alex`, speed 0.85, MP3 mono 24kHz 48k, keyed by exact spoken phrase. `sayLine`/`sayPhrase` (story/phrase sentences) still use the browser voice (not pre-baked). File is now ~7.4MB.
+
+## ROADMAP — Spanish app (Veo & Digo embedded in Pebble) — as of 2026-06-27
+1. **Bake keys into defaults** (`DEFAULT_DATA.settings` line ~1108: apiKey/gistId/gistToken/oneSignal*). Blocked: need Gabby's export-data JSON. Git is private, so baking is OK.
+2. **Polished jar redesign** — `MarbleJar` (~line 2028). Make data-driven (currently hardcoded 12 marbles, MISSING Español page). Gabby chose: keep jar metaphor, neat rows, include all pages, bigger labels.
+3. **AI in the Spanish app** (Veo source `veo-y-digo-source.html`; needs Claude key baked into the Veo app, call api.anthropic.com with `anthropic-dangerous-direct-browser-access`):
+   - **Diario autocorrect**: on save, send entry to Claude → rewrite to natural Spanish (translate English, fix grammar/vocab). Example: "me gusta pineapple" → "me gusta piña". Show corrected version.
+   - **Recommendations**: AI suggestions — SCOPE TBD (next story / words to drill / daily tip?).
+4. **Oz Ch.1 listening mode**: per page → audio (Kokoro, generate), ordena la frase (word-order), ¿qué significa? (meaning), + hand-written comprehension Q. Oz data: `stories.oz1`..`oz8`; oz1 has 18 pages. Then roll out oz2-8.
+
+Audio pipeline: Kokoro via `/opt/homebrew/bin/python3.11` (model ~/.cache/hyperframes/tts), em_alex @0.85, MP3 mono 24k/48k, base64 into `FC_AUDIO` in the Veo source; re-bake = base64 Veo source into `window.VEO_DIGO_B64` in pebble-app.html. Babel is pinned to @7.23.10 (floating CDN broke it).
