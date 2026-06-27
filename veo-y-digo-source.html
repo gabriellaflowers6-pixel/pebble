@@ -5720,7 +5720,7 @@ function atCheck(){
 function atBuildRef(){
   function tbl(rows,withWhy){
     let s='<table class="at-table"><tr><th>Verbo</th><th>Significa</th><th>Gerundio</th>'+(withWhy?'<th>Por qué</th>':'')+'</tr>';
-    for(const r of rows){ s+='<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td class="g"><button type="button" class="at-spk" onclick="fcPlay(\'estaba '+r[2]+'\')">🔊<\/button> '+r[2]+'</td>'+(withWhy?'<td class="w">'+r[3]+'</td>':'')+'</tr>'; }
+    for(const r of rows){ s+='<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td class="g"><button type="button" class="at-spk" onclick="fcPlay(\''+r[2]+'\')">🔊<\/button> '+r[2]+'</td>'+(withWhy?'<td class="w">'+r[3]+'</td>':'')+'</tr>'; }
     return s+'</table>';
   }
   let est='<table class="at-table"><tr><th>Pronombre</th><th>Forma</th></tr>';
