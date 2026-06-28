@@ -43,7 +43,7 @@
   }
 
   .phone-frame {
-    width: 375px; max-height: 812px; height: 100vh;
+    width: 375px; max-height: 812px; height: var(--app-h, 100vh);
     background: var(--bg); position: relative; overflow: hidden;
     margin: 0 auto; border-radius: 0;
     display: flex; flex-direction: column;
@@ -3023,13 +3023,13 @@ ${(data.plans || []).length ? '\nActive plans: ' + (data.plans || []).map(p => p
               {hasSpeechAPI && (
                 <button className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer flex-shrink-0"
                   style={{ background: isListening ? 'var(--primary)' : 'rgba(0,0,0,0.04)', border: isListening ? '2px solid var(--primary)' : '1px solid rgba(0,0,0,0.08)', transition: 'all 0.15s' }}
-                  onClick={toggleVoice}>
+                  onMouseDown={e => e.preventDefault()} onClick={toggleVoice}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={isListening ? 'white' : 'var(--muted)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
                 </button>
               )}
               <button className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer flex-shrink-0"
                 style={{ background: 'var(--primary)', opacity: msg.trim() ? 1 : 0.4, transition: 'opacity 0.15s' }}
-                onClick={() => { navigator.vibrate?.(10); sendMessage(); }} disabled={!msg.trim()}>
+                onMouseDown={e => e.preventDefault()} onClick={() => { navigator.vibrate?.(10); sendMessage(); }} disabled={!msg.trim()}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
               </button>
             </div>
@@ -3085,13 +3085,13 @@ ${(data.plans || []).length ? '\nActive plans: ' + (data.plans || []).map(p => p
         {hasSpeechAPI && (
           <button className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer flex-shrink-0"
             style={{ background: isListening ? 'var(--primary)' : 'rgba(0,0,0,0.04)', border: isListening ? '2px solid var(--primary)' : '1px solid rgba(0,0,0,0.08)', transition: 'all 0.15s' }}
-            onClick={toggleVoice}>
+            onMouseDown={e => e.preventDefault()} onClick={toggleVoice}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={isListening ? 'white' : 'var(--muted)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
           </button>
         )}
         <button className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer flex-shrink-0"
           style={{ background: 'var(--primary)', opacity: msg.trim() ? 1 : 0.4, transition: 'opacity 0.15s' }}
-          onClick={() => { navigator.vibrate?.(10); sendMessage(); }} disabled={!msg.trim()}>
+          onMouseDown={e => e.preventDefault()} onClick={() => { navigator.vibrate?.(10); sendMessage(); }} disabled={!msg.trim()}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
         </button>
       </div>
@@ -5311,8 +5311,8 @@ function ThemeSwatch({ id, theme, isActive, onSelect, onDelete, isCustom }) {
   );
 }
 
-const PEBBLE_BUILD = 1;
-const PEBBLE_BUILD_NOTE = 'contenteditable chat box (no iOS form bar/autofill) + device-local API key (no more key resets)';
+const PEBBLE_BUILD = 2;
+const PEBBLE_BUILD_NOTE = 'keyboard stays above the chat and no longer drops when you send (+ contenteditable box, device-local key)';
 
 function SettingsPanel({ open, onClose }) {
   const { themeId, setTheme, customThemes, deleteCustomTheme } = useContext(ThemeCtx);
@@ -6035,6 +6035,19 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       el.removeAttribute('data-pebtab');
     }
   });
+})();
+</script>
+<script>
+/* Keyboard-aware sizing: shrink the app to the visual viewport so the chat (messages +
+   composer) stays above the iOS keyboard instead of hiding behind it. */
+(function () {
+  var vv = window.visualViewport;
+  if (!vv) return;
+  function apply() { document.documentElement.style.setProperty('--app-h', Math.round(vv.height) + 'px'); }
+  vv.addEventListener('resize', apply);
+  vv.addEventListener('scroll', apply);
+  window.addEventListener('orientationchange', function () { setTimeout(apply, 200); });
+  apply();
 })();
 </script>
 </body>
