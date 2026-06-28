@@ -147,3 +147,13 @@ Big feature for the Pebble Spanish chat (ChatBar Spanish mode). Spec confirmed w
 **Testing (headless):** App boots clean, `PEBBLECHECK ERRS(0)`. Migration assertion `MIGCHECK SETS(1) CARDS(3) ID(convo-all)` (two seeded legacy decks, 4 cards, Hola/hola deduped, collapse into one). Real localStorage key is `pebble-data` (hyphen). Node logic test for the merge helper passes 7/7.
 **Committed:** YES. Branch `convo-one-deck`, commits fb8d0fa, 3c117ca, ed3db8f plus docs and worklog. NOT pushed, NOT merged to main.
 **Notes for next session:** ON-DEVICE CHECK PENDING (Gabby, iPhone): save a word in two separate Spanish chats, open Veo Tarjetas, confirm a single "Conversación" deck holds both and the old separate per-chat decks are gone. Then decide merge to main. API key is still public via Pages (proxy before sharing) as flagged in earlier entries.
+
+## 2026-06-28 — convo-one-deck merged to main + PUSHED to origin
+**Working on:** Shipping the convo-one-deck feature after the post-restart git sanity check + Gabby's on-device Tarjetas check (she confirmed: one rolling Conversación deck, old per-chat decks gone).
+**What happened:**
+- Git sanity check passed — `.git` survived the laptop restart, all feature commits present.
+- Fast-forwarded `main` (was 32 ahead of origin) to `convo-one-deck` (`aaa4464`). No merge commit.
+- First push REJECTED by GitHub push protection: the baked Anthropic `sk-ant` key in `pebble-app.html` (lines 566 + 1109) flagged across commits `cafd5e4`, `ed3db8f`, `91f0f9a`.
+- Gabby chose "allow the secret," clicked GitHub's unblock URL, then push succeeded: `65cb183..aaa4464  main -> main` (38 commits total — the 6 feature commits + 32 prior unpushed).
+**Committed:** YES — pushed. `main` == `origin/main` == `aaa4464`.
+**Notes for next session:** The live API key is now in public repo history AND served via Pages. WATCH FOR AUTO-REVOCATION — Anthropic + GitHub secret scanning may kill this key, which would break AI in Pebble (Diario autocorrect, Spanish chat, translator). If AI suddenly fails, rotate the key (Anthropic console → swap into DEFAULT_DATA.settings.apiKey + window.PEBBLE_API_KEY at pebble-app.html:566/1109, re-bake not needed since it's React-side). The real fix remains the Netlify-function proxy so no key lives in client code. Remaining roadmap: phone voice decision (device vs cloud TTS), translator button, recommendations (scope TBD), Oz Ch.4-8 comprehension Qs.
