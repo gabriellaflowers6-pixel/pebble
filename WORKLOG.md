@@ -77,3 +77,6 @@ Audio pipeline: Kokoro via `/opt/homebrew/bin/python3.11` (model ~/.cache/hyperf
 **To activate:** put an Anthropic `sk-ant-…` key in Pebble Settings → apiKey (or bake into DEFAULT_DATA.settings). Then writing in Diario + save → Claude rewrites to natural LatAm Spanish + a one-line tip.
 **Same key unlocks:** future translator + conversation + recommendations.
 **Committed:** YES.
+
+## 2026-06-27 — Anthropic API key baked in; Diario autocorrect LIVE
+Baked the sk-ant key into DEFAULT_DATA.settings.apiKey + a window.PEBBLE_API_KEY hard fallback (out of babel) + EspanolPage falls back to it. Verified: key valid (200, billing active, correction works), app mounts. Diario autocorrect now functional. Same key powers Pebble chat + future translator/conversation. Key is in pebble-app.html (private repo). Committed, NOT pushed.
