@@ -1130,6 +1130,20 @@ function stripJsonFences(text) {
   return text.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
 }
 
+
+const CONVO_DECK_ID = 'convo-all';
+const CONVO_DECK_LABEL = 'Conversación';
+const convoCardKey = (c) => (c.kind || 'word') + ':' + (c.es || '').toLowerCase();
+function mergeConvoSets(sets) {
+  const cards = []; const seen = new Set();
+  (sets || []).forEach(s => (s.cards || []).forEach(c => {
+    const k = convoCardKey(c);
+    if (seen.has(k)) return;
+    seen.add(k); cards.push(c);
+  }));
+  return [{ id: CONVO_DECK_ID, label: CONVO_DECK_LABEL, date: new Date().toISOString().slice(0, 10), cards }];
+}
+
 function dataReducer(state, action) {
   switch (action.type) {
     case 'TOGGLE_TODO': {
@@ -1358,6 +1372,14 @@ function dataReducer(state, action) {
         return { ...s, cards: [...(s.cards || []), action.card] };
       }) } };
     }
+    case 'ES_FLASH_MERGE_ALL': {
+      const sets = (state.esFlash?.sets) || [];
+      // idempotent: nothing to do if empty or already a single convo-all deck
+      if (sets.length === 0) return state;
+      if (sets.length === 1 && sets[0].id === CONVO_DECK_ID) return state;
+      return { ...state, esFlash: { sets: mergeConvoSets(sets) } };
+    }
+
     case 'ADD_MEMORY_PENDING': {
       const already = (state.memory?.pending || []).some(p => p.label === action.item.label);
       if (already) return state;
