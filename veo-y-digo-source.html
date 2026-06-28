@@ -494,22 +494,9 @@
         <div class="icon"><svg viewBox="0 0 100 100"><rect x="6" y="40" width="38" height="22" rx="6" fill="#c75c3a"/><text x="25" y="55" text-anchor="middle" font-family="serif" font-size="12" font-weight="900" fill="#fff">-ar</text><path d="M48 51 h10 m-4 -4 l4 4 l-4 4" stroke="#d99c2b" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/><rect x="62" y="40" width="32" height="22" rx="6" fill="#556434"/><text x="78" y="55" text-anchor="middle" font-family="serif" font-size="9" font-weight="900" fill="#fff">-ando</text></svg></div>
         <div><h2>Atajos</h2><p>Shortcuts that skip whole tenses. Start with "estaba ___ando" = I was ___ing. Chart plus a quick drill.</p></div>
       </button>
-      <button class="mode" onclick="convoLaunchPebble()">
-        <div class="icon"><svg viewBox="0 0 100 100"><rect x="12" y="20" width="56" height="40" rx="12" fill="#c75c3a"/><path d="M26 60 l0 13 l15 -13z" fill="#c75c3a"/><circle cx="30" cy="40" r="4" fill="#fff"/><circle cx="42" cy="40" r="4" fill="#fff"/><circle cx="54" cy="40" r="4" fill="#fff"/><rect x="44" y="50" width="44" height="30" rx="10" fill="#556434"/><path d="M72 80 l0 11 l-13 -11z" fill="#556434"/></svg></div>
-        <div><h2>Conversación</h2><p>Chat in Spanish with Pebble. It speaks out loud and you read the subtitles, hear it and read it at once.</p></div>
-      </button>
     </div>
     <p class="footnote">Built to skip English: link pictures and stories straight to Spanish, then check yourself only when you need to.</p>
   </section>
-  <!-- ========== CONVERSACIÓN ========== -->
-  <section class="screen" id="convo">
-    <div class="cv-head">Conversación con Pebble</div>
-    <div class="cv-launch">
-      <p>Habla en español con Pebble en el chat principal. Pebble te responde en voz alta y ves los subtítulos. Puedes hablar o escribir.</p>
-      <button class="cv-launch-btn" onclick="convoLaunchPebble()">Abrir conversación →</button>
-    </div>
-  </section>
-
   <!-- ========== MODO ESCUCHA ========== -->
   <section class="screen" id="escucha">
     <div class="esc-progress" id="escProgress"></div>
@@ -4742,7 +4729,7 @@ const stories = {
 };
 
 /* ===================== NAVIGATION ===================== */
-const screens = ['home','flashHome','storyHome','reader','phrase','test','worksheet','wsHome','wsRef','diario','constructor','atajos','escucha','convo'];
+const screens = ['home','flashHome','storyHome','reader','phrase','test','worksheet','wsHome','wsRef','diario','constructor','atajos','escucha'];
 
 /* ===================== WORKSHEET DATA ===================== */
 const wsCategories = [
@@ -6006,7 +5993,6 @@ function convoMic(){
     if(btn) btn.classList.add('on'); convoRec.start();
   }catch(e){ if(btn) btn.classList.remove('on'); convoRec=null; convoMicHint('Usa el micro 🎙️ del teclado'); }
 }
-function openConvo(){ nav('convo'); }
 function convoLaunchPebble(){ try{ window.parent.postMessage({type:'openSpanishChat'},'*'); }catch(e){} }
 
 function show(id){
