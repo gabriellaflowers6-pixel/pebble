@@ -135,25 +135,15 @@ Big feature for the Pebble Spanish chat (ChatBar Spanish mode). Spec confirmed w
 
 **(superseded)** Earlier note — Remaining: **B. merge Conversación into the main "talk to Pebble" chat** (has design choices — ask Gabby: toggle vs separate, keep history, what changes besides the system prompt). Also still open from before: translator button, recommendations (scope), Oz Ch.4-8 comp Qs. **API KEY IS PUBLIC via GitHub Pages** (https://gabriellaflowers6-pixel.github.io/pebble/pebble-app.html serves the baked sk-ant key to anyone) — Gabby aware, chose to leave for now, fix (Netlify-function proxy) before sharing. iOS PWA mic is the big unknown to test on-device.
 
-## 2026-06-28 — Task 1: mergeConvoSets helper + ES_FLASH_MERGE_ALL reducer
-**Working on:** Implementing the core merge helper and reducer action for consolidating Spanish flashcard conversation decks into one rolling "Conversación" deck (Task 1 of the convo-one-deck feature branch).
-**Files changed:** `pebble-app.html` — added 14 lines (constants + helper + reducer case).
+## 2026-06-28 — Convo flashcards collapsed into one rolling Conversación deck (branch convo-one-deck)
+**Working on:** Replacing the per-conversation Spanish flashcard decks with a single permanent "Conversación" deck, and merging existing decks into it on load. Spec and plan in `docs/superpowers/`. Built subagent-driven across 3 tasks, each reviewed clean, plus a final whole-branch review (READY TO MERGE, no critical or important findings).
+**Files changed:** `pebble-app.html` only (code). Veo source and the base64 `VEO_DIGO_B64` were intentionally NOT touched, so no re-bake.
 **What:**
-- Added `const CONVO_DECK_ID = 'convo-all'` and `const CONVO_DECK_LABEL = 'Conversación'` at lines 1134-1135.
-- Added `const convoCardKey()` dedup key helper and `function mergeConvoSets(sets)` pure merger at lines 1136-1147.
-- Added `case 'ES_FLASH_MERGE_ALL':` reducer action at lines 1375-1381 (idempotent, defers to mergeConvoSets, no-op if empty or already merged).
-**Testing:** Node logic test (merge-test.js) passes all 7 assertions. Headless smoke test: `PEBBLECHECK ERRS(0)` (zero JS errors on load).
-**Committed:** YES — fb8d0fa
-**Uncommitted:** none
-**Notes for next session:** Task 1 complete and ready for Tasks 2-3 (will build on this helper + action). Branch is convo-one-deck, everything committed. No concerns.
-
-## 2026-06-28 — Task 3: One-time migration effect for legacy per-convo decks
-**Working on:** Adding the reactive `useEffect` that migrates any existing per-conversation esFlash sets into the single `convo-all` deck on load (Task 3 of the convo-one-deck branch).
-**Files changed:** `pebble-app.html` -- 8 lines inserted inside the Spanish chat component, after the `openSpanishChat` message-listener useEffect (~line 2968).
-**What:** Added a `useEffect` with `[data.esFlash]` dependency that computes `needsMerge` and dispatches `ES_FLASH_MERGE_ALL` when needed. Reactive form so it also fires after async `LOAD_DATA` brings stored sets in. Reducer idempotency prevents re-render loops.
-**localStorage key:** `pebble-data` (hyphen, not underscore -- brief's harness had the wrong key; corrected both the perl seed and title-readback in the migration test).
-**Smoke test:** `PEBBLECHECK ERRS(0)`
-**Migration test:** `MIGCHECK SETS(1) CARDS(3) ID(convo-all)`
-**Committed:** YES -- ed3db8f
-**Uncommitted:** none
-**Notes for next session:** Task 3 complete. Branch `convo-one-deck`: Tasks 1-3 all done. Review/merge when Gabby is ready. WORKLOG.md still has uncommitted changes.
+- Added `CONVO_DECK_ID = 'convo-all'`, `CONVO_DECK_LABEL = 'Conversación'`, a shared `convoCardKey()` dedup helper, and a pure `mergeConvoSets()` (lines ~1134-1147).
+- Added the idempotent `ES_FLASH_MERGE_ALL` reducer case. `ES_FLASH_ADD_CARD` now uses `convoCardKey()` too, so every path shares one key formula.
+- `saveSpanishCard` writes to the fixed `convo-all` deck (no more per-session sets). `enterSpanish` seeds the dedup cache from the persisted deck so dedup spans all sessions. The save toast counts the whole deck.
+- One reactive migration `useEffect` (`[data.esFlash]`) folds any legacy per-convo decks into the single deck on load. Idempotent, so no re-render loop.
+- `esSessionRef` is now unused (left in place, harmless).
+**Testing (headless):** App boots clean, `PEBBLECHECK ERRS(0)`. Migration assertion `MIGCHECK SETS(1) CARDS(3) ID(convo-all)` (two seeded legacy decks, 4 cards, Hola/hola deduped, collapse into one). Real localStorage key is `pebble-data` (hyphen). Node logic test for the merge helper passes 7/7.
+**Committed:** YES. Branch `convo-one-deck`, commits fb8d0fa, 3c117ca, ed3db8f plus docs and worklog. NOT pushed, NOT merged to main.
+**Notes for next session:** ON-DEVICE CHECK PENDING (Gabby, iPhone): save a word in two separate Spanish chats, open Veo Tarjetas, confirm a single "Conversación" deck holds both and the old separate per-chat decks are gone. Then decide merge to main. API key is still public via Pages (proxy before sharing) as flagged in earlier entries.
