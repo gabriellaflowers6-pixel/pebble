@@ -1367,8 +1367,8 @@ function dataReducer(state, action) {
       const sets = (state.esFlash?.sets) || [];
       return { ...state, esFlash: { sets: sets.map(s => {
         if (s.id !== action.setId) return s;
-        const k = action.card.kind + ':' + (action.card.es || '').toLowerCase();
-        if ((s.cards || []).some(c => (c.kind + ':' + (c.es || '').toLowerCase()) === k)) return s;
+        const k = convoCardKey(action.card);
+        if ((s.cards || []).some(c => convoCardKey(c) === k)) return s;
         return { ...s, cards: [...(s.cards || []), action.card] };
       }) } };
     }
@@ -2911,9 +2911,9 @@ ${(data.plans || []).length ? '\nActive plans: ' + (data.plans || []).map(p => p
     primeSpeech();
     setSpanishMode(true); setChatExpanded(true); setChatOpen(false);
     if (esMsgs.length) return;
-    // fresh chat = new session = new flashcard set (created lazily on first save)
-    esSessionRef.current = { id: 'es' + Date.now(), label: 'Conversación · ' + new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), date: new Date().toISOString().slice(0, 10), created: false };
-    esCardsRef.current = [];
+    // rolling deck: seed the dedup cache from the persisted Conversación deck so saves dedupe across all sessions
+    const convoDeck = (data.esFlash?.sets || []).find(s => s.id === CONVO_DECK_ID);
+    esCardsRef.current = convoDeck ? convoDeck.cards.slice() : [];
     if (!data.settings?.apiKey) { setEsMsgs([{ role: 'assistant', sentences: [{ es: 'Agrega tu clave de API en ajustes para conversar.', en: 'Add your API key in settings to chat.', words: [] }] }]); return; }
     setSending(true);
     (async () => {
@@ -2941,19 +2941,18 @@ ${(data.plans || []).length ? '\nActive plans: ' + (data.plans || []).map(p => p
   enterSpanishRef.current = enterSpanish;
   const exitSpanish = () => { try { speechSynthesis.cancel(); } catch {} setSpanishMode(false); setEsMsgs([]); };
 
-  // Save a tapped word / sentence to this session's flashcard set (persisted in Pebble; Stage 3 syncs it to the Tarjetas section)
+  // Save a tapped word / sentence into the single rolling Conversación deck.
   const saveSpanishCard = (kind, es, en) => {
     const e = (es || '').trim(); if (!e) return;
-    let sess = esSessionRef.current;
-    if (!sess) { sess = esSessionRef.current = { id: 'es' + Date.now(), label: 'Conversación · ' + new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), date: new Date().toISOString().slice(0, 10), created: false }; }
     const card = { kind, es: e, en: (en || '').trim() };
-    const key = kind + ':' + e.toLowerCase();
-    if (esCardsRef.current.some(c => (c.kind + ':' + (c.es || '').toLowerCase()) === key)) {
+    const key = convoCardKey(card);
+    if (esCardsRef.current.some(c => convoCardKey(c) === key)) {
       setFlashToast('ya guardada');
     } else {
       esCardsRef.current.push(card);
-      if (!sess.created) { dispatch({ type: 'ES_FLASH_NEW_SET', id: sess.id, label: sess.label, date: sess.date }); sess.created = true; }
-      dispatch({ type: 'ES_FLASH_ADD_CARD', setId: sess.id, card });
+      // ensure the one rolling deck exists (NEW_SET is a no-op if it already does), then add the card
+      dispatch({ type: 'ES_FLASH_NEW_SET', id: CONVO_DECK_ID, label: CONVO_DECK_LABEL, date: new Date().toISOString().slice(0, 10) });
+      dispatch({ type: 'ES_FLASH_ADD_CARD', setId: CONVO_DECK_ID, card });
       setFlashToast((kind === 'word' ? 'palabra' : 'frase') + ' guardada ✓ (' + esCardsRef.current.length + ')');
     }
     setTimeout(() => setFlashToast(''), 1800);
