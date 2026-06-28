@@ -447,6 +447,7 @@
   .cv-launch{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:0 28px;text-align:center;}
   .cv-launch p{font-size:.95rem;line-height:1.55;color:#4a4030;max-width:340px;}
   .cv-launch-btn{padding:14px 22px;border:none;border-radius:14px;background:var(--berry);color:#fff;font-size:1rem;font-weight:600;cursor:pointer;}
+  .fc-txt-front{display:flex;align-items:center;justify-content:center;text-align:center;height:100%;padding:16px;font-family:'Fraunces',Georgia,serif;font-weight:700;font-size:1.3rem;line-height:1.35;color:#4a4030;overflow-wrap:anywhere;}
   .cv-send{background:var(--terracotta);color:#fff;}
 </style>
 </head>
@@ -5222,6 +5223,22 @@ function diarioNew(){
 }
 
 window.addEventListener('message',function(e){ if(e&&e.data&&e.data.type==='pebbleClaudeKey'){ window.__claudeKey=e.data.key||''; } });
+// Session flashcard sets pushed in from Pebble's Spanish chat -> register them in the Tarjetas deck list.
+window.__esFlashNames=[];
+function applyEsFlashSets(sets){
+  try{
+    if(!Array.isArray(sets)) return;
+    (window.__esFlashNames||[]).forEach(function(n){ try{ delete themeDecks[n]; }catch(e){} });
+    window.__esFlashNames=[];
+    sets.forEach(function(s){
+      if(!s||!s.label||!Array.isArray(s.cards)||!s.cards.length) return;
+      themeDecks[s.label]=s.cards.map(function(c){ return { front:c.es, word:(c.en||c.es), en:c.es, art:'' }; });
+      window.__esFlashNames.push(s.label);
+    });
+    if(typeof currentScreen!=='undefined' && currentScreen==='flashHome' && typeof buildThemeButtons==='function') buildThemeButtons();
+  }catch(e){}
+}
+window.addEventListener('message',function(e){ if(e&&e.data&&e.data.type==='esFlashSets'){ applyEsFlashSets(e.data.sets); } });
 async function diarioSave(){
   const raw = document.getElementById('diarioInput').value.trim();
   if(!raw) return;
@@ -6028,12 +6045,15 @@ function loadDeck(kind, key){
   else { fcDeckName=stories[key].title; fcDeck=stories[key].deck; }
   fcIdx=0; renderCard();
 }
+let fcRenderToken=0;
 function renderCard(){
   const c=fcDeck[fcIdx];
+  const myTok = ++fcRenderToken;
   document.getElementById('fcCard').classList.remove('flipped');
   const svgFallback = art[c.art]||'';
   const artEl = document.getElementById('fcArt');
-  artEl.innerHTML = svgFallback; // immediate SVG fallback
+  // Session cards (saved from the Pebble chat) carry their Spanish text in c.front; show it on the front face.
+  artEl.innerHTML = c.front ? ('<div class="fc-txt-front">'+(''+c.front).replace(/[&<>]/g,function(ch){return ch==='&'?'&amp;':ch==='<'?'&lt;':'&gt;';})+'</div>') : svgFallback;
   const en = c.en || gloss(c.word);
   // Text-only cards (structure/question/glue words) have the Spanish baked into the SVG.
   // For these, show the ENGLISH big on the back instead of repeating the Spanish.
@@ -6054,7 +6074,7 @@ function renderCard(){
   enEl.classList.remove('show');
   document.getElementById('fcEnBtn').classList.remove('on');
   // If card has a wiki search term, try to fetch a real image
-  if(c.wiki) fetchWikiImage(c.wiki, svgFallback, artEl);
+  if(c.wiki) fetchWikiImage(c.wiki, svgFallback, artEl, myTok);
 }
 function toggleCardEn(){
   document.getElementById('fcEn').classList.toggle('show');
@@ -6063,10 +6083,10 @@ function toggleCardEn(){
 
 // ---- Wikipedia image fetch with SVG fallback ----
 const wikiImgCache = {};
-async function fetchWikiImage(term, svgFallback, artEl){
+async function fetchWikiImage(term, svgFallback, artEl, tok){
   // Return cached result immediately
   if(wikiImgCache[term] !== undefined){
-    if(wikiImgCache[term]) setWikiImg(wikiImgCache[term], svgFallback, artEl);
+    if(wikiImgCache[term]) setWikiImg(wikiImgCache[term], svgFallback, artEl, tok);
     return;
   }
   try {
@@ -6077,17 +6097,18 @@ async function fetchWikiImage(term, svgFallback, artEl){
     const d = await r.json();
     const url = d?.thumbnail?.source;
     wikiImgCache[term] = url || null;
-    if(url) setWikiImg(url, svgFallback, artEl);
+    if(url) setWikiImg(url, svgFallback, artEl, tok);
   } catch(e){
     wikiImgCache[term] = null; // offline or error — keep SVG
   }
 }
-function setWikiImg(url, svgFallback, artEl){
-  // Only update if this artEl is still the current card's artEl
+function setWikiImg(url, svgFallback, artEl, tok){
+  // Ignore if the card has changed since this fetch started (don't clobber a newer card, e.g. a session text card)
+  const stale = () => (typeof tok !== 'undefined' && tok !== fcRenderToken);
   const img = document.createElement('img');
   img.style.cssText = 'width:100%;height:100%;object-fit:contain;border-radius:8px;';
-  img.onerror = () => { artEl.innerHTML = svgFallback; };
-  img.onload  = () => { artEl.innerHTML = ''; artEl.appendChild(img); };
+  img.onerror = () => { if(stale()) return; artEl.innerHTML = svgFallback; };
+  img.onload  = () => { if(stale()) return; artEl.innerHTML = ''; artEl.appendChild(img); };
   img.src = url;
 }
 function flipCard(){ document.getElementById('fcCard').classList.toggle('flipped'); }
