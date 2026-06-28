@@ -2965,6 +2965,14 @@ ${(data.plans || []).length ? '\nActive plans: ' + (data.plans || []).map(p => p
     return () => window.removeEventListener('message', onMsg);
   }, []);
 
+  // One-time migration: fold any legacy per-conversation decks into the single rolling deck.
+  // Runs reactively so it also fires after async LOAD_DATA brings stored sets in. Idempotent in the reducer.
+  useEffect(() => {
+    const sets = data.esFlash?.sets || [];
+    const needsMerge = sets.length > 1 || sets.some(s => s.id !== CONVO_DECK_ID);
+    if (needsMerge) dispatch({ type: 'ES_FLASH_MERGE_ALL' });
+  }, [data.esFlash]);
+
   return (
     <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} style={{ position: 'relative' }}>
       {/* Expanded full-screen chat — portaled to phone-frame so it covers nav + chat bar */}
