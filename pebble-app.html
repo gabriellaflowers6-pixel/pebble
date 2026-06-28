@@ -3014,12 +3014,11 @@ ${(data.plans || []).length ? '\nActive plans: ' + (data.plans || []).map(p => p
           )}
           <div className="px-4 pb-5 pt-2" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
             <div className="flex items-center gap-2">
-              <input type="text" value={msg} onChange={e => setMsg(e.target.value)}
+              <ChatField value={msg} onChange={setMsg} onEnter={sendMessage}
                 placeholder={spanishMode ? 'habla en español…' : 'talk to pebble...'}
+                name="pebble-chat-expanded"
                 className="flex-1 outline-none"
-                autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false} name="pebble-chat-expanded" inputMode="text"
-                style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 999, padding: '10px 16px', fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--dark)' }}
-                onKeyDown={e => e.key === 'Enter' && sendMessage()} />
+                style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 999, padding: '10px 16px', fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--dark)' }} />
               {hasSpeechAPI && (
                 <button className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer flex-shrink-0"
                   style={{ background: isListening ? 'var(--primary)' : 'rgba(0,0,0,0.04)', border: isListening ? '2px solid var(--primary)' : '1px solid rgba(0,0,0,0.08)', transition: 'all 0.15s' }}
@@ -3069,14 +3068,13 @@ ${(data.plans || []).length ? '\nActive plans: ' + (data.plans || []).map(p => p
       )}
       <div className="chat-bar border-t px-4 py-2.5 flex items-center gap-2 flex-shrink-0" style={{ borderColor: 'rgba(0,0,0,0.04)', position: 'relative', zIndex: 45 }}>
         <div className="flex-1" style={{ position: 'relative' }}>
-          <input type="text" value={msg} onChange={e => setMsg(e.target.value)}
-            placeholder="talk to pebble..."
-            className="w-full outline-none"
-            autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false} name="pebble-chat-msg" inputMode="text"
-            style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 999, padding: '10px 16px', paddingRight: (!msg.trim() ? 44 : 16), fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--dark)', transition: 'border-color 0.15s' }}
-            onFocus={e => { e.target.style.borderColor = 'var(--primary)'; if (data.chat.messages.length) setChatOpen(true); }}
-            onBlur={e => { e.target.style.borderColor = 'rgba(0,0,0,0.06)'; }}
-            onKeyDown={e => e.key === 'Enter' && sendMessage()} />
+          <ChatField value={msg} onChange={setMsg} onEnter={sendMessage}
+              placeholder="talk to pebble..."
+              name="pebble-chat-msg"
+              className="w-full outline-none"
+              style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 999, padding: '10px 16px', paddingRight: (!msg.trim() ? 44 : 16), fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--dark)', transition: 'border-color 0.15s' }}
+              onFocus={e => { e.target.style.borderColor = 'var(--primary)'; if (data.chat.messages.length) setChatOpen(true); }}
+              onBlur={e => { e.target.style.borderColor = 'rgba(0,0,0,0.06)'; }} />
           {!msg.trim() && (
             <button title={spanishMode ? 'volver al inglés' : 'modo español'}
               onClick={() => { navigator.vibrate?.(10); spanishMode ? exitSpanish() : enterSpanish(); }}
@@ -5938,43 +5936,82 @@ function App() {
   );
 }
 
+function ChatField(props) {
+  var ref = useRef(null);
+  React.useLayoutEffect(function () {
+    var el = ref.current;
+    if (el && el.textContent !== (props.value || '')) {
+      el.textContent = props.value || '';
+      if (el === document.activeElement) {
+        try {
+          var r = document.createRange(), sel = window.getSelection();
+          r.selectNodeContents(el); r.collapse(false);
+          sel.removeAllRanges(); sel.addRange(r);
+        } catch (e) {}
+      }
+    }
+  }, [props.value]);
+  return (
+    <div
+      ref={ref}
+      contentEditable
+      suppressContentEditableWarning
+      role="textbox"
+      aria-label={props.placeholder}
+      data-placeholder={props.placeholder}
+      data-name={props.name}
+      className={(props.className || '') + ' pebble-ce'}
+      style={props.style}
+      inputMode="text"
+      autoCorrect="off"
+      autoCapitalize="off"
+      spellCheck={false}
+      onInput={function (e) { var txt = e.currentTarget.textContent || ''; if (!txt) e.currentTarget.innerHTML = ''; props.onChange(txt); }}
+      onFocus={props.onFocus}
+      onBlur={props.onBlur}
+      onKeyDown={function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (props.onEnter) props.onEnter(); } }}
+    />
+  );
+}
+
 /* ── Mount ── */
 ReactDOM.createRoot(document.getElementById('root')).render(
   <ThemeProvider><DataProvider><App /></DataProvider></ThemeProvider>
 );
 </script>
+<style>
+.pebble-ce { outline: none; white-space: pre-wrap; overflow-wrap: anywhere; cursor: text; min-height: 1.25em; -webkit-user-modify: read-write-plaintext-only; }
+.pebble-ce:empty:before { content: attr(data-placeholder); color: var(--muted); opacity: 0.7; pointer-events: none; }
+</style>
 <script>
-/* iOS keyboard helper: Pebble keeps all pages mounted, so many inputs sit in the DOM
-   at once and iOS shows up/down "next field" arrows. While one field is focused, make
-   every OTHER field non-tab-navigable so iOS has nothing to arrow to (the field stays
-   tap-focusable; this is fully reverted on blur). Also keeps the latest chat messages
-   visible when the keyboard opens. Additive only, does not touch the React app. */
+/* Pebble chat composer is a contenteditable (not a form field), so iOS shows no
+   field-nav arrows and no contact autofill. This helper keeps the latest messages in
+   view when the keyboard opens, and for the OTHER real inputs makes the focused field
+   the only tab-navigable one. Additive, no React changes. */
 (function () {
-  function isChatField(t) {
-    var n = t && t.getAttribute && t.getAttribute('name');
-    return !!(n && n.indexOf('pebble-chat') === 0);
-  }
+  function fieldName(t){ return (t && t.getAttribute && (t.getAttribute('name') || t.getAttribute('data-name'))) || ''; }
+  function isChat(t){ return fieldName(t).indexOf('pebble-chat') === 0; }
   document.addEventListener('focusin', function (e) {
     var t = e.target;
-    if (!t || !t.matches || !t.matches('input, textarea')) return;
-    var fields = document.querySelectorAll('input, textarea');
-    for (var i = 0; i < fields.length; i++) {
-      var el = fields[i];
-      if (el === t) continue;
-      if (el.hasAttribute('tabindex')) el.setAttribute('data-pebtab-orig', el.getAttribute('tabindex'));
-      el.setAttribute('data-pebtab', '1');
-      el.setAttribute('tabindex', '-1');
+    if (!t || !t.matches) return;
+    if (t.matches('input, textarea')) {
+      var fields = document.querySelectorAll('input, textarea');
+      for (var i = 0; i < fields.length; i++) {
+        var el = fields[i];
+        if (el === t) continue;
+        if (el.hasAttribute('tabindex')) el.setAttribute('data-pebtab-orig', el.getAttribute('tabindex'));
+        el.setAttribute('data-pebtab', '1');
+        el.setAttribute('tabindex', '-1');
+      }
     }
-    if (isChatField(t)) {
+    if (isChat(t) || (t.matches('.pebble-ce'))) {
       setTimeout(function () {
         try { t.scrollIntoView({ block: 'center' }); } catch (_) {}
         var frame = document.querySelector('.phone-frame') || document.body;
         var divs = frame.querySelectorAll('div');
         for (var j = 0; j < divs.length; j++) {
-          var s = divs[j], oy = getComputedStyle(s).overflowY;
-          if ((oy === 'auto' || oy === 'scroll') && s.scrollHeight > s.clientHeight + 4) {
-            s.scrollTop = s.scrollHeight;
-          }
+          var sd = divs[j], oy = getComputedStyle(sd).overflowY;
+          if ((oy === 'auto' || oy === 'scroll') && sd.scrollHeight > sd.clientHeight + 4) sd.scrollTop = sd.scrollHeight;
         }
       }, 320);
     }
@@ -5983,12 +6020,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     var marked = document.querySelectorAll('[data-pebtab="1"]');
     for (var i = 0; i < marked.length; i++) {
       var el = marked[i];
-      if (el.hasAttribute('data-pebtab-orig')) {
-        el.setAttribute('tabindex', el.getAttribute('data-pebtab-orig'));
-        el.removeAttribute('data-pebtab-orig');
-      } else {
-        el.removeAttribute('tabindex');
-      }
+      if (el.hasAttribute('data-pebtab-orig')) { el.setAttribute('tabindex', el.getAttribute('data-pebtab-orig')); el.removeAttribute('data-pebtab-orig'); }
+      else el.removeAttribute('tabindex');
       el.removeAttribute('data-pebtab');
     }
   });
