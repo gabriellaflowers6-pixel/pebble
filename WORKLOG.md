@@ -80,3 +80,8 @@ Audio pipeline: Kokoro via `/opt/homebrew/bin/python3.11` (model ~/.cache/hyperf
 
 ## 2026-06-27 — Anthropic API key baked in; Diario autocorrect LIVE
 Baked the sk-ant key into DEFAULT_DATA.settings.apiKey + a window.PEBBLE_API_KEY hard fallback (out of babel) + EspanolPage falls back to it. Verified: key valid (200, billing active, correction works), app mounts. Diario autocorrect now functional. Same key powers Pebble chat + future translator/conversation. Key is in pebble-app.html (private repo). Committed, NOT pushed.
+
+## 2026-06-28 — Conversation mode (live Spanish chat with Dora) built
+**Done:** Full-screen "Conversación" in the Veo app (home card → #convo screen, registered in `screens`). Claude (sonnet-4-6) holds a back-and-forth in simple LatAm Spanish via `window.__claudeKey`; system prompt = warm beginner tutor, SHORT replies, returns JSON {es,en}. Each AI bubble shows Spanish + English subtitle + 🔊 replay. Voice: **Kokoro Dora** via a local server (`kokoro-tts-server.py`, ef_dora, http://127.0.0.1:7070) — `convoProbe()` checks /health; `convoSpeak()` uses the server if up, else falls back to browser `SpeechSynthesis` (es-MX). Input: text + 🎤 mic (Web Speech `SpeechRecognition`, es-MX, graceful if unsupported). Verified end-to-end (real Claude greeting rendered; Dora server serves MP3).
+**Run the nice voice:** `cd ~/Desktop/my\ projects/pebble && /opt/homebrew/bin/python3.11 kokoro-tts-server.py` (note on Desktop: start-dora-voice.txt). Phone/no-server → device voice.
+**Committed:** YES.

@@ -427,6 +427,24 @@
   .esc-fb.no{color:var(--berry);}
   .esc-launch{font-family:'DM Mono',monospace;font-size:.8rem;background:var(--terracotta);color:#fff;border:none;border-radius:40px;padding:9px 18px;cursor:pointer;margin:0 0 12px;box-shadow:0 4px 12px rgba(199,92,58,.25);}
   .esc-launch:active{transform:scale(.96);}
+  /* ===== Conversación ===== */
+  #convo{width:100%;max-width:560px;height:calc(100dvh - 58px);display:flex;flex-direction:column;align-items:stretch;padding:0;}
+  .cv-head{font-family:'Fraunces',serif;font-weight:800;font-size:1.05rem;color:var(--ink);text-align:center;padding:8px 0 6px;flex:none;}
+  .cv-transcript{flex:1;min-height:0;overflow-y:auto;padding:6px 14px;display:flex;flex-direction:column;gap:10px;}
+  .cv-bubble{max-width:85%;padding:9px 13px;border-radius:15px;line-height:1.42;}
+  .cv-ai{align-self:flex-start;background:var(--paper);border:1.5px solid #e3d8c4;border-bottom-left-radius:4px;}
+  .cv-user{align-self:flex-end;background:var(--olive);color:#fff;border-bottom-right-radius:4px;font-family:'DM Mono',monospace;font-size:.85rem;}
+  .cv-es{font-family:'Fraunces',serif;font-size:.98rem;color:var(--ink);}
+  .cv-en{font-family:'DM Mono',monospace;font-size:.72rem;color:rgba(42,33,24,.55);margin-top:4px;}
+  .cv-spk{background:none;border:none;cursor:pointer;font-size:.85em;padding:0 2px;opacity:.65;}
+  .cv-typing{font-family:'DM Mono',monospace;font-size:.76rem;color:rgba(42,33,24,.5);padding:0 18px 4px;flex:none;}
+  .cv-inputrow{flex:none;display:flex;gap:8px;align-items:center;padding:6px 12px 12px;}
+  .cv-input{flex:1;min-width:0;font-family:'DM Mono',monospace;font-size:.9rem;padding:10px 14px;border:2px solid #d0c4ac;border-radius:22px;background:#fff;color:var(--ink);outline:none;}
+  .cv-input:focus{border-color:var(--gold);}
+  .cv-mic,.cv-send{flex:none;width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;font-size:1rem;line-height:1;display:flex;align-items:center;justify-content:center;}
+  .cv-mic{background:var(--paper);border:2px solid #d0c4ac;}
+  .cv-mic.on{background:var(--berry);color:#fff;border-color:var(--berry);}
+  .cv-send{background:var(--terracotta);color:#fff;}
 </style>
 </head>
 <body>
@@ -472,9 +490,25 @@
         <div class="icon"><svg viewBox="0 0 100 100"><rect x="6" y="40" width="38" height="22" rx="6" fill="#c75c3a"/><text x="25" y="55" text-anchor="middle" font-family="serif" font-size="12" font-weight="900" fill="#fff">-ar</text><path d="M48 51 h10 m-4 -4 l4 4 l-4 4" stroke="#d99c2b" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/><rect x="62" y="40" width="32" height="22" rx="6" fill="#556434"/><text x="78" y="55" text-anchor="middle" font-family="serif" font-size="9" font-weight="900" fill="#fff">-ando</text></svg></div>
         <div><h2>Atajos</h2><p>Shortcuts that skip whole tenses. Start with "estaba ___ando" = I was ___ing. Chart plus a quick drill.</p></div>
       </button>
+      <button class="mode" onclick="openConvo()">
+        <div class="icon"><svg viewBox="0 0 100 100"><rect x="12" y="20" width="56" height="40" rx="12" fill="#c75c3a"/><path d="M26 60 l0 13 l15 -13z" fill="#c75c3a"/><circle cx="30" cy="40" r="4" fill="#fff"/><circle cx="42" cy="40" r="4" fill="#fff"/><circle cx="54" cy="40" r="4" fill="#fff"/><rect x="44" y="50" width="44" height="30" rx="10" fill="#556434"/><path d="M72 80 l0 11 l-13 -11z" fill="#556434"/></svg></div>
+        <div><h2>Conversación</h2><p>Talk live with Dora. She speaks Spanish and you see the subtitles — hear it and read it at once.</p></div>
+      </button>
     </div>
     <p class="footnote">Built to skip English: link pictures and stories straight to Spanish, then check yourself only when you need to.</p>
   </section>
+  <!-- ========== CONVERSACIÓN ========== -->
+  <section class="screen" id="convo">
+    <div class="cv-head">Conversación con Dora</div>
+    <div class="cv-transcript" id="convoTranscript"></div>
+    <div class="cv-typing" id="convoTyping" style="display:none">Dora está pensando…</div>
+    <div class="cv-inputrow">
+      <button class="cv-mic" id="convoMicBtn" onclick="convoMic()" title="Hablar">🎤</button>
+      <input id="convoInput" class="cv-input" type="text" autocomplete="off" placeholder="Escribe o toca el micro…" onkeydown="if(event.key==='Enter')convoSend()">
+      <button class="cv-send" onclick="convoSend()" title="Enviar">➤</button>
+    </div>
+  </section>
+
   <!-- ========== MODO ESCUCHA ========== -->
   <section class="screen" id="escucha">
     <div class="esc-progress" id="escProgress"></div>
@@ -4707,7 +4741,7 @@ const stories = {
 };
 
 /* ===================== NAVIGATION ===================== */
-const screens = ['home','flashHome','storyHome','reader','phrase','test','worksheet','wsHome','wsRef','diario','constructor','atajos','escucha'];
+const screens = ['home','flashHome','storyHome','reader','phrase','test','worksheet','wsHome','wsRef','diario','constructor','atajos','escucha','convo'];
 
 /* ===================== WORKSHEET DATA ===================== */
 const wsCategories = [
@@ -5792,7 +5826,7 @@ function renderEsc(){
   else escComp(pg,stage);
 }
 function escListen(pg,stage){
-  stage.innerHTML='<div class="esc-label">Escucha</div><button class="esc-bigplay" onclick="escPlay()">\U0001F50A</button><div class="esc-hint">Toca para oír otra vez.<br>¿La entiendes?</div><button class="esc-next" onclick="escAdvance()">Continuar →</button>';
+  stage.innerHTML='<div class="esc-label">Escucha</div><button class="esc-bigplay" onclick="escPlay()">🔊</button><div class="esc-hint">Toca para oír otra vez.<br>¿La entiendes?</div><button class="esc-next" onclick="escAdvance()">Continuar →</button>';
   setTimeout(escPlay,350);
 }
 function escBuildOrder(pg,stage){
@@ -5843,6 +5877,82 @@ function escFinish(){
   document.getElementById('escProgress').innerHTML='';
   document.getElementById('escStage').innerHTML='<div class="esc-label">¡Terminaste! \U0001F389</div><div class="esc-hint">Completaste este capítulo en Modo Escucha.</div><button class="esc-next" onclick="goBack()">Volver →</button>';
 }
+
+/* ===================== Conversación (live Spanish chat with Dora) ===================== */
+const CONVO_SYSTEM = `You are Dora, a warm, patient Spanish conversation partner for Gabby, a beginner learning Latin American Spanish. Have a natural back-and-forth, ALL in simple Spanish.
+Rules:
+- Keep each reply SHORT: 1 to 2 short sentences.
+- Use simple, common words a beginner knows. Latin American Spanish only (tu/ustedes, never vosotros).
+- Always end with a simple question to keep the conversation going.
+- Be warm and encouraging. If she makes a mistake, just model the correct phrasing naturally in your reply; do not lecture or correct explicitly.
+- Return ONLY a JSON object, no markdown fences: {"es":"your short Spanish reply","en":"a plain English translation of that reply"}`;
+let convoMsgs=[], convoLines=[], convoBusy=false, convoServerOk=false, convoRec=null;
+function convoProbe(){ try{ fetch('http://127.0.0.1:7070/health',{cache:'no-store'}).then(function(r){ convoServerOk=!!(r&&r.ok); }).catch(function(){ convoServerOk=false; }); }catch(e){ convoServerOk=false; } }
+function convoBrowserSpeak(text){ try{ var u=new SpeechSynthesisUtterance(text); u.lang='es-MX'; u.rate=0.95; speechSynthesis.cancel(); speechSynthesis.speak(u); }catch(e){} }
+function convoSpeak(text){
+  if(!text) return;
+  try{ speechSynthesis.cancel(); }catch(e){}
+  if(convoServerOk){
+    var a=new Audio('http://127.0.0.1:7070/tts?text='+encodeURIComponent(text)+'&speed=0.95');
+    var p=a.play(); if(p&&p.catch) p.catch(function(){ convoBrowserSpeak(text); });
+  } else { convoBrowserSpeak(text); }
+}
+function convoReplay(i){ convoSpeak(convoLines[i]); }
+function convoAddBubble(who, es, en){
+  var t=document.getElementById('convoTranscript'); if(!t) return;
+  var b=document.createElement('div'); b.className='cv-bubble '+(who==='user'?'cv-user':'cv-ai');
+  if(who==='ai'){
+    var i=convoLines.length; convoLines.push(es);
+    b.innerHTML='<div class="cv-es">'+es+' <button class="cv-spk" onclick="convoReplay('+i+')">🔊<\/button></div>'+(en?'<div class="cv-en">'+en+'</div>':'');
+  } else { b.textContent=es; }
+  t.appendChild(b); t.scrollTop=t.scrollHeight;
+}
+function convoSetTyping(on){ var el=document.getElementById('convoTyping'); if(el) el.style.display=on?'block':'none'; var tr=document.getElementById('convoTranscript'); if(on&&tr) tr.scrollTop=tr.scrollHeight; }
+async function convoCall(){
+  convoBusy=true; convoSetTyping(true);
+  try{
+    if(!window.__claudeKey) throw new Error('no-key');
+    var res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':window.__claudeKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:300, system:CONVO_SYSTEM, messages:convoMsgs })
+    });
+    var data=await res.json();
+    var raw=(data.content||[]).filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('').trim();
+    var es=raw, en='';
+    try{ var j=JSON.parse(raw.replace(/```json|```/g,'').trim()); if(j&&j.es){ es=j.es; en=j.en||''; } }catch(e){}
+    convoMsgs.push({role:'assistant', content:es});
+    convoSetTyping(false); convoAddBubble('ai', es, en); convoSpeak(es);
+  }catch(e){
+    convoSetTyping(false);
+    convoAddBubble('ai', (window.__claudeKey? 'Hubo un error. Intenta de nuevo.' : 'Agrega tu clave de API en Pebble para conversar.'), '');
+  }
+  convoBusy=false;
+}
+function convoSend(){
+  if(convoBusy) return;
+  var inp=document.getElementById('convoInput'); var text=(inp.value||'').trim(); if(!text) return;
+  inp.value=''; convoAddBubble('user', text, null); convoMsgs.push({role:'user', content:text}); convoCall();
+}
+function convoStart(){
+  var t=document.getElementById('convoTranscript'); if(t) t.innerHTML=''; convoLines=[];
+  convoMsgs=[{role:'user', content:'(Empieza tu la conversacion: saludame con calidez y hazme una pregunta sencilla para iniciar.)'}];
+  convoCall();
+}
+function convoMic(){
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  var btn=document.getElementById('convoMicBtn');
+  if(!SR){ alert('El microfono no esta disponible aqui. Puedes escribir.'); return; }
+  if(convoRec){ try{ convoRec.stop(); }catch(e){} convoRec=null; if(btn) btn.classList.remove('on'); return; }
+  try{
+    convoRec=new SR(); convoRec.lang='es-MX'; convoRec.interimResults=false; convoRec.maxAlternatives=1;
+    convoRec.onresult=function(e){ var tr=e.results[0][0].transcript; var inp=document.getElementById('convoInput'); if(inp){ inp.value=tr; } convoSend(); };
+    convoRec.onerror=function(){ if(btn) btn.classList.remove('on'); convoRec=null; };
+    convoRec.onend=function(){ if(btn) btn.classList.remove('on'); convoRec=null; };
+    if(btn) btn.classList.add('on'); convoRec.start();
+  }catch(e){ if(btn) btn.classList.remove('on'); convoRec=null; }
+}
+function openConvo(){ convoProbe(); nav('convo'); if(!convoMsgs.length) convoStart(); }
 
 function show(id){
   screens.forEach(s=>document.getElementById(s).classList.toggle('active', s===id));
