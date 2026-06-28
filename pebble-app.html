@@ -2859,20 +2859,30 @@ ${(data.plans || []).length ? '\nActive plans: ' + (data.plans || []).map(p => p
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': data.settings.apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 300, system: ES_SYSTEM, messages: apiMsgs }),
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 900, system: ES_SYSTEM, messages: apiMsgs }),
     });
     const json = await res.json();
     const raw = (json.content || []).filter(b => b.type === 'text').map(b => b.text).join('').trim();
     let sentences = null;
-    try {
-      const j = JSON.parse(raw.replace(/```json|```/g, '').trim());
-      if (j && Array.isArray(j.sentences) && j.sentences.length) {
-        sentences = j.sentences.map(s => ({ es: s.es || '', en: s.en || '', words: Array.isArray(s.words) ? s.words.map(w => ({ w: (w && w.w != null) ? String(w.w) : '', t: (w && w.t != null) ? String(w.t) : '' })).filter(w => w.w) : [] }));
-      } else if (j && j.es) {
-        sentences = [{ es: j.es, en: j.en || '', words: [] }];
-      }
-    } catch {}
-    if (!sentences || !sentences.length) sentences = [{ es: raw, en: '', words: [] }];
+    const dec = (s) => { try { return JSON.parse('"' + s + '"'); } catch { return s; } };
+    const tryParse = (str) => { try { return JSON.parse(str); } catch { return null; } };
+    const mapSentences = (arr) => arr.map(s => ({ es: s.es || '', en: s.en || '', words: Array.isArray(s.words) ? s.words.map(w => ({ w: (w && w.w != null) ? String(w.w) : '', t: (w && w.t != null) ? String(w.t) : '' })).filter(w => w.w) : [] }));
+    // 1) parse the JSON object (strip fences; if there's surrounding text, grab the outermost braces)
+    let j = tryParse(raw.replace(/```json|```/g, '').trim());
+    if (!j) { const a = raw.indexOf('{'), b = raw.lastIndexOf('}'); if (a >= 0 && b > a) j = tryParse(raw.slice(a, b + 1)); }
+    if (j && Array.isArray(j.sentences) && j.sentences.length) sentences = mapSentences(j.sentences);
+    else if (j && j.es) sentences = [{ es: j.es, en: j.en || '', words: [] }];
+    // 2) salvage from a truncated/garbled reply: pull the sentence-level es/en pairs (word objects use w/t, so they won't match here)
+    if (!sentences) {
+      const esList = [...raw.matchAll(/"es"\s*:\s*"((?:[^"\\]|\\.)*)"/g)].map(m => dec(m[1]));
+      const enList = [...raw.matchAll(/"en"\s*:\s*"((?:[^"\\]|\\.)*)"/g)].map(m => dec(m[1]));
+      if (esList.length) sentences = esList.map((es, i) => ({ es, en: enList[i] || '', words: [] }));
+    }
+    // 3) last resort: never dump raw JSON at the user
+    if (!sentences || !sentences.length) {
+      const looksJson = /^[\s`]*[\{\[]/.test(raw) || raw.indexOf('"sentences"') >= 0 || raw.indexOf('"es"') >= 0;
+      sentences = [{ es: looksJson ? 'Mmm, intenta otra vez.' : raw, en: looksJson ? 'Hmm, try again.' : '', words: [] }];
+    }
     return { sentences };
   };
   const enterSpanish = () => {
