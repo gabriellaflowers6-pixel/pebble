@@ -5943,5 +5943,56 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   <ThemeProvider><DataProvider><App /></DataProvider></ThemeProvider>
 );
 </script>
+<script>
+/* iOS keyboard helper: Pebble keeps all pages mounted, so many inputs sit in the DOM
+   at once and iOS shows up/down "next field" arrows. While one field is focused, make
+   every OTHER field non-tab-navigable so iOS has nothing to arrow to (the field stays
+   tap-focusable; this is fully reverted on blur). Also keeps the latest chat messages
+   visible when the keyboard opens. Additive only, does not touch the React app. */
+(function () {
+  function isChatField(t) {
+    var n = t && t.getAttribute && t.getAttribute('name');
+    return !!(n && n.indexOf('pebble-chat') === 0);
+  }
+  document.addEventListener('focusin', function (e) {
+    var t = e.target;
+    if (!t || !t.matches || !t.matches('input, textarea')) return;
+    var fields = document.querySelectorAll('input, textarea');
+    for (var i = 0; i < fields.length; i++) {
+      var el = fields[i];
+      if (el === t) continue;
+      if (el.hasAttribute('tabindex')) el.setAttribute('data-pebtab-orig', el.getAttribute('tabindex'));
+      el.setAttribute('data-pebtab', '1');
+      el.setAttribute('tabindex', '-1');
+    }
+    if (isChatField(t)) {
+      setTimeout(function () {
+        try { t.scrollIntoView({ block: 'center' }); } catch (_) {}
+        var frame = document.querySelector('.phone-frame') || document.body;
+        var divs = frame.querySelectorAll('div');
+        for (var j = 0; j < divs.length; j++) {
+          var s = divs[j], oy = getComputedStyle(s).overflowY;
+          if ((oy === 'auto' || oy === 'scroll') && s.scrollHeight > s.clientHeight + 4) {
+            s.scrollTop = s.scrollHeight;
+          }
+        }
+      }, 320);
+    }
+  });
+  document.addEventListener('focusout', function () {
+    var marked = document.querySelectorAll('[data-pebtab="1"]');
+    for (var i = 0; i < marked.length; i++) {
+      var el = marked[i];
+      if (el.hasAttribute('data-pebtab-orig')) {
+        el.setAttribute('tabindex', el.getAttribute('data-pebtab-orig'));
+        el.removeAttribute('data-pebtab-orig');
+      } else {
+        el.removeAttribute('tabindex');
+      }
+      el.removeAttribute('data-pebtab');
+    }
+  });
+})();
+</script>
 </body>
 </html>
