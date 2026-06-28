@@ -4,6 +4,28 @@ Paste this to start the next session.
 
 ---
 
+## >>> DO THIS FIRST (2026-06-28, after laptop restart) <<<
+
+There is finished, committed, UNPUSHED work on branch **`convo-one-deck`**. Gabby restarted her laptop mid-session; the plan is to push after restart.
+
+**The feature:** convo flashcards now collapse into ONE rolling "Conversación" deck instead of one deck per chat, and existing per-chat decks merge into it on load. All React-side in `pebble-app.html`, Veo source and base64 untouched (no re-bake). Spec + plan in `docs/superpowers/`. Built and reviewed clean (final review: READY TO MERGE). Commits: `fb8d0fa`, `3c117ca`, `ed3db8f`, plus docs/WORKLOG.
+
+**Step 1 — sanity check nothing got evicted by the restart:**
+```
+cd ~/Desktop/my\ projects/pebble && git status && git log --oneline -6
+```
+You should be on `convo-one-deck`, working tree clean, those commits present. (If `.git` looks damaged from iCloud eviction, STOP and tell Gabby — do not force anything.)
+
+**Step 2 — on-device check BEFORE merging to main (Gabby does this on her iPhone):** save a word in two separate Spanish chats, open the Veo **Tarjetas** section, confirm a single "Conversación" deck holds both words and the old separate per-chat decks are gone.
+
+**Step 3 — push (only after Gabby confirms):** Gabby wants to push. Confirm the target with her, then:
+```
+git checkout main && git merge convo-one-deck && git push
+```
+(or push the branch and open a PR if she prefers). NEVER push without her explicit go-ahead. Note: the public API-key issue still stands (Pages serves the baked sk-ant key) — proxy before sharing widely.
+
+---
+
 We're building out the **Veo & Digo** Spanish-learning app embedded inside **Pebble** (`Desktop/my projects/pebble/pebble-app.html`). Read `pebble/WORKLOG.md` and the memory note `project_pebble_spanish_app.md` first. Key facts so you don't relearn them the hard way:
 
 **How the embed works / how to edit the Spanish app**
