@@ -3005,18 +3005,21 @@ ${(data.plans || []).length ? '\nActive plans: ' + (data.plans || []).map(p => p
         </div>
       )}
       <div className="chat-bar border-t px-4 py-2.5 flex items-center gap-2 flex-shrink-0" style={{ borderColor: 'rgba(0,0,0,0.04)', position: 'relative', zIndex: 45 }}>
-        <input type="text" value={msg} onChange={e => setMsg(e.target.value)}
-          placeholder="talk to pebble..."
-          className="flex-1 outline-none"
-          autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false} name="pebble-chat-msg" inputMode="text"
-          style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 999, padding: '10px 16px', fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--dark)', transition: 'border-color 0.15s' }}
-          onFocus={e => { e.target.style.borderColor = 'var(--primary)'; if (data.chat.messages.length) setChatOpen(true); }}
-          onBlur={e => { e.target.style.borderColor = 'rgba(0,0,0,0.06)'; }}
-          onKeyDown={e => e.key === 'Enter' && sendMessage()} />
-        <button className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer flex-shrink-0"
-          title={spanishMode ? 'volver al inglés' : 'modo español'}
-          style={{ background: spanishMode ? 'var(--primary)' : 'rgba(0,0,0,0.04)', color: spanishMode ? 'white' : 'var(--muted)', border: spanishMode ? '2px solid var(--primary)' : '1px solid rgba(0,0,0,0.08)', fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 700, transition: 'all 0.15s' }}
-          onClick={() => { navigator.vibrate?.(10); spanishMode ? exitSpanish() : enterSpanish(); }}>ES</button>
+        <div className="flex-1" style={{ position: 'relative' }}>
+          <input type="text" value={msg} onChange={e => setMsg(e.target.value)}
+            placeholder="talk to pebble..."
+            className="w-full outline-none"
+            autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false} name="pebble-chat-msg" inputMode="text"
+            style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 999, padding: '10px 16px', paddingRight: (!msg.trim() ? 44 : 16), fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--dark)', transition: 'border-color 0.15s' }}
+            onFocus={e => { e.target.style.borderColor = 'var(--primary)'; if (data.chat.messages.length) setChatOpen(true); }}
+            onBlur={e => { e.target.style.borderColor = 'rgba(0,0,0,0.06)'; }}
+            onKeyDown={e => e.key === 'Enter' && sendMessage()} />
+          {!msg.trim() && (
+            <button title={spanishMode ? 'volver al inglés' : 'modo español'}
+              onClick={() => { navigator.vibrate?.(10); spanishMode ? exitSpanish() : enterSpanish(); }}
+              style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', width: 30, height: 30, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: spanishMode ? 'var(--primary)' : 'rgba(0,0,0,0.06)', color: spanishMode ? 'white' : 'var(--muted)', border: spanishMode ? '2px solid var(--primary)' : '1px solid rgba(0,0,0,0.08)', fontFamily: 'var(--font-body)', fontSize: 10, fontWeight: 700, transition: 'all 0.15s' }}>ES</button>
+          )}
+        </div>
         {hasSpeechAPI && (
           <button className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer flex-shrink-0"
             style={{ background: isListening ? 'var(--primary)' : 'rgba(0,0,0,0.04)', border: isListening ? '2px solid var(--primary)' : '1px solid rgba(0,0,0,0.08)', transition: 'all 0.15s' }}
