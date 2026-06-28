@@ -24,6 +24,13 @@ We're building out the **Veo & Digo** Spanish-learning app embedded inside **Peb
 **Done:** embed + Español page, Atajos (gerund hack) + audio, polished jar, Study→Español link, Oz Modo Escucha (all 8 chapters audio + listen/order/meaning; comprehension Qs for Ch.1–3), Diario autocorrect, Conversación (live chat w/ Dora + subtitles). All committed, NOT pushed.
 
 **Pick up here (roadmap, in priority order):**
+
+**NEW — phone-first priorities (Gabby, 2026-06-28):** Pebble is used MOSTLY ON HER PHONE. These three are now top of the list.
+- **A. Voice must work on the phone without the Mac.** The nice Dora voice currently needs the local Kokoro server (`kokoro-tts-server.py`, 127.0.0.1:7070) running on the Mac. It dies when the terminal/session ends and the phone can't reach 127.0.0.1 anyway (and https page → http localhost is mixed-content blocked). So on the phone there is effectively NO Dora. Fix: pick a voice path that needs no running Mac — (a) device `SpeechSynthesis` Spanish voice (free, offline, iOS voices like Mónica/Paulina are decent), or (b) a cloud TTS API called browser-direct (best quality, costs per call, works anywhere). DECISION NEEDED from Gabby. Until then the app already falls back to the device voice.
+- **B. Merge Conversación (Dora chat) into the main "talk to Pebble" chat.** Instead of a separate Veo `#convo` screen, add a button/toggle in Pebble's own chat that switches it into live Spanish-conversation mode. One chat, a mode switch.
+- **C. Fix the microphone (speak + type both work).** The 🎤 button doesn't work. Goal: speak to the AI, it understands and replies (voice+subtitles), AND typing still works. Likely cause: the iframe embedding the Veo app is missing `allow="microphone"` (and possibly `autoplay`) permission delegation, so `SpeechRecognition` is blocked. Also handle iOS Safari `webkitSpeechRecognition` quirks. Investigate the iframe `allow=` attr in `EspanolPage` first.
+
+**Original roadmap (still open):**
 1. **Translator button** — a button in Pebble's top corner (Header, next to settings/jar) that opens a quick EN↔ES translator panel. Uses the baked key. Self-contained.
 2. **Recommendations** — AI suggestions in the Spanish app. ASK Gabby the scope first: next story to read / words to drill / a daily "try this".
 3. **Oz Ch.4–8 comprehension questions** — author into `ozQ` (the engine already handles them, currently skips when absent). Ch.7 is ~104 pages; consider whether to author all or sample. Sentences via the extract snippet in `generate_oz1_audio.py`.

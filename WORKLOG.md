@@ -88,3 +88,21 @@ Baked the sk-ant key into DEFAULT_DATA.settings.apiKey + a window.PEBBLE_API_KEY
 
 ## 2026-06-28 — Session handoff
 State saved. Memory note: `project_pebble_spanish_app.md`. Next-session prompt + full context: **`pebble/NEXT-SESSION.md`** (read it first next time). Roadmap remaining: (1) translator button, (2) recommendations (ask Gabby the scope), (3) Oz Ch.4-8 comprehension Qs. Everything committed, NOT pushed.
+
+## 2026-06-28 — NEW phone-first priorities added to roadmap (Gabby)
+Gabby uses Pebble MOSTLY ON HER PHONE. Three new top-priority items captured in NEXT-SESSION.md (block "NEW — phone-first priorities"):
+- **A. Voice without the Mac.** Dora needs the local Kokoro server, which dies when the session ends and is unreachable from the phone (127.0.0.1 + mixed-content). Need a no-server voice path: device SpeechSynthesis (free/offline) vs cloud TTS (paid, best quality). **DECISION PENDING from Gabby.**
+- **B. Merge Conversación into the main "talk to Pebble" chat** via a mode toggle/button (not a separate Veo screen).
+- **C. Fix the 🎤 mic** so she can speak AND type. Suspect the `EspanolPage` iframe is missing `allow="microphone"` (+ autoplay) so SpeechRecognition is blocked; also iOS Safari quirks. Investigate iframe `allow=` first.
+No code changed yet — capturing scope + waiting on the voice decision. Working tree was clean before this edit.
+
+## 2026-06-28 — Phone voice (Paulina) + mic fix built (items A + C)
+**Working on:** Making Conversación work on Gabby's iPhone with no Mac/Dora server, and fixing the dead 🎤 button.
+**Files changed:** `veo-y-digo-source.html` (convo voice + mic JS), `pebble-app.html` (iframe `allow=` + re-baked `VEO_DIGO_B64`).
+**What:**
+- **Device voice, Paulina preferred.** Added `convoRankVoice`/`convoLoadVoices`/`convoVoice` to pick the best Spanish `SpeechSynthesis` voice on the device (es-MX/es-419 weighted, Premium/Enhanced/localService bonuses, **Paulina +40 so she wins**; honors `localStorage.convoVoiceName` if set). `convoBrowserSpeak` now sets `u.voice`/`u.lang` to that voice. Wired `speechSynthesis.onvoiceschanged`. The Dora local-server path still works on desktop when up, but the phone now uses Paulina instead of the flat compact voice. Gabby downloaded Paulina on her iPhone.
+- **Mic permission.** The `EspanolPage` iframe had NO `allow=` attr, so the embedded app could never get the mic. Added `allow="microphone; autoplay; clipboard-read; clipboard-write"`.
+- **Mic graceful failure.** Replaced the blocking `alert()` with `convoMicHint()` (non-blocking placeholder hint, auto-resets after 5s). On `not-allowed`/no-SR it now focuses the input and tells her to use the keyboard mic 🎙️ instead of silently doing nothing.
+**Verified:** Re-baked (source 10.98MB → app 14.97MB). Headless boot: top app `ERRS(0) mounted`; Veo source `ERRS(0)`, all 3 new fns defined. NOT yet tested on a real iPhone — Gabby needs to confirm Paulina speaks + whether iOS SpeechRecognition works in the standalone homescreen PWA (may need to fall back to keyboard dictation).
+**Committed:** YES.
+**Notes for next session:** Remaining: **B. merge Conversación into the main "talk to Pebble" chat** (has design choices — ask Gabby: toggle vs separate, keep history, what changes besides the system prompt). Also still open from before: translator button, recommendations (scope), Oz Ch.4-8 comp Qs. **API KEY IS PUBLIC via GitHub Pages** (https://gabriellaflowers6-pixel.github.io/pebble/pebble-app.html serves the baked sk-ant key to anyone) — Gabby aware, chose to leave for now, fix (Netlify-function proxy) before sharing. iOS PWA mic is the big unknown to test on-device.

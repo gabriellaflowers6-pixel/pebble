@@ -5888,7 +5888,43 @@ Rules:
 - Return ONLY a JSON object, no markdown fences: {"es":"your short Spanish reply","en":"a plain English translation of that reply"}`;
 let convoMsgs=[], convoLines=[], convoBusy=false, convoServerOk=false, convoRec=null;
 function convoProbe(){ try{ fetch('http://127.0.0.1:7070/health',{cache:'no-store'}).then(function(r){ convoServerOk=!!(r&&r.ok); }).catch(function(){ convoServerOk=false; }); }catch(e){ convoServerOk=false; } }
-function convoBrowserSpeak(text){ try{ var u=new SpeechSynthesisUtterance(text); u.lang='es-MX'; u.rate=0.95; speechSynthesis.cancel(); speechSynthesis.speak(u); }catch(e){} }
+var convoVoice=null;
+function convoRankVoice(v){
+  var n=(v.name||'').toLowerCase(), l=(v.lang||'').toLowerCase();
+  if(l.indexOf('es')!==0) return -1;
+  var s=0;
+  if(l==='es-mx') s+=40; else if(l==='es-419') s+=38; else if(l==='es-us') s+=30;
+  else if(l==='es-ar'||l==='es-co'||l==='es-cl'||l==='es-pe') s+=24; else s+=12;
+  if(n.indexOf('premium')>=0) s+=20;
+  if(n.indexOf('enhanced')>=0) s+=15;
+  if(v.localService) s+=6;
+  if(n.indexOf('paulina')>=0) s+=40;
+  if(n.indexOf('mónica')>=0||n.indexOf('monica')>=0) s+=8;
+  if(n.indexOf('juan')>=0||n.indexOf('jorge')>=0) s+=4;
+  return s;
+}
+function convoLoadVoices(){
+  try{
+    var vs=(window.speechSynthesis&&speechSynthesis.getVoices())||[];
+    var es=vs.filter(function(v){return (v.lang||'').toLowerCase().indexOf('es')===0;});
+    if(!es.length){ convoVoice=null; return; }
+    var pref=null; try{ pref=localStorage.getItem('convoVoiceName'); }catch(e){}
+    var best=null;
+    if(pref){ for(var i=0;i<es.length;i++){ if(es[i].name===pref){ best=es[i]; break; } } }
+    if(!best){ var bs=-1; es.forEach(function(v){ var sc=convoRankVoice(v); if(sc>bs){ bs=sc; best=v; } }); }
+    convoVoice=best;
+  }catch(e){}
+}
+try{ if('speechSynthesis' in window){ speechSynthesis.onvoiceschanged=convoLoadVoices; convoLoadVoices(); } }catch(e){}
+function convoBrowserSpeak(text){
+  try{
+    if(!convoVoice) convoLoadVoices();
+    var u=new SpeechSynthesisUtterance(text);
+    if(convoVoice){ u.voice=convoVoice; u.lang=convoVoice.lang||'es-MX'; } else { u.lang='es-MX'; }
+    u.rate=0.95;
+    speechSynthesis.cancel(); speechSynthesis.speak(u);
+  }catch(e){}
+}
 function convoSpeak(text){
   if(!text) return;
   try{ speechSynthesis.cancel(); }catch(e){}
@@ -5939,18 +5975,19 @@ function convoStart(){
   convoMsgs=[{role:'user', content:'(Empieza tu la conversacion: saludame con calidez y hazme una pregunta sencilla para iniciar.)'}];
   convoCall();
 }
+function convoMicHint(msg){ var inp=document.getElementById('convoInput'); if(inp){ inp.placeholder=msg; setTimeout(function(){ if(inp) inp.placeholder='Escribe o toca el micro…'; }, 5000); } }
 function convoMic(){
   var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   var btn=document.getElementById('convoMicBtn');
-  if(!SR){ alert('El microfono no esta disponible aqui. Puedes escribir.'); return; }
+  if(!SR){ var inp=document.getElementById('convoInput'); if(inp) inp.focus(); convoMicHint('Toca el campo y usa el micro 🎙️ del teclado'); return; }
   if(convoRec){ try{ convoRec.stop(); }catch(e){} convoRec=null; if(btn) btn.classList.remove('on'); return; }
   try{
     convoRec=new SR(); convoRec.lang='es-MX'; convoRec.interimResults=false; convoRec.maxAlternatives=1;
     convoRec.onresult=function(e){ var tr=e.results[0][0].transcript; var inp=document.getElementById('convoInput'); if(inp){ inp.value=tr; } convoSend(); };
-    convoRec.onerror=function(){ if(btn) btn.classList.remove('on'); convoRec=null; };
+    convoRec.onerror=function(ev){ if(btn) btn.classList.remove('on'); convoRec=null; var er=(ev&&ev.error)||''; if(er==='not-allowed'||er==='service-not-allowed'){ convoMicHint('Permite el micrófono, o usa el micro 🎙️ del teclado'); } else if(er==='no-speech'){ convoMicHint('No te escuché, intenta otra vez'); } };
     convoRec.onend=function(){ if(btn) btn.classList.remove('on'); convoRec=null; };
     if(btn) btn.classList.add('on'); convoRec.start();
-  }catch(e){ if(btn) btn.classList.remove('on'); convoRec=null; }
+  }catch(e){ if(btn) btn.classList.remove('on'); convoRec=null; convoMicHint('Usa el micro 🎙️ del teclado'); }
 }
 function openConvo(){ convoProbe(); nav('convo'); if(!convoMsgs.length) convoStart(); }
 
