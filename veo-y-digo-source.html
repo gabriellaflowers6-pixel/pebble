@@ -444,6 +444,9 @@
   .cv-mic,.cv-send{flex:none;width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;font-size:1rem;line-height:1;display:flex;align-items:center;justify-content:center;}
   .cv-mic{background:var(--paper);border:2px solid #d0c4ac;}
   .cv-mic.on{background:var(--berry);color:#fff;border-color:var(--berry);}
+  .cv-launch{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:0 28px;text-align:center;}
+  .cv-launch p{font-size:.95rem;line-height:1.55;color:#4a4030;max-width:340px;}
+  .cv-launch-btn{padding:14px 22px;border:none;border-radius:14px;background:var(--berry);color:#fff;font-size:1rem;font-weight:600;cursor:pointer;}
   .cv-send{background:var(--terracotta);color:#fff;}
 </style>
 </head>
@@ -490,22 +493,19 @@
         <div class="icon"><svg viewBox="0 0 100 100"><rect x="6" y="40" width="38" height="22" rx="6" fill="#c75c3a"/><text x="25" y="55" text-anchor="middle" font-family="serif" font-size="12" font-weight="900" fill="#fff">-ar</text><path d="M48 51 h10 m-4 -4 l4 4 l-4 4" stroke="#d99c2b" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/><rect x="62" y="40" width="32" height="22" rx="6" fill="#556434"/><text x="78" y="55" text-anchor="middle" font-family="serif" font-size="9" font-weight="900" fill="#fff">-ando</text></svg></div>
         <div><h2>Atajos</h2><p>Shortcuts that skip whole tenses. Start with "estaba ___ando" = I was ___ing. Chart plus a quick drill.</p></div>
       </button>
-      <button class="mode" onclick="openConvo()">
+      <button class="mode" onclick="convoLaunchPebble()">
         <div class="icon"><svg viewBox="0 0 100 100"><rect x="12" y="20" width="56" height="40" rx="12" fill="#c75c3a"/><path d="M26 60 l0 13 l15 -13z" fill="#c75c3a"/><circle cx="30" cy="40" r="4" fill="#fff"/><circle cx="42" cy="40" r="4" fill="#fff"/><circle cx="54" cy="40" r="4" fill="#fff"/><rect x="44" y="50" width="44" height="30" rx="10" fill="#556434"/><path d="M72 80 l0 11 l-13 -11z" fill="#556434"/></svg></div>
-        <div><h2>Conversación</h2><p>Talk live with Dora. She speaks Spanish and you see the subtitles — hear it and read it at once.</p></div>
+        <div><h2>Conversación</h2><p>Chat in Spanish with Pebble. It speaks out loud and you read the subtitles, hear it and read it at once.</p></div>
       </button>
     </div>
     <p class="footnote">Built to skip English: link pictures and stories straight to Spanish, then check yourself only when you need to.</p>
   </section>
   <!-- ========== CONVERSACIÓN ========== -->
   <section class="screen" id="convo">
-    <div class="cv-head">Conversación con Dora</div>
-    <div class="cv-transcript" id="convoTranscript"></div>
-    <div class="cv-typing" id="convoTyping" style="display:none">Dora está pensando…</div>
-    <div class="cv-inputrow">
-      <button class="cv-mic" id="convoMicBtn" onclick="convoMic()" title="Hablar">🎤</button>
-      <input id="convoInput" class="cv-input" type="text" autocomplete="off" placeholder="Escribe o toca el micro…" onkeydown="if(event.key==='Enter')convoSend()">
-      <button class="cv-send" onclick="convoSend()" title="Enviar">➤</button>
+    <div class="cv-head">Conversación con Pebble</div>
+    <div class="cv-launch">
+      <p>Habla en español con Pebble en el chat principal. Pebble te responde en voz alta y ves los subtítulos. Puedes hablar o escribir.</p>
+      <button class="cv-launch-btn" onclick="convoLaunchPebble()">Abrir conversación →</button>
     </div>
   </section>
 
@@ -5989,7 +5989,8 @@ function convoMic(){
     if(btn) btn.classList.add('on'); convoRec.start();
   }catch(e){ if(btn) btn.classList.remove('on'); convoRec=null; convoMicHint('Usa el micro 🎙️ del teclado'); }
 }
-function openConvo(){ convoProbe(); nav('convo'); if(!convoMsgs.length) convoStart(); }
+function openConvo(){ nav('convo'); }
+function convoLaunchPebble(){ try{ window.parent.postMessage({type:'openSpanishChat'},'*'); }catch(e){} }
 
 function show(id){
   screens.forEach(s=>document.getElementById(s).classList.toggle('active', s===id));
