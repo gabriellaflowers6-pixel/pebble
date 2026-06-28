@@ -1592,8 +1592,9 @@ function getHashCreds() {
     const params = new URLSearchParams(hash);
     const gistId = params.get('g');
     const gistToken = params.get('t');
-    const apiKey = params.get('k');
-    if (gistId && gistToken) return { gistId, gistToken, ...(apiKey ? { apiKey } : {}) };
+    // apiKey intentionally NOT read from the URL — it is device-local (prevents a frozen
+    // home-screen URL hash from overwriting the key you pasted in Settings).
+    if (gistId && gistToken) return { gistId, gistToken };
   } catch {}
   return null;
 }
@@ -1603,7 +1604,7 @@ function updateHashCreds(settings) {
   const params = new URLSearchParams();
   params.set('g', settings.gistId);
   params.set('t', settings.gistToken);
-  if (settings.apiKey) params.set('k', settings.apiKey);
+  // apiKey intentionally NOT written to the URL (kept device-local; see getHashCreds).
   const newHash = '#' + params.toString();
   if (window.location.hash !== newHash) {
     history.replaceState(null, '', newHash);
