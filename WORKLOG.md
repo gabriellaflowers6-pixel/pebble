@@ -71,3 +71,9 @@ Audio pipeline: Kokoro via `/opt/homebrew/bin/python3.11` (model ~/.cache/hyperf
 **Done:** Generated audio for all 219 oz2-8 page sentences (Kokoro em_alex 0.85) → FC_AUDIO now 828 clips. All 8 Oz chapters now play full Modo Escucha (listen + ordena la frase + ¿qué significa?). Comprehension questions authored for Ch.1, Ch.2 (18), Ch.3 (13) in `ozQ`. Ch.4-8 comprehension step auto-skips (engine handles missing Qs). pebble-app.html now ~14.3 MB (async blob decode keeps load non-blocking). Verified mount + audio.
 **Next:** author comprehension Qs for oz4 (43), oz5 (12), oz6 (11), oz7 (104), oz8 (18) into `ozQ` — pure content authoring, sentences via the extract snippet in generate_oz1_audio.py. NOTE FILE SIZE: at 14MB, consider whether to keep growing the single baked file or split audio out (e.g., separate audio bank fetched lazily) if it gets heavier.
 **Committed:** YES — this commit.
+
+## 2026-06-27 — Diario autocorrect AI wired (dormant until key)
+**Done:** The Veo Diario already had a Claude-call `diarioSave()` but was missing auth headers (so it always failed → saved raw). Added `x-api-key`/`anthropic-version`/`anthropic-dangerous-direct-browser-access` headers, updated model `claude-sonnet-4-20250514`→`claude-sonnet-4-6`, personalized prompt (Brie→Gabby, feminine forms). Key routing: Pebble `EspanolPage` reads `data.settings.apiKey` and `postMessage`s it into the iframe (`{type:'pebbleClaudeKey'}`) on load + on change; Veo listens and sets `window.__claudeKey`. No key → `diarioSave` skips the API and saves raw (graceful). Verified app mounts clean.
+**To activate:** put an Anthropic `sk-ant-…` key in Pebble Settings → apiKey (or bake into DEFAULT_DATA.settings). Then writing in Diario + save → Claude rewrites to natural LatAm Spanish + a one-line tip.
+**Same key unlocks:** future translator + conversation + recommendations.
+**Committed:** YES.

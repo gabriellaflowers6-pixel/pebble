@@ -5187,6 +5187,7 @@ function diarioNew(){
   window.scrollTo(0,0);
 }
 
+window.addEventListener('message',function(e){ if(e&&e.data&&e.data.type==='pebbleClaudeKey'){ window.__claudeKey=e.data.key||''; } });
 async function diarioSave(){
   const raw = document.getElementById('diarioInput').value.trim();
   if(!raw) return;
@@ -5196,19 +5197,20 @@ async function diarioSave(){
   let spanish = raw;
   let note = '';
   try {
+    if(!(window.__claudeKey)) throw new Error('no-key');
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json','x-api-key':(window.__claudeKey||''),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
       body: JSON.stringify({
-        model:'claude-sonnet-4-20250514',
+        model:'claude-sonnet-4-6',
         max_tokens:1000,
-        system:`You are a Latin American Spanish journal assistant for a woman named Brie who is learning Spanish. She writes journal entries in English, Spanish, or a mix of both.
+        system:`You are a Latin American Spanish journal assistant for Gabby, a woman learning Spanish. She writes journal entries in English, Spanish, or a mix of both.
 
 Your job:
 1. Translate and correct everything into natural, warm, conversational Latin American Spanish — the kind spoken in Mexico, Puerto Rico, and Chicago's Spanish-speaking communities.
 2. Keep her voice and personality. Do not make it formal or stiff.
 3. Never use vosotros, vuestro, or Spain Spanish. Use tú/ustedes throughout.
-4. Use feminine grammatical forms for Brie (soy nueva, estoy cansada, etc.)
+4. Use feminine grammatical forms for Gabby (soy nueva, estoy cansada, etc.)
 5. Return ONLY a JSON object with no markdown, no backticks, no preamble. Format:
 {"spanish":"the full entry in Spanish","note":"one short plain-English tip about something corrected or a grammar insight (max 20 words). Leave empty string if nothing to note."}`,
         messages:[{role:'user', content:`Journal entry:\n${raw}`}]
@@ -5222,7 +5224,7 @@ Your job:
     note = parsed.note || '';
   } catch(e){
     spanish = raw;
-    note = 'Could not connect — entry saved as written.';
+    note = window.__claudeKey ? 'Could not connect — entry saved as written.' : '';
   }
   const entries = await diarioLoadEntries();
   entries.push({ date, original: raw, spanish, note });
