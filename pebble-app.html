@@ -2569,7 +2569,7 @@ function SpanishChatBubble({ m, onReplay, onSaveWord, onSaveSentence }) {
                   ))}
                 </div>
                 <div onClick={(e) => openSentence(e, s)} title="guardar frase" style={{ height: 3, borderRadius: 2, background: color, marginTop: 3, cursor: 'pointer' }} />
-                <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--muted)', marginTop: 4, fontStyle: 'italic' }}>{s.en}</div>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--muted)', marginTop: 4, fontStyle: 'italic' }}>{s.en}</div>
               </div>
               <button onClick={(e) => { e.stopPropagation(); onReplay(s.es); }} title="escuchar" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, padding: 2, flexShrink: 0 }}>🔊</button>
             </div>
