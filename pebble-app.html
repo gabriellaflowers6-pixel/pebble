@@ -1108,6 +1108,7 @@ const DEFAULT_DATA = {
   },
   settings: { gistId: '', gistToken: '', apiKey: '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', oneSignalAppId: '', oneSignalRestKey: '', jarIcon: 'images/pebble-logo.png', navStyle: 'jar' },
   chat: { messages: [] },
+  esFlash: { sets: [] },
   memory: { pending: [] },
 };
 
@@ -1342,6 +1343,20 @@ function dataReducer(state, action) {
     }
     case 'ADD_CHAT_MSG': {
       return { ...state, chat: { messages: [...state.chat.messages, action.msg] } };
+    }
+    case 'ES_FLASH_NEW_SET': {
+      const sets = (state.esFlash?.sets) || [];
+      if (sets.some(s => s.id === action.id)) return state;
+      return { ...state, esFlash: { sets: [...sets, { id: action.id, label: action.label, date: action.date, cards: [] }] } };
+    }
+    case 'ES_FLASH_ADD_CARD': {
+      const sets = (state.esFlash?.sets) || [];
+      return { ...state, esFlash: { sets: sets.map(s => {
+        if (s.id !== action.setId) return s;
+        const k = action.card.kind + ':' + (action.card.es || '').toLowerCase();
+        if ((s.cards || []).some(c => (c.kind + ':' + (c.es || '').toLowerCase()) === k)) return s;
+        return { ...s, cards: [...(s.cards || []), action.card] };
+      }) } };
     }
     case 'ADD_MEMORY_PENDING': {
       const already = (state.memory?.pending || []).some(p => p.label === action.item.label);
@@ -2591,6 +2606,7 @@ function ChatBar() {
   const [esMsgs, setEsMsgs] = useState([]);
   const [flashToast, setFlashToast] = useState('');
   const esCardsRef = useRef([]);
+  const esSessionRef = useRef(null);
   const recognitionRef = useRef(null);
   const msgsRef = useRef(null);
   const swipeStartX = useRef(null);
@@ -2863,6 +2879,9 @@ ${(data.plans || []).length ? '\nActive plans: ' + (data.plans || []).map(p => p
     primeSpeech();
     setSpanishMode(true); setChatExpanded(true); setChatOpen(false);
     if (esMsgs.length) return;
+    // fresh chat = new session = new flashcard set (created lazily on first save)
+    esSessionRef.current = { id: 'es' + Date.now(), label: 'Conversación · ' + new Date().toLocaleDateString(), date: new Date().toISOString().slice(0, 10), created: false };
+    esCardsRef.current = [];
     if (!data.settings?.apiKey) { setEsMsgs([{ role: 'assistant', sentences: [{ es: 'Agrega tu clave de API en ajustes para conversar.', en: 'Add your API key in settings to chat.', words: [] }] }]); return; }
     setSending(true);
     (async () => {
@@ -2890,14 +2909,19 @@ ${(data.plans || []).length ? '\nActive plans: ' + (data.plans || []).map(p => p
   enterSpanishRef.current = enterSpanish;
   const exitSpanish = () => { try { speechSynthesis.cancel(); } catch {} setSpanishMode(false); setEsMsgs([]); };
 
-  // Save a tapped word / sentence to this session's flashcard set (Stage 2 will persist + sync to the Tarjetas section)
+  // Save a tapped word / sentence to this session's flashcard set (persisted in Pebble; Stage 3 syncs it to the Tarjetas section)
   const saveSpanishCard = (kind, es, en) => {
     const e = (es || '').trim(); if (!e) return;
+    let sess = esSessionRef.current;
+    if (!sess) { sess = esSessionRef.current = { id: 'es' + Date.now(), label: 'Conversación · ' + new Date().toLocaleDateString(), date: new Date().toISOString().slice(0, 10), created: false }; }
+    const card = { kind, es: e, en: (en || '').trim() };
     const key = kind + ':' + e.toLowerCase();
     if (esCardsRef.current.some(c => (c.kind + ':' + (c.es || '').toLowerCase()) === key)) {
       setFlashToast('ya guardada');
     } else {
-      esCardsRef.current.push({ kind, es: e, en: (en || '').trim() });
+      esCardsRef.current.push(card);
+      if (!sess.created) { dispatch({ type: 'ES_FLASH_NEW_SET', id: sess.id, label: sess.label, date: sess.date }); sess.created = true; }
+      dispatch({ type: 'ES_FLASH_ADD_CARD', setId: sess.id, card });
       setFlashToast((kind === 'word' ? 'palabra' : 'frase') + ' guardada ✓ (' + esCardsRef.current.length + ')');
     }
     setTimeout(() => setFlashToast(''), 1800);
