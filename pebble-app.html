@@ -1108,7 +1108,7 @@ const DEFAULT_DATA = {
   },
   settings: { gistId: '', gistToken: '', apiKey: '', oneSignalAppId: '', oneSignalRestKey: '', jarIcon: 'images/pebble-logo.png', navStyle: 'jar' },
   chat: { messages: [] },
-  esFlash: { sets: [] },
+  esFlash: { sets: [], recent: [] },
   memory: { pending: [] },
 };
 
@@ -1361,11 +1361,11 @@ function dataReducer(state, action) {
     case 'ES_FLASH_NEW_SET': {
       const sets = (state.esFlash?.sets) || [];
       if (sets.some(s => s.id === action.id)) return state;
-      return { ...state, esFlash: { sets: [...sets, { id: action.id, label: action.label, date: action.date, cards: [] }] } };
+      return { ...state, esFlash: { ...state.esFlash, sets: [...sets, { id: action.id, label: action.label, date: action.date, cards: [] }] } };
     }
     case 'ES_FLASH_ADD_CARD': {
       const sets = (state.esFlash?.sets) || [];
-      return { ...state, esFlash: { sets: sets.map(s => {
+      return { ...state, esFlash: { ...state.esFlash, sets: sets.map(s => {
         if (s.id !== action.setId) return s;
         const k = convoCardKey(action.card);
         if ((s.cards || []).some(c => convoCardKey(c) === k)) return s;
@@ -1377,7 +1377,47 @@ function dataReducer(state, action) {
       // idempotent: nothing to do if empty or already a single convo-all deck
       if (sets.length === 0) return state;
       if (sets.length === 1 && sets[0].id === CONVO_DECK_ID) return state;
-      return { ...state, esFlash: { sets: mergeConvoSets(sets) } };
+      return { ...state, esFlash: { ...state.esFlash, sets: mergeConvoSets(sets) } };
+    }
+
+    case 'ES_FLASH_DELETE_CARD': {
+      const sets = ((state.esFlash && state.esFlash.sets) || []).map(set =>
+        set.id === action.setId ? { ...set, cards: (set.cards || []).filter(c => convoCardKey(c) !== action.cardKey) } : set);
+      return { ...state, esFlash: { ...state.esFlash, sets } };
+    }
+    case 'ES_FLASH_EDIT_CARD': {
+      const sets = ((state.esFlash && state.esFlash.sets) || []).map(set => {
+        if (set.id !== action.setId) return set;
+        const cur = (set.cards || []).find(c => convoCardKey(c) === action.cardKey);
+        if (!cur) return set;
+        const next = { ...cur, es: (action.es || '').trim(), en: (action.en || '').trim() };
+        const nextKey = convoCardKey(next);
+        const collides = (set.cards || []).some(c => convoCardKey(c) !== action.cardKey && convoCardKey(c) === nextKey);
+        if (!next.es || collides) return set;
+        return { ...set, cards: set.cards.map(c => convoCardKey(c) === action.cardKey ? next : c) };
+      });
+      return { ...state, esFlash: { ...state.esFlash, sets } };
+    }
+    case 'ES_FLASH_MOVE_CARDS': {
+      const moving = [];
+      let sets = ((state.esFlash && state.esFlash.sets) || []).map(set => {
+        if (set.id !== action.fromSetId) return set;
+        const keep = [], take = [];
+        (set.cards || []).forEach(c => ((action.cardKeys || []).indexOf(convoCardKey(c)) >= 0 ? take : keep).push(c));
+        moving.push.apply(moving, take);
+        return { ...set, cards: keep };
+      });
+      sets = sets.map(set => set.id === action.toSetId
+        ? { ...set, cards: [...(set.cards || []), ...moving.filter(m => !(set.cards || []).some(c => convoCardKey(c) === convoCardKey(m)))] }
+        : set);
+      return { ...state, esFlash: { ...state.esFlash, sets } };
+    }
+    case 'ES_FLASH_PUSH_RECENT': {
+      const cur = (state.esFlash && state.esFlash.recent) || [];
+      const seen = {}; cur.forEach(c => { seen[convoCardKey(c)] = 1; });
+      const add = (action.items || []).filter(it => it && it.es && !seen[convoCardKey(it)]);
+      const recent = [...add, ...cur].slice(0, 50);
+      return { ...state, esFlash: { ...state.esFlash, recent } };
     }
 
     case 'ADD_MEMORY_PENDING': {
