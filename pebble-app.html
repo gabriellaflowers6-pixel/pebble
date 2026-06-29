@@ -5877,9 +5877,116 @@ function EspanolPage() {
   );
 }
 
+function FlashEditor({ open, onClose }) {
+  const { data, dispatch } = useContext(DataCtx);
+  const [deckId, setDeckId] = useState(CONVO_DECK_ID);
+  const [es, setEs] = useState('');
+  const [en, setEn] = useState('');
+  const [editKey, setEditKey] = useState(null);
+  const [editEs, setEditEs] = useState('');
+  const [editEn, setEditEn] = useState('');
+  const [toast, setToast] = useState('');
+  if (!open) return null;
+  const sets = (data.esFlash && data.esFlash.sets) || [];
+  const deck = sets.find(s => s.id === deckId) || sets.find(s => s.id === CONVO_DECK_ID) || { id: CONVO_DECK_ID, label: CONVO_DECK_LABEL, cards: [] };
+  const cards = deck.cards || [];
+  const recent = (data.esFlash && data.esFlash.recent) || [];
+  const keyOf = (c) => convoCardKey(c);
+  const inDeck = (c) => cards.some(x => keyOf(x) === keyOf(c));
+  const flash = (m) => { setToast(m); setTimeout(() => setToast(''), 1600); };
+  const ensureDeck = () => dispatch({ type: 'ES_FLASH_NEW_SET', id: deck.id, label: deck.label, date: new Date().toISOString().slice(0, 10) });
+  const add = () => {
+    const card = { kind: 'word', es: es.trim(), en: en.trim() };
+    if (!card.es) return;
+    if (inDeck(card)) { flash('ya guardada'); return; }
+    ensureDeck();
+    dispatch({ type: 'ES_FLASH_ADD_CARD', setId: deck.id, card });
+    setEs(''); setEn(''); flash('añadida ✓');
+  };
+  const addSuggest = (c) => {
+    if (inDeck(c)) { flash('ya guardada'); return; }
+    ensureDeck();
+    dispatch({ type: 'ES_FLASH_ADD_CARD', setId: deck.id, card: { kind: c.kind || 'word', es: c.es, en: c.en } });
+    flash('añadida ✓');
+  };
+  const del = (c) => dispatch({ type: 'ES_FLASH_DELETE_CARD', setId: deck.id, cardKey: keyOf(c) });
+  const startEdit = (c) => { setEditKey(keyOf(c)); setEditEs(c.es || ''); setEditEn(c.en || ''); };
+  const saveEdit = () => { dispatch({ type: 'ES_FLASH_EDIT_CARD', setId: deck.id, cardKey: editKey, es: editEs, en: editEn }); setEditKey(null); };
+  const suggestions = recent.filter(c => !inDeck(c)).slice(0, 20);
+  const inp = { background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 10, padding: '8px 12px', fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--dark)', outline: 'none', width: '100%' };
+  return (
+    <div className="absolute inset-0 z-50 flex flex-col" style={{ background: 'var(--bg)' }}>
+      <div className="settings-enter flex-1 flex flex-col" style={{ minHeight: 0 }}>
+        <div className="px-5 pt-12 pb-4 flex items-center justify-between">
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 24, color: 'var(--dark)' }}>tarjetas</h2>
+          <button onClick={onClose} className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer" aria-label="Close">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--dark)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">{icons.x}</svg>
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto px-5 pb-8" style={{ WebkitOverflowScrolling: 'touch' }}>
+          {sets.length > 1 && (
+            <select value={deck.id} onChange={e => setDeckId(e.target.value)} style={{ ...inp, marginBottom: 14 }}>
+              {sets.map(set => <option key={set.id} value={set.id}>{set.label} ({(set.cards || []).length})</option>)}
+            </select>
+          )}
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--muted)', marginBottom: 12 }}>{cards.length} {cards.length === 1 ? 'tarjeta' : 'tarjetas'}</div>
+          <div className="glass-card mb-5" style={{ padding: 14 }}>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+              <input value={es} onChange={e => setEs(e.target.value)} placeholder="español" style={inp} autoCapitalize="off" autoCorrect="off" />
+              <input value={en} onChange={e => setEn(e.target.value)} placeholder="english" style={inp} />
+            </div>
+            <button onClick={add} disabled={!es.trim()} style={{ background: 'var(--primary)', color: 'white', border: 'none', borderRadius: 999, padding: '8px 18px', fontFamily: 'var(--font-body)', fontSize: 12, cursor: 'pointer', opacity: es.trim() ? 1 : 0.4 }}>añadir</button>
+          </div>
+          {suggestions.length > 0 && (
+            <div className="mb-5">
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--muted)', marginBottom: 6 }}>de tus chats</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {suggestions.map((c, i) => (
+                  <button key={i} onClick={() => addSuggest(c)} style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 999, padding: '5px 12px', fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--dark)', cursor: 'pointer' }}>+ {c.es}</button>
+                ))}
+              </div>
+            </div>
+          )}
+          {cards.length === 0 ? (
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--muted)', textAlign: 'center', marginTop: 30 }}>no hay tarjetas todavía</p>
+          ) : cards.map((c, i) => (
+            <div key={keyOf(c) + i} className="glass-card mb-2" style={{ padding: '10px 12px' }}>
+              {editKey === keyOf(c) ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <input value={editEs} onChange={e => setEditEs(e.target.value)} style={inp} />
+                  <input value={editEn} onChange={e => setEditEn(e.target.value)} style={inp} />
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button onClick={saveEdit} style={{ background: 'var(--primary)', color: 'white', border: 'none', borderRadius: 999, padding: '6px 14px', fontSize: 11, cursor: 'pointer' }}>guardar</button>
+                    <button onClick={() => setEditKey(null)} style={{ background: 'rgba(0,0,0,0.05)', border: 'none', borderRadius: 999, padding: '6px 14px', fontSize: 11, cursor: 'pointer' }}>cancelar</button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                  <div style={{ flex: 1, minWidth: 0 }} onClick={() => startEdit(c)}>
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--dark)' }}>{c.es}</div>
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--muted)' }}>{c.en}</div>
+                  </div>
+                  <button onClick={() => del(c)} aria-label="delete" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 6, color: 'var(--muted)', flexShrink: 0 }}>🗑</button>
+                </div>
+              )}
+            </div>
+          ))}
+          {toast && <div style={{ textAlign: 'center', marginTop: 14 }}><span style={{ background: 'var(--dark)', color: 'white', fontFamily: 'var(--font-body)', fontSize: 11, padding: '5px 12px', borderRadius: 999 }}>{toast}</span></div>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function App() {
   const [jarOpen, setJarOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [flashEditorOpen, setFlashEditorOpen] = useState(false);
+  useEffect(() => {
+    const onMsg = (e) => { if (e && e.data && e.data.type === 'openFlashEditor') setFlashEditorOpen(true); };
+    window.addEventListener('message', onMsg);
+    return () => window.removeEventListener('message', onMsg);
+  }, []);
   const [currentPage, setCurrentPage] = useState(0);
   const [cardQuiz, setCardQuiz] = useState(null);
   const containerRef = useRef(null);
@@ -5963,6 +6070,7 @@ function App() {
       {cardQuiz && <CardQuizOverlay quiz={cardQuiz} onClose={() => setCardQuiz(null)} />}
       {navStyle === 'jar' && <MarbleJar open={jarOpen} onClose={() => setJarOpen(false)} onNavigate={navigateTo} currentPage={currentPage} customSegments={customSegments} staticPageCount={staticPages.length} />}
       <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <FlashEditor open={flashEditorOpen} onClose={() => setFlashEditorOpen(false)} />
 
       <div className={hasSky ? 'cloud-sky' : ''}>
         <Header onJarOpen={navStyle === 'jar' ? () => setJarOpen(true) : null} onSettingsOpen={() => setSettingsOpen(true)} />
