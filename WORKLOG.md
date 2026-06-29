@@ -201,3 +201,13 @@ Big feature for the Pebble Spanish chat (ChatBar Spanish mode). Spec confirmed w
 **Tested (desktop):** compiles, no errors, BUILD renders in Settings, `--app-h` set by the listener, desktop frame stays 812px (var only used at mobile width), typing works. iOS keyboard behavior itself NOT desktop-testable — needs Gabby.
 **Committed/Pushed:** YES — be0525a (BUILD 1 stamp), f5890b6 (BUILD 2 keyboard). origin/main.
 **Notes for next session:** Gabby tests on iPhone (confirm Settings shows BUILD 2 first). If the frame shifts/offsets when keyboard opens, add `visualViewport.offsetTop` handling (translateY) or pin `.phone-frame` position:fixed top:0 — that's the likely BUILD 3. Autofill: should be gone via contenteditable; confirm on BUILD 2. Mic button (roadmap C) still separate. Durable key fix still = Netlify proxy.
+
+## 2026-06-29 — Running backlog (Gabby, ordered)
+Tracked so nothing slips. Build/fix as prioritized.
+1. **Keyboard fixes (BUILD 3)** — TWO issues:
+   (a) Normal chat: dead/blank gap between keyboard and chat bar; user must manually pull chat down each focus. Screenshot pending.
+   (b) REGRESSION from BUILD 2: the visualViewport `--app-h` resize is GLOBAL to `.phone-frame`, so the keyboard-aware shrink now fires for EVERY input (Atajos, Journal, etc.), not just chat. The chat-bar/keyboard "goes up" behavior leaked into Atajos. FIX: scope the keyboard-aware shrink to ONLY when the main chat composer is focused (gate the `--app-h` apply on chat focus, restore default `--app-h`/100vh on blur or non-chat focus). Screenshot pending.
+2. **Flashcard editor** — design APPROVED, spec at `docs/superpowers/specs/2026-06-29-flashcard-editor-design.md`. Phase 1 (editor: list/edit/delete/manual-add-dedup/from-chat-suggestions) then Phase 2 (AI suggest + AI organize/split into themed decks). Awaiting Gabby's spec review, then writing-plans.
+3. **Spanish chat corrections + explain** (new, needs design) — under the user's Spanish message, show the corrected Spanish + an "Explain" button breaking down the grammar they missed (e.g. used "yo" but "estoy" works like X).
+4. **Save facts & quotes with a heart** (new, needs design) — heart a fact/quote, view saved ones later. Scope TBD (source + view location).
+Durable key fix (Netlify proxy) and mic button (roadmap C) still open from before.
