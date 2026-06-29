@@ -211,3 +211,13 @@ Tracked so nothing slips. Build/fix as prioritized.
 3. **Spanish chat corrections + explain** (new, needs design) — under the user's Spanish message, show the corrected Spanish + an "Explain" button breaking down the grammar they missed (e.g. used "yo" but "estoy" works like X).
 4. **Save facts & quotes with a heart** (new, needs design) — heart a fact/quote, view saved ones later. Scope TBD (source + view location).
 Durable key fix (Netlify proxy) and mic button (roadmap C) still open from before.
+
+## 2026-06-29 — BUILD 3: chat-scoped keyboard resize + frame pin (gap fix)
+**Working on:** Fix the BUILD 2 keyboard regressions Gabby reported (screenshot "look at.PNG": expanded Spanish chat composer floating with dead space below it down to the keyboard; and the keyboard-aware shrink firing in Atajos where it shouldn't).
+**Fixes (commit 1b351f9):**
+- Consolidated the two end-of-body scripts into one. The `--app-h` visualViewport shrink now applies ONLY while the chat composer is focused, gated by an `html.kb-chat` class toggled on chat focusin/focusout. Non-chat inputs (Atajos in the Veo iframe, Journal, add-task, etc.) no longer trigger the app shrink. Verified on desktop: chat focus → kb-chat + --app-h set; other input focus → kb-chat false.
+- `.phone-frame` is now `position: fixed; top:0; left:0; right:0` on mobile so iOS can't scroll the layout and open a gap between composer and keyboard. Desktop media query overrides back to `position: relative` (centered mockup verified intact on desktop).
+- BUILD bumped to 3.
+**Caveat:** the actual iOS keyboard gap + scoping can only be confirmed on Gabby's iPhone. CRITICAL open question across the last several builds: we still don't know which BUILD her phone is actually running — if Settings shows < 3, she's been testing cached old code (no service worker; iOS caches the webclip), which would explain why autofill/key-reset/gap all persisted. The BUILD stamp exists to settle this.
+**Committed/Pushed:** YES — 1b351f9, origin/main.
+**Notes for next session:** Gabby MUST report the BUILD number in Settings. If < 3 → cache problem is the real blocker; consider a network-first service worker so the PWA always fetches fresh (currently none). If BUILD 3 and gap persists → add visualViewport.offsetTop translate. Backlog unchanged: flashcard editor (spec approved, ready for writing-plans), Spanish corrections (design), facts/quotes (design).
