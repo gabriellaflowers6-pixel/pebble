@@ -725,6 +725,7 @@
     <div id="cPanelCards" style="display:none;padding:14px 20px 40px">
       <!-- Sub-deck selector -->
       <div id="cCardDeckBtns" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px"></div>
+      <button onclick="manageFlashCards()" style="width:100%;padding:9px;margin-bottom:14px;background:#556434;color:#fff;border:none;border-radius:8px;font-family:'DM Mono',monospace;font-size:.8rem;cursor:pointer">✏️ Administrar tarjetas</button>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
         <button onclick="cCardPrev()" style="padding:8px 16px;background:#e8dece;border:none;border-radius:8px;font-size:1.1rem;cursor:pointer">←</button>
         <span id="cCardProgress" style="font-family:'DM Mono',monospace;font-size:.8rem;color:var(--muted)"></span>
@@ -5994,6 +5995,7 @@ function convoMic(){
   }catch(e){ if(btn) btn.classList.remove('on'); convoRec=null; convoMicHint('Usa el micro 🎙️ del teclado'); }
 }
 function convoLaunchPebble(){ try{ window.parent.postMessage({type:'openSpanishChat'},'*'); }catch(e){} }
+function manageFlashCards(){ try{ window.parent.postMessage({type:'openFlashEditor'},'*'); }catch(e){} }
 
 function show(id){
   screens.forEach(s=>document.getElementById(s).classList.toggle('active', s===id));
