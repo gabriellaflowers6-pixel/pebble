@@ -44,13 +44,13 @@
 
   .phone-frame {
     width: 375px; max-height: 812px; height: var(--app-h, 100vh);
-    background: var(--bg); position: relative; overflow: hidden;
+    background: var(--bg); position: fixed; top: 0; left: 0; right: 0; overflow: hidden;
     margin: 0 auto; border-radius: 0;
     display: flex; flex-direction: column;
   }
   @media (min-width: 500px) {
     body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px 0; }
-    .phone-frame { border-radius: 40px; box-shadow: 0 25px 80px rgba(0,0,0,0.15), 0 0 0 8px var(--dark); max-height: 812px; height: 812px; }
+    .phone-frame { border-radius: 40px; box-shadow: 0 25px 80px rgba(0,0,0,0.15), 0 0 0 8px var(--dark); max-height: 812px; height: 812px; position: relative; top: auto; left: auto; right: auto; }
   }
 
   /* ── Swipe Container ── */
@@ -5311,8 +5311,8 @@ function ThemeSwatch({ id, theme, isActive, onSelect, onDelete, isCustom }) {
   );
 }
 
-const PEBBLE_BUILD = 2;
-const PEBBLE_BUILD_NOTE = 'keyboard stays above the chat and no longer drops when you send (+ contenteditable box, device-local key)';
+const PEBBLE_BUILD = 3;
+const PEBBLE_BUILD_NOTE = 'keyboard resize is chat-only now (Atajos/Journal back to normal) + chat sits right above the keyboard, no dead-space gap';
 
 function SettingsPanel({ open, onClose }) {
   const { themeId, setTheme, customThemes, deleteCustomTheme } = useContext(ThemeCtx);
@@ -5994,13 +5994,29 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 .pebble-ce:empty:before { content: attr(data-placeholder); color: var(--muted); opacity: 0.7; pointer-events: none; }
 </style>
 <script>
-/* Pebble chat composer is a contenteditable (not a form field), so iOS shows no
-   field-nav arrows and no contact autofill. This helper keeps the latest messages in
-   view when the keyboard opens, and for the OTHER real inputs makes the focused field
-   the only tab-navigable one. Additive, no React changes. */
+/* Pebble keyboard helper (additive, no React changes):
+   - The chat composer is a contenteditable (not a form field), so iOS shows no field-nav
+     arrows / contact autofill.
+   - ONLY when the chat composer is focused: mark <html class="kb-chat"> and size the app to
+     the visual viewport (--app-h) so the chat sits right above the keyboard. Scoped to chat,
+     so Atajos / Journal / every other input behave normally.
+   - Keep the latest messages in view; for the OTHER real inputs, trap tab-nav to the focused
+     field so iOS hides the prev/next arrows. */
 (function () {
+  var root = document.documentElement;
+  var vv = window.visualViewport;
   function fieldName(t){ return (t && t.getAttribute && (t.getAttribute('name') || t.getAttribute('data-name'))) || ''; }
   function isChat(t){ return fieldName(t).indexOf('pebble-chat') === 0; }
+  function applyViewport() {
+    if (!vv) return;
+    if (root.classList.contains('kb-chat')) root.style.setProperty('--app-h', Math.round(vv.height) + 'px');
+    else root.style.removeProperty('--app-h');
+  }
+  if (vv) {
+    vv.addEventListener('resize', applyViewport);
+    vv.addEventListener('scroll', applyViewport);
+    window.addEventListener('orientationchange', function () { setTimeout(applyViewport, 200); });
+  }
   document.addEventListener('focusin', function (e) {
     var t = e.target;
     if (!t || !t.matches) return;
@@ -6014,7 +6030,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         el.setAttribute('tabindex', '-1');
       }
     }
-    if (isChat(t) || (t.matches('.pebble-ce'))) {
+    if (isChat(t)) {
+      root.classList.add('kb-chat');
+      applyViewport();
       setTimeout(function () {
         try { t.scrollIntoView({ block: 'center' }); } catch (_) {}
         var frame = document.querySelector('.phone-frame') || document.body;
@@ -6026,7 +6044,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       }, 320);
     }
   });
-  document.addEventListener('focusout', function () {
+  document.addEventListener('focusout', function (e) {
     var marked = document.querySelectorAll('[data-pebtab="1"]');
     for (var i = 0; i < marked.length; i++) {
       var el = marked[i];
@@ -6034,20 +6052,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       else el.removeAttribute('tabindex');
       el.removeAttribute('data-pebtab');
     }
+    if (isChat(e.target)) { root.classList.remove('kb-chat'); applyViewport(); }
   });
-})();
-</script>
-<script>
-/* Keyboard-aware sizing: shrink the app to the visual viewport so the chat (messages +
-   composer) stays above the iOS keyboard instead of hiding behind it. */
-(function () {
-  var vv = window.visualViewport;
-  if (!vv) return;
-  function apply() { document.documentElement.style.setProperty('--app-h', Math.round(vv.height) + 'px'); }
-  vv.addEventListener('resize', apply);
-  vv.addEventListener('scroll', apply);
-  window.addEventListener('orientationchange', function () { setTimeout(apply, 200); });
-  apply();
 })();
 </script>
 </body>
