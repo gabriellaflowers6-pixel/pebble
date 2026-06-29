@@ -5926,7 +5926,7 @@ function convoBrowserSpeak(text){
     if(!convoVoice) convoLoadVoices();
     var u=new SpeechSynthesisUtterance(text);
     if(convoVoice){ u.voice=convoVoice; u.lang=convoVoice.lang||'es-MX'; } else { u.lang='es-MX'; }
-    u.rate=0.95;
+    u.rate=0.85;
     speechSynthesis.cancel(); speechSynthesis.speak(u);
   }catch(e){}
 }
