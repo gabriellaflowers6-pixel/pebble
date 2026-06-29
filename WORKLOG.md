@@ -224,3 +224,15 @@ Durable key fix (Netlify proxy) and mic button (roadmap C) still open from befor
 
 ## 2026-06-29 — Backlog add: Listening mode (Modo Escucha) — wrong answer traps you
 **Bug (Gabby, on-device):** In the listening mode for the story (Alice in Wonderland / Oz "Modo Escucha"), when you get a question WRONG it won't let you skip or advance — you get stuck redoing the same words with no way to move to the next question. FIX: add a Skip / "next" option (or auto-advance after N tries / reveal answer) so a wrong answer doesn't lock you in. Logged for later, not fixed yet.
+
+## 2026-06-29 — Flashcard editor Phase 1 (Tasks 1, 3, 4 done; 2, 5 remain)
+**Working on:** Building the flashcard editor per spec/plan in docs/superpowers/. Done inline this session, verified on desktop (local http server + browser JS).
+- **Task 1 (2749989):** reducer actions ES_FLASH_DELETE_CARD/EDIT_CARD/MOVE_CARDS/PUSH_RECENT + `recent: []` in DEFAULT_DATA.esFlash. Updated existing NEW_SET/ADD_CARD/MERGE_ALL to spread `...state.esFlash` so they don't drop `recent`.
+- **Task 3 (a56f21a):** `FlashEditor` component (before App) + `flashEditorOpen` state + `openFlashEditor` window-message listener in App + render after SettingsPanel. List/edit/delete/manual-add. Dedup is reducer-enforced (no dup ever) + "ya guardada" toast in normal (non-racing) use. Verified: opens, add/dedup/delete work, 🗑 renders. (Fixed a raw-string `\U0001f5d1` escape bug → real emoji.)
+- **Task 4 (cd5bcd0):** "✏️ Administrar tarjetas" button + manageFlashCards() bridge (posts openFlashEditor) in the Veo Tarjetas panel (#cPanelCards); re-baked VEO_DIGO_B64 (round-trips to source). Bumped BUILD to 4. Verified the bridge opens the editor end-to-end.
+**REMAINING for Phase 1:**
+- **Task 2:** capture recent Spanish chat words into `data.esFlash.recent` (dispatch ES_FLASH_PUSH_RECENT from the Spanish reply parse path) so the "de tus chats" suggestions populate. Currently that section is empty.
+- **Task 5:** confirm the esFlashSets post effect (~5817) re-fires on esFlash change so Tarjetas reflects edits (likely already does; verify).
+**Committed:** YES — 2749989, a56f21a, cd5bcd0 (+ plan abf8b1e). **Pushed:** NO — awaiting Gabby's OK.
+**Recurring issue:** git index keeps corrupting (tracked count → 0, everything shows deleted) after some operations — a crashed git leaves it empty. Fix each time: back up working files, `git reset --mixed HEAD` (rebuilds index from HEAD, working tree untouched), recommit. Working files are never lost.
+**Notes for next session:** Editor is usable + reachable now. Phone test (after push + reload, confirm Settings shows BUILD 4): open Español → Tarjetas → Administrar tarjetas → add/edit/delete a card. Keyboard BUILD 3 test still pending too.
