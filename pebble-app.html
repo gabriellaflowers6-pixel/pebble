@@ -1135,13 +1135,14 @@ const CONVO_DECK_ID = 'convo-all';
 const CONVO_DECK_LABEL = 'Conversación';
 const convoCardKey = (c) => (c.kind || 'word') + ':' + (c.es || '').toLowerCase();
 function mergeConvoSets(sets) {
+  const themed = (sets || []).filter(s => s.themed);
   const cards = []; const seen = new Set();
-  (sets || []).forEach(s => (s.cards || []).forEach(c => {
+  (sets || []).filter(s => !s.themed).forEach(s => (s.cards || []).forEach(c => {
     const k = convoCardKey(c);
     if (seen.has(k)) return;
     seen.add(k); cards.push(c);
   }));
-  return [{ id: CONVO_DECK_ID, label: CONVO_DECK_LABEL, date: new Date().toISOString().slice(0, 10), cards }];
+  return [{ id: CONVO_DECK_ID, label: CONVO_DECK_LABEL, date: new Date().toISOString().slice(0, 10), cards }, ...themed];
 }
 
 function dataReducer(state, action) {
@@ -1366,7 +1367,7 @@ function dataReducer(state, action) {
     case 'ES_FLASH_NEW_SET': {
       const sets = (state.esFlash?.sets) || [];
       if (sets.some(s => s.id === action.id)) return state;
-      return { ...state, esFlash: { ...state.esFlash, sets: [...sets, { id: action.id, label: action.label, date: action.date, cards: [] }] } };
+      return { ...state, esFlash: { ...state.esFlash, sets: [...sets, { id: action.id, label: action.label, date: action.date, cards: [], themed: !!action.themed }] } };
     }
     case 'ES_FLASH_ADD_CARD': {
       const sets = (state.esFlash?.sets) || [];
@@ -1379,9 +1380,9 @@ function dataReducer(state, action) {
     }
     case 'ES_FLASH_MERGE_ALL': {
       const sets = (state.esFlash?.sets) || [];
-      // idempotent: nothing to do if empty or already a single convo-all deck
       if (sets.length === 0) return state;
-      if (sets.length === 1 && sets[0].id === CONVO_DECK_ID) return state;
+      // only merge legacy per-convo decks; never themed decks made by Organize
+      if (!sets.some(s => s.id !== CONVO_DECK_ID && !s.themed)) return state;
       return { ...state, esFlash: { ...state.esFlash, sets: mergeConvoSets(sets) } };
     }
 
@@ -3053,7 +3054,7 @@ ${(data.plans || []).length ? '\nActive plans: ' + (data.plans || []).map(p => p
   // Runs reactively so it also fires after async LOAD_DATA brings stored sets in. Idempotent in the reducer.
   useEffect(() => {
     const sets = data.esFlash?.sets || [];
-    const needsMerge = sets.length > 1 || sets.some(s => s.id !== CONVO_DECK_ID);
+    const needsMerge = sets.some(s => s.id !== CONVO_DECK_ID && !s.themed);
     if (needsMerge) dispatch({ type: 'ES_FLASH_MERGE_ALL' });
   }, [data.esFlash]);
 
@@ -5404,8 +5405,8 @@ function ThemeSwatch({ id, theme, isActive, onSelect, onDelete, isCustom }) {
   );
 }
 
-const PEBBLE_BUILD = 9;
-const PEBBLE_BUILD_NOTE = 'Modo Escucha: a wrong word-order no longer traps you (Ver respuesta y seguir) + heart quotes/facts';
+const PEBBLE_BUILD = 10;
+const PEBBLE_BUILD_NOTE = 'flashcard editor AI: sugerir palabras + organizar (split cards into themed decks by type) + Modo Escucha fix';
 
 function SettingsPanel({ open, onClose }) {
   const { themeId, setTheme, customThemes, deleteCustomTheme } = useContext(ThemeCtx);
@@ -5939,6 +5940,9 @@ function FlashEditor({ open, onClose }) {
   const [editEs, setEditEs] = useState('');
   const [editEn, setEditEn] = useState('');
   const [toast, setToast] = useState('');
+  const [aiBusy, setAiBusy] = useState('');
+  const [aiSugg, setAiSugg] = useState([]);
+  const [cats, setCats] = useState(null);
   if (!open) return null;
   const sets = (data.esFlash && data.esFlash.sets) || [];
   const deck = sets.find(s => s.id === deckId) || sets.find(s => s.id === CONVO_DECK_ID) || { id: CONVO_DECK_ID, label: CONVO_DECK_LABEL, cards: [] };
@@ -5967,6 +5971,46 @@ function FlashEditor({ open, onClose }) {
   const saveEdit = () => { dispatch({ type: 'ES_FLASH_EDIT_CARD', setId: deck.id, cardKey: editKey, es: editEs, en: editEn }); setEditKey(null); };
   const suggestions = recent.filter(c => !inDeck(c)).slice(0, 20);
   const inp = { background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 10, padding: '8px 12px', fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--dark)', outline: 'none', width: '100%' };
+  const aiBtn = { flex: 1, background: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 999, padding: '7px 10px', fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--dark)', cursor: 'pointer' };
+  const chip = { background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 999, padding: '5px 12px', fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--dark)', cursor: 'pointer' };
+  const lbl = { fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--muted)', marginBottom: 6 };
+  const aiCall = async (prompt, maxTok) => {
+    const res = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': data.settings.apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json', 'anthropic-dangerous-direct-browser-access': 'true' }, body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: maxTok, messages: [{ role: 'user', content: prompt }] }) });
+    const j = await res.json();
+    return (j.content || []).filter(b => b.type === 'text').map(b => b.text).join('').trim();
+  };
+  const parseJ = (raw, o, cl) => { const r = raw.replace(/```json|```/g, '').trim(); try { return JSON.parse(r); } catch (e) {} const a = r.indexOf(o), b = r.lastIndexOf(cl); if (a >= 0 && b > a) { try { return JSON.parse(r.slice(a, b + 1)); } catch (e) {} } return null; };
+  const suggestAI = async () => {
+    if (!data.settings?.apiKey) { flash('agrega tu clave en ajustes'); return; }
+    setAiBusy('suggest');
+    try {
+      const have = cards.map(c => c.es).slice(0, 80).join(', ');
+      const raw = await aiCall('A Spanish learner has these words: ' + have + '. Suggest 8 NEW useful related Latin American Spanish words they do not already have. Return ONLY a JSON array, no markdown: [{"es":"palabra","en":"english"}]', 400);
+      const arr = parseJ(raw, '[', ']') || [];
+      setAiSugg(arr.filter(x => x && x.es).filter(x => !inDeck(x)));
+    } catch (e) { flash('no pude sugerir'); }
+    finally { setAiBusy(''); }
+  };
+  const organizeAI = async () => {
+    if (!data.settings?.apiKey) { flash('agrega tu clave en ajustes'); return; }
+    if (!cards.length) return;
+    setAiBusy('organize');
+    try {
+      const raw = await aiCall('Categorize each Spanish word or phrase into ONE short Spanish category such as: verbo, sustantivo, parte del cuerpo, comida, sentimiento, pasatiempo, lugar, tiempo, color, familia. Items: ' + JSON.stringify(cards.map(c => c.es)) + '. Return ONLY a JSON object mapping each item exactly to its category, no markdown: {"palabra":"categoria"}', 700);
+      const map = parseJ(raw, '{', '}') || {};
+      const byKey = {}; cards.forEach(c => { const cat = map[c.es]; if (cat) byKey[keyOf(c)] = String(cat).toLowerCase().trim(); });
+      setCats(byKey);
+    } catch (e) { flash('no pude organizar'); }
+    finally { setAiBusy(''); }
+  };
+  const splitCategory = (cat) => {
+    const catCards = cards.filter(c => cats && cats[keyOf(c)] === cat);
+    if (!catCards.length) return;
+    const id = 'deck-' + cat.replace(/[^a-z0-9]+/gi, '-') + '-' + Date.now();
+    dispatch({ type: 'ES_FLASH_NEW_SET', id, label: cat, date: new Date().toISOString().slice(0, 10), themed: true });
+    dispatch({ type: 'ES_FLASH_MOVE_CARDS', fromSetId: deck.id, toSetId: id, cardKeys: catCards.map(keyOf) });
+    setCats(null); flash('mazo "' + cat + '" creado');
+  };
   return (
     <div className="absolute inset-0 z-50 flex flex-col" style={{ background: 'var(--bg)' }}>
       <div className="settings-enter flex-1 flex flex-col" style={{ minHeight: 0 }}>
@@ -5997,6 +6041,28 @@ function FlashEditor({ open, onClose }) {
                 {suggestions.map((c, i) => (
                   <button key={i} onClick={() => addSuggest(c)} style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 999, padding: '5px 12px', fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--dark)', cursor: 'pointer' }}>+ {c.es}</button>
                 ))}
+              </div>
+            </div>
+          )}
+          {cards.length > 0 && data.settings?.apiKey && (
+            <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+              <button onClick={suggestAI} disabled={!!aiBusy} style={aiBtn}>{aiBusy === 'suggest' ? '…' : '✨ sugerir palabras'}</button>
+              <button onClick={organizeAI} disabled={!!aiBusy} style={aiBtn}>{aiBusy === 'organize' ? '…' : '✨ organizar'}</button>
+            </div>
+          )}
+          {aiSugg.length > 0 && (
+            <div className="mb-5">
+              <div style={lbl}>sugerencias</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {aiSugg.map((c, i) => <button key={i} onClick={() => { addSuggest(c); setAiSugg(p => p.filter(x => x !== c)); }} style={chip}>+ {c.es}</button>)}
+              </div>
+            </div>
+          )}
+          {cats && Object.keys(cats).length > 0 && (
+            <div className="mb-5">
+              <div style={lbl}>hacer mazos por tipo (toca para separar)</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {[...new Set(Object.values(cats))].map((cat, i) => { const n = cards.filter(c => cats[keyOf(c)] === cat).length; return <button key={i} onClick={() => splitCategory(cat)} style={chip}>{cat} ({n}) →</button>; })}
               </div>
             </div>
           )}
