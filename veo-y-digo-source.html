@@ -5851,8 +5851,9 @@ function escCheckOrder(){
   const got=escOrder.built.map(it=>it.w).join(' '), correct=escOrder.correct.join(' ');
   const fb=document.getElementById('escFb'), act=document.getElementById('escAct');
   if(got===correct){ fb.className='esc-fb ok'; fb.textContent='✓ ¡Correcto!'; escPlay(); act.textContent='Continuar →'; act.setAttribute('onclick','escAdvance()'); }
-  else { fb.className='esc-fb no'; fb.textContent='Casi… inténtalo otra vez.'; }
+  else { fb.className='esc-fb no'; fb.innerHTML='Casi… inténtalo otra vez.<br><button class="esc-next" style="margin-top:8px" onclick="escRevealOrder()">Ver respuesta y seguir →</button>'; }
 }
+function escRevealOrder(){ const fb=document.getElementById('escFb'); fb.className='esc-fb ok'; fb.innerHTML='La frase correcta:<br><b>'+escOrder.correct.join(' ')+'</b><br><button class="esc-next" style="margin-top:8px" onclick="escAdvance()">Continuar →</button>'; try{ escPlay(); }catch(e){} }
 function escMeaning(pg,stage){
   const correct=pg.en;
   const others=escPages.filter(x=>x!==pg).map(x=>x.en);
@@ -5880,7 +5881,7 @@ function escAdvance(){
 }
 function escFinish(){
   document.getElementById('escProgress').innerHTML='';
-  document.getElementById('escStage').innerHTML='<div class="esc-label">¡Terminaste! \U0001F389</div><div class="esc-hint">Completaste este capítulo en Modo Escucha.</div><button class="esc-next" onclick="goBack()">Volver →</button>';
+  document.getElementById('escStage').innerHTML='<div class="esc-label">¡Terminaste! 🎉</div><div class="esc-hint">Completaste este capítulo en Modo Escucha.</div><button class="esc-next" onclick="goBack()">Volver →</button>';
 }
 
 /* ===================== Conversación (live Spanish chat with Dora) ===================== */
