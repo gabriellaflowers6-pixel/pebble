@@ -309,3 +309,19 @@ Durable key fix (Netlify proxy) and mic button (roadmap C) still open from befor
 **Verified:** `node scratchpad/checkbabel.js pebble-app.html "function ChatBar"` -> BABEL SYNTAX OK. Same for "teachSpanish" -> BABEL SYNTAX OK.
 **Committed:** YES -- 94ade67. NOT pushed.
 **Notes for next session:** On-device test: type "teach me the future tense" in Spanish mode -- expect an assistant bubble with an English explanation + 2-3 Spanish examples with hear/save controls. Normal Spanish messages unchanged.
+
+## 2026-06-30 — Lecciones Spanish lessons feature COMPLETE (BUILD 13)
+**Working on:** The full "Lecciones" feature on branch `lecciones`, built subagent-driven from the plan at docs/superpowers/plans/2026-06-30-spanish-lecciones.md (spec at docs/superpowers/specs/2026-06-29-spanish-lecciones-design.md).
+**What shipped (Tasks 1-6, each reviewed):**
+- React data layer: `data.esLessons` + reducer (ES_LESSON_CACHE / ES_LESSON_PROGRESS); EspanolPage posts `esLessonsData` into the iframe and handles `esLessonCache`/`esLessonProgress`/`saveEsCard` back out (saveEsCard routes into a themed `lecciones` flashcard deck via the idempotent ES_FLASH_NEW_SET + ES_FLASH_ADD_CARD).
+- Veo source: a new `lecciones` screen (section.screen) with the phased road-to-fluency checklist (`LECCIONES` constant, 6 phases), progress count, "Lección de hoy" button, home nav entry; `renderLecciones`/`leccStatus`/`leccionDeHoy`.
+- Lesson generator `leccGenerate` (Claude claude-sonnet-4-6, headers matching convoCall) returning structured JSON, cached to window.__esLessons + posted to React; hardened with `if(!res.ok)` + shape guard BEFORE the cache write so a failed/garbage response cannot poison the persisted cache.
+- Full lesson view `openLeccion`/`renderLeccionView`/`leccQuestionHtml`/`leccAnswer`/`leccFinishQuiz`: teach text, pattern, multiple-choice practice with per-question "why", mini-quiz scored on a 0.6 threshold that marks the topic done; all AI strings HTML-escaped via `esc()`.
+- Hear + save on examples: `leccHear` (fcSpeak) and `leccSaveEx` (postMessage saveEsCard -> lecciones deck).
+- "teach me X" / "enseñame X" in the Spanish chat (`teachSpanish` in ChatBar): short English explanation + 2-3 Spanish examples; speaks ONLY the example sentences (not the English text).
+**Files changed:** `veo-y-digo-source.html` (Lecciones screen + lesson engine) re-baked into `pebble-app.html`; React data layer + chat command in `pebble-app.html`. PEBBLE_BUILD 12 -> 13.
+**Verified (static):** every task node --check (Veo plain JS) / Babel-transform (React JSX) clean; re-bake round-trips verified per Veo task; final bake in sync with all Lecciones functions in the payload. Each task passed an independent spec+quality review (Task 2 needed an accent fix, Task 6 needed an enseñame-regex fix; both fixed + verified).
+**NOT yet verified:** runtime behavior in a browser. No live lesson generation was run (API key is device-local). Needs Gabby's on-device pass.
+**Committed:** branch `lecciones`, NOT merged to main, NOT pushed (deploy rule).
+**Deferred Minors (for final review / follow-up):** home Lecciones button has no .icon SVG like siblings; leccFinishQuiz does not disable its button against a double-tap; cache shape-guard checks practice but not quiz (empty-quiz response could not be completed).
+**On-device test plan (BUILD 13):** confirm Settings shows BUILD 13. Español -> Lecciones: checklist renders; tap a topic (with API key set) -> lesson generates (teach, pattern, practice, mini-quiz), finishing at >=60% checks it off; reopen loads instantly from cache; hear + save an example -> appears in Tarjetas "Lecciones" deck; in the Spanish chat, "teach me the future tense" returns an explanation + examples.
