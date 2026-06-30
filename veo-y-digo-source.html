@@ -449,6 +449,9 @@
   .cv-launch-btn{padding:14px 22px;border:none;border-radius:14px;background:var(--berry);color:#fff;font-size:1rem;font-weight:600;cursor:pointer;}
   .fc-txt-front{display:flex;align-items:center;justify-content:center;text-align:center;height:100%;padding:16px;font-family:'Fraunces',Georgia,serif;font-weight:700;font-size:1.3rem;line-height:1.35;color:#4a4030;overflow-wrap:anywhere;}
   .cv-send{background:var(--terracotta);color:#fff;}
+  .lecc-phase { font-family:'DM Mono',monospace; font-size:0.72rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--olive); margin:16px 0 6px; }
+  .lecc-row { display:block; width:100%; text-align:left; background:var(--paper); border:1px solid rgba(42,33,24,0.08); border-radius:12px; padding:11px 14px; margin:6px 0; font-size:0.95rem; color:var(--ink); cursor:pointer; }
+  .lecc-mark { display:inline-block; width:1.1em; color:var(--terracotta); font-weight:700; }
 </style>
 </head>
 <body>
@@ -493,6 +496,9 @@
       <button class="mode" onclick="openAtajos()">
         <div class="icon"><svg viewBox="0 0 100 100"><rect x="6" y="40" width="38" height="22" rx="6" fill="#c75c3a"/><text x="25" y="55" text-anchor="middle" font-family="serif" font-size="12" font-weight="900" fill="#fff">-ar</text><path d="M48 51 h10 m-4 -4 l4 4 l-4 4" stroke="#d99c2b" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/><rect x="62" y="40" width="32" height="22" rx="6" fill="#556434"/><text x="78" y="55" text-anchor="middle" font-family="serif" font-size="9" font-weight="900" fill="#fff">-ando</text></svg></div>
         <div><h2>Atajos</h2><p>Shortcuts that skip whole tenses. Start with "estaba ___ando" = I was ___ing. Chart plus a quick drill.</p></div>
+      </button>
+      <button class="mode" onclick="show('lecciones'); renderLecciones();">
+        <div><h2>Lecciones</h2><p>Hoja de ruta a la fluidez. Temas de gramatica, ejemplos y practica corta.</p></div>
       </button>
     </div>
     <p class="footnote">Built to skip English: link pictures and stories straight to Spanish, then check yourself only when you need to.</p>
@@ -800,6 +806,17 @@
         <button class="arrow" onclick="goBack()">← Back to story</button>
       </div>
     </div>
+  </section>
+
+  <!-- ========== LECCIONES ========== -->
+  <section class="screen" id="lecciones">
+    <div class="reader-nav">
+      <button onclick="show('home')">← inicio</button>
+    </div>
+    <div class="picker-title">Lecciones</div>
+    <div class="progress" id="leccProgress"></div>
+    <button class="mode" onclick="leccionDeHoy()">Leccion de hoy</button>
+    <div id="leccList"></div>
   </section>
 
 <script>
@@ -4730,7 +4747,57 @@ const stories = {
 };
 
 /* ===================== NAVIGATION ===================== */
-const screens = ['home','flashHome','storyHome','reader','phrase','test','worksheet','wsHome','wsRef','diario','constructor','atajos','escucha'];
+const screens = ['home','flashHome','storyHome','reader','phrase','test','worksheet','wsHome','wsRef','diario','constructor','atajos','escucha','lecciones'];
+
+/* ===================== LECCIONES TOPIC SPINE ===================== */
+const LECCIONES = [
+  { phase: 'Fundamentos', topics: [
+    { id:'pronunciacion', label:'Pronunciacion y acentos' },
+    { id:'genero',        label:'Genero y articulos' },
+    { id:'concordancia',  label:'Concordancia de adjetivos' },
+    { id:'pronombres',    label:'Pronombres de sujeto' },
+    { id:'ser-estar',     label:'Ser vs estar' },
+    { id:'preguntas',     label:'Preguntas (que, quien, donde...)' },
+    { id:'negacion',      label:'Negacion (no, nada, nunca...)' },
+  ]},
+  { phase: 'Presente', topics: [
+    { id:'presente-reg',  label:'Presente regular (-ar/-er/-ir)' },
+    { id:'cambio-radical',label:'Verbos con cambio radical' },
+    { id:'irregulares',   label:'Irregulares comunes (tener, ir, hacer...)' },
+    { id:'reflexivos',    label:'Verbos reflexivos' },
+    { id:'progresivo',    label:'Presente progresivo (estar + -ando)' },
+    { id:'gustar',        label:'Gustar y verbos como gustar' },
+  ]},
+  { phase: 'Pronombres y conectores', topics: [
+    { id:'od',            label:'Objeto directo (lo, la, los, las)' },
+    { id:'oi',            label:'Objeto indirecto (me, te, le, nos, les)' },
+    { id:'dobles',        label:'Doble pronombre (se lo, me lo)' },
+    { id:'posesivos',     label:'Posesivos y demostrativos' },
+    { id:'por-para',      label:'Por vs para' },
+    { id:'preposiciones', label:'Preposiciones comunes (al, del...)' },
+  ]},
+  { phase: 'Pasado', topics: [
+    { id:'preterito',     label:'Preterito (regular e irregular)' },
+    { id:'imperfecto',    label:'Imperfecto' },
+    { id:'pret-vs-imp',   label:'Preterito vs imperfecto' },
+    { id:'pres-perfecto', label:'Presente perfecto (he/has...)' },
+  ]},
+  { phase: 'Futuro y modos', topics: [
+    { id:'ir-a',          label:'Ir a + infinitivo (futuro proximo)' },
+    { id:'futuro',        label:'Futuro simple' },
+    { id:'condicional',   label:'Condicional' },
+    { id:'imperativo',    label:'Imperativo (mandatos)' },
+    { id:'subjuntivo',    label:'Presente de subjuntivo' },
+    { id:'subj-imp',      label:'Imperfecto de subjuntivo' },
+    { id:'si-clausulas',  label:'Clausulas con si' },
+  ]},
+  { phase: 'Pulido', topics: [
+    { id:'se-pasivo',     label:'Se pasivo e impersonal' },
+    { id:'relativos',     label:'Clausulas relativas (que, quien...)' },
+    { id:'comparativos',  label:'Comparativos y superlativos' },
+    { id:'conectores',    label:'Conectores del discurso' },
+  ]},
+];
 
 /* ===================== WORKSHEET DATA ===================== */
 const wsCategories = [
@@ -5227,6 +5294,9 @@ function applyEsFlashSets(sets){
   }catch(e){}
 }
 window.addEventListener('message',function(e){ if(e&&e.data&&e.data.type==='esFlashSets'){ applyEsFlashSets(e.data.sets); } });
+window.__esLessons = {};
+function applyEsLessons(l){ try { if (l && typeof l === 'object') { window.__esLessons = l; if (typeof currentScreen !== 'undefined' && currentScreen === 'lecciones') renderLecciones(); } } catch(e){} }
+window.addEventListener('message', function(e){ if (e && e.data && e.data.type === 'esLessonsData') applyEsLessons(e.data.lessons); });
 async function diarioSave(){
   const raw = document.getElementById('diarioInput').value.trim();
   if(!raw) return;
@@ -6078,6 +6148,28 @@ function toggleCardEn(){
   document.getElementById('fcEn').classList.toggle('show');
   document.getElementById('fcEnBtn').classList.toggle('on');
 }
+
+/* ===================== LECCIONES ===================== */
+function leccStatus(id){ return (window.__esLessons[id] && window.__esLessons[id].status) || 'new'; }
+function renderLecciones(){
+  const list = document.getElementById('leccList');
+  let total = 0, done = 0, html = '';
+  LECCIONES.forEach(group => {
+    html += '<div class="lecc-phase">'+group.phase+'</div>';
+    group.topics.forEach(t => {
+      total++; const st = leccStatus(t.id); if (st === 'done') done++;
+      const mark = st === 'done' ? '✓' : (st === 'in-progress' ? '·' : '');
+      html += '<button class="lecc-row" onclick="openLeccion(\''+t.id+'\')"><span class="lecc-mark">'+mark+'</span> '+t.label+'</button>';
+    });
+  });
+  list.innerHTML = html;
+  document.getElementById('leccProgress').textContent = done + ' / ' + total + ' completadas';
+}
+function leccionDeHoy(){
+  for (const g of LECCIONES) for (const t of g.topics) if (leccStatus(t.id) !== 'done') { openLeccion(t.id); return; }
+  openLeccion(LECCIONES[0].topics[0].id);
+}
+function openLeccion(topicId){ show('lecciones'); /* full view added in Task 4 */ }
 
 // ---- Wikipedia image fetch with SVG fallback ----
 const wikiImgCache = {};
