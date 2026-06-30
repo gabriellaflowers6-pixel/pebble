@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pebble — Design Mockups</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=DM+Mono:wght@300;400;500&family=Inter:wght@300;400;500;600;700&family=Caveat:wght@400;600;700&family=Klee+One&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a0a;
+    font-family: 'Inter', -apple-system, sans-serif;
+    color: #e0e0e0;
+    min-height: 100vh;
+    padding: 40px 20px 60px;
+  }
+
+  .page-title {
+    text-align: center;
+    margin-bottom: 10px;
+  }
+  .page-title h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 36px; font-weight: 400; color: #fff;
+    letter-spacing: 4px;
+  }
+  .page-subtitle {
+    font-size: 12px; color: #555; letter-spacing: 2px;
+    text-transform: uppercase; text-align: center; margin-bottom: 50px;
+  }
+
+  .mockups {
+    display: flex; gap: 50px; justify-content: center;
+    flex-wrap: wrap; align-items: flex-start;
+  }
+
+  .mockup-col {
+    display: flex; flex-direction: column; align-items: center; gap: 16px;
+  }
+  .mockup-label {
+    font-size: 11px; color: #888; letter-spacing: 2px;
+    text-transform: uppercase; text-align: center; max-width: 300px;
+  }
+  .mockup-desc {
+    font-size: 10px; color: #555; text-align: center;
+    max-width: 280px; line-height: 1.5; margin-top: -8px;
+  }
+
+  /* ============= PHONE FRAME ============= */
+  .phone {
+    width: 320px; height: 692px; border-radius: 44px;
+    overflow: hidden; position: relative;
+    box-shadow: 0 20px 80px rgba(0,0,0,0.6), inset 0 0 0 2px rgba(255,255,255,0.06);
+    flex-shrink: 0;
+  }
+  .screen {
+    width: 100%; height: 100%; overflow-y: auto;
+    display: flex; flex-direction: column;
+    padding: 48px 18px 78px;
+    scrollbar-width: none;
+    position: relative;
+  }
+  .screen::-webkit-scrollbar { display: none; }
+  .screen > * { position: relative; z-index: 1; }
+
+  /* ============= SHARED COMPONENTS ============= */
+  .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+  .brand { font-family: 'Cormorant Garamond', serif; }
+  .date-pill {
+    font-size: 8px; padding: 4px 12px; border-radius: 20px;
+    letter-spacing: 1px; text-transform: uppercase;
+  }
+  .greeting { font-family: 'Playfair Display', serif; font-weight: 600; margin-bottom: 3px; }
+  .subtext { font-size: 9px; letter-spacing: 1px; margin-bottom: 18px; }
+
+  .stats { display: flex; gap: 8px; margin-bottom: 18px; }
+  .stat { flex: 1; text-align: center; padding: 14px 8px; border-radius: 16px; }
+  .stat-num { font-family: 'Playfair Display', serif; font-weight: 700; line-height: 1; }
+  .stat-label { font-family: 'DM Mono', monospace; font-size: 8px; letter-spacing: 1px; text-transform: uppercase; margin-top: 4px; }
+
+  .section-label {
+    font-family: 'DM Mono', monospace; font-size: 8px;
+    letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; padding: 0 4px;
+  }
+
+  .card { border-radius: 16px; padding: 14px; margin-bottom: 10px; }
+  .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .card-title { font-family: 'DM Mono', monospace; font-size: 8px; letter-spacing: 2px; text-transform: uppercase; }
+  .card-meta { font-family: 'DM Mono', monospace; font-size: 8px; }
+
+  .task { display: flex; align-items: center; gap: 9px; padding: 7px 0; font-family: 'DM Mono', monospace; font-size: 11px; }
+  .cb {
+    width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
+    border-width: 1.5px; border-style: solid;
+  }
+  .cb.done { position: relative; }
+  .cb.done::after {
+    content: ''; position: absolute;
+    top: calc(50% - 4px); left: calc(50% - 3px);
+    width: 5px; height: 8px;
+    border-style: solid; border-width: 0 1.5px 1.5px 0;
+    transform: rotate(45deg);
+  }
+  .task-done { text-decoration: line-through; }
+
+  .cal-strip { display: flex; gap: 5px; }
+  .cal-day {
+    flex: 1; height: 56px; border-radius: 12px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  }
+  .cal-day-name { font-size: 8px; letter-spacing: 1px; text-transform: uppercase; }
+  .cal-day-num { font-size: 15px; font-weight: 700; }
+
+  .meal-row { display: flex; gap: 6px; }
+  .meal-chip { flex: 1; border-radius: 12px; padding: 10px 6px; text-align: center; }
+  .meal-label { font-family: 'DM Mono', monospace; font-size: 7px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 3px; }
+  .meal-name { font-family: 'Playfair Display', serif; font-size: 10px; font-weight: 600; }
+  .meal-cal { font-family: 'DM Mono', monospace; font-size: 8px; margin-top: 2px; }
+
+  .progress-wrap { margin-top: 10px; display: flex; align-items: center; gap: 8px; }
+  .progress-bg { flex: 1; height: 5px; border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; width: 62%; border-radius: 3px; }
+  .progress-text { font-family: 'DM Mono', monospace; font-size: 9px; }
+
+  /* Tracker dots */
+  .tracker-row { display: flex; align-items: center; gap: 5px; margin-bottom: 5px; }
+  .tracker-label { font-family: 'DM Mono', monospace; font-size: 8px; width: 48px; text-align: right; flex-shrink: 0; letter-spacing: 0.5px; }
+  .tracker-dots { display: flex; gap: 2px; }
+  .tracker-dot { width: 9px; height: 9px; border-radius: 50%; border-width: 1.2px; border-style: solid; background: transparent; opacity: 0.3; }
+  .tracker-dot.filled { opacity: 1; }
+  .tracker-dot.today-ring { box-shadow: 0 0 0 1.5px var(--dot-bg), 0 0 0 3px var(--dot-color); opacity: 1; }
+
+  /* Tab bar */
+  .tab-bar {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    display: flex; justify-content: center; gap: 5px;
+    padding: 10px 22px 26px;
+  }
+  .tab {
+    width: 44px; height: 40px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* ============= CLOUD BACKGROUNDS ============= */
+  .cloud-bg::before {
+    content: ''; position: absolute;
+    top: 0; left: 0; right: 0; height: 280px;
+    z-index: 0; pointer-events: none;
+    border-radius: 40px 40px 0 0;
+  }
+
+  /* ============= DESIGN 1: APPLE MODERN ============= */
+  .d1 .screen {
+    background: #F5F0E6;
+  }
+  .d1 .cloud-bg::before {
+    background:
+      radial-gradient(ellipse 120px 80px at 22% 50%, rgba(232,240,228,0.85) 0%, transparent 70%),
+      radial-gradient(ellipse 90px 60px at 52% 40%, rgba(255,255,250,0.7) 0%, transparent 65%),
+      radial-gradient(ellipse 160px 90px at 78% 55%, rgba(232,240,228,0.65) 0%, transparent 70%),
+      radial-gradient(ellipse 100px 70px at 38% 65%, rgba(245,240,230,0.5) 0%, transparent 65%),
+      radial-gradient(ellipse 70px 50px at 88% 35%, rgba(255,255,250,0.6) 0%, transparent 60%),
+      linear-gradient(180deg, #89AAB5 0%, #89AAB5 30%, #F5F0E6 100%);
+  }
+  .d1 .brand { font-size: 34px; color: #4A6741; font-weight: 400; }
+  .d1 .date-pill { background: #4A6741; color: #F5F0E6; font-family: 'DM Mono', monospace; }
+  .d1 .greeting { font-size: 17px; color: #4A6741; }
+  .d1 .subtext { color: #8B7355; font-family: 'DM Mono', monospace; }
+  .d1 .stat { background: rgba(255,255,250,0.85); box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
+  .d1 .stat-num { font-size: 26px; color: #4A6741; }
+  .d1 .stat-label { color: #8B7355; }
+  .d1 .section-label { color: #8B7355; }
+  .d1 .card { background: rgba(255,255,250,0.85); box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
+  .d1 .card-title { color: #8B7355; }
+  .d1 .card-meta { color: #8B7355; }
+  .d1 .task { color: #E08B76; }
+  .d1 .task-done { color: #8B7355; }
+  .d1 .cb { border-color: #4A6741; }
+  .d1 .cb.done { background: #4A6741; }
+  .d1 .cb.done::after { border-color: #F5F0E6; }
+  .d1 .cal-day { background: #F5F0E6; font-family: 'DM Mono', monospace; }
+  .d1 .cal-day-name { color: #8B7355; }
+  .d1 .cal-day-num { color: #4A6741; font-family: 'Playfair Display', serif; }
+  .d1 .cal-day.today { background: #4A6741; }
+  .d1 .cal-day.today .cal-day-name { color: #E8F0E4; }
+  .d1 .cal-day.today .cal-day-num { color: #F5F0E6; }
+  .d1 .meal-chip { background: #E8F0E4; }
+  .d1 .meal-label { color: #8B7355; }
+  .d1 .meal-name { color: #E08B76; }
+  .d1 .meal-cal { color: #8B7355; }
+  .d1 .progress-bg { background: #E8F0E4; }
+  .d1 .progress-fill { background: #4A6741; }
+  .d1 .progress-text { color: #8B7355; }
+  .d1 .tracker-dot { border-color: #4A6741; --dot-color: #4A6741; --dot-bg: #F5F0E6; }
+  .d1 .tracker-dot.filled { background: #4A6741; }
+  .d1 .tracker-label { color: #8B7355; }
+  .d1 .tab-bar { background: #F5F0E6; }
+  .d1 .tab.active { background: #4A6741; }
+  .d1 .tab.active svg { color: #F5F0E6; }
+  .d1 .tab svg { color: #8B7355; }
+
+  /* ============= DESIGN 2: APPLE VINTAGE ILLUSTRATED ============= */
+  .d2 .screen {
+    background: #F5F0E6;
+  }
+  .d2 .cloud-bg::before {
+    background:
+      radial-gradient(ellipse 140px 90px at 18% 48%, rgba(237,230,216,0.9) 0%, transparent 70%),
+      radial-gradient(ellipse 80px 55px at 48% 38%, rgba(255,252,245,0.8) 0%, transparent 65%),
+      radial-gradient(ellipse 170px 100px at 75% 52%, rgba(237,230,216,0.7) 0%, transparent 70%),
+      radial-gradient(ellipse 110px 70px at 32% 62%, rgba(224,139,118,0.15) 0%, transparent 65%),
+      radial-gradient(ellipse 90px 60px at 85% 32%, rgba(255,252,245,0.6) 0%, transparent 60%),
+      linear-gradient(180deg, #8A9EAA 0%, #A8B8B5 30%, #F5F0E6 100%);
+  }
+  .d2 .brand { font-size: 34px; color: #4A6741; font-weight: 400; }
+  .d2 .date-pill { background: #4A6741; color: #F5F0E6; font-family: 'DM Mono', monospace; }
+  .d2 .greeting { font-size: 17px; color: #4A6741; }
+  .d2 .subtext { color: #8B7355; font-family: 'DM Mono', monospace; }
+  .d2 .stat {
+    background: rgba(255,252,245,0.7);
+    border: 1px solid rgba(139,115,85,0.15);
+  }
+  .d2 .stat-num { font-size: 26px; color: #E08B76; font-family: 'Cormorant Garamond', serif; }
+  .d2 .stat-label { color: #8B7355; }
+  .d2 .section-label { color: #8B7355; font-family: 'Caveat', cursive; font-size: 12px; letter-spacing: 1px; }
+  .d2 .card {
+    background: rgba(255,252,245,0.7);
+    border: 1px solid rgba(139,115,85,0.12);
+  }
+  .d2 .card-title { color: #8B7355; }
+  .d2 .card-meta { color: #8B7355; }
+  .d2 .task { color: #4A6741; font-family: 'Klee One', cursive; font-size: 12px; }
+  .d2 .task-done { color: #8B7355; }
+  .d2 .cb { border-color: #E08B76; border-radius: 3px; }
+  .d2 .cb.done { background: #E08B76; }
+  .d2 .cb.done::after { border-color: #F5F0E6; }
+  .d2 .cal-day { background: rgba(232,240,228,0.4); font-family: 'DM Mono', monospace; border-radius: 8px; }
+  .d2 .cal-day-name { color: #8B7355; }
+  .d2 .cal-day-num { color: #4A6741; font-family: 'Cormorant Garamond', serif; }
+  .d2 .cal-day.today { background: #E08B76; }
+  .d2 .cal-day.today .cal-day-name { color: #F5F0E6; }
+  .d2 .cal-day.today .cal-day-num { color: #FFF; }
+  .d2 .meal-chip { background: rgba(232,240,228,0.5); border: 1px solid rgba(74,103,65,0.1); }
+  .d2 .meal-label { color: #8B7355; }
+  .d2 .meal-name { color: #4A6741; font-family: 'Cormorant Garamond', serif; font-size: 12px; }
+  .d2 .meal-cal { color: #8B7355; }
+  .d2 .progress-bg { background: rgba(232,240,228,0.5); }
+  .d2 .progress-fill { background: #E08B76; }
+  .d2 .progress-text { color: #8B7355; }
+  .d2 .tracker-dot { border-color: #E08B76; --dot-color: #E08B76; --dot-bg: #F5F0E6; }
+  .d2 .tracker-dot.filled { background: #E08B76; }
+  .d2 .tracker-label { color: #8B7355; font-family: 'Caveat', cursive; font-size: 11px; }
+  .d2 .tab-bar { background: #F5F0E6; }
+  .d2 .tab.active { background: rgba(224,139,118,0.12); }
+  .d2 .tab.active svg { color: #E08B76; }
+  .d2 .tab svg { color: #8B7355; }
+
+  /* Decorative illustrated dividers */
+  .d2 .divider-vine {
+    text-align: center; color: #8B7355; font-size: 14px;
+    margin: 4px 0 12px; opacity: 0.4; letter-spacing: 6px;
+  }
+
+  /* ============= DESIGN 3: MONET ============= */
+  .d3 .screen {
+    background: var(--monet-bg, #E8DDD0);
+    position: relative;
+  }
+  /* The Monet gradient - changes daily */
+  .d3 .screen::before {
+    content: ''; position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 0; pointer-events: none;
+    border-radius: 44px;
+    opacity: 0.4;
+  }
+  .d3 .screen > * { position: relative; z-index: 1; }
+
+  /* Monet cloud header - more painterly */
+  .d3 .cloud-bg::before {
+    background:
+      radial-gradient(ellipse 150px 100px at 15% 45%, var(--monet-cloud1, rgba(255,235,200,0.8)) 0%, transparent 70%),
+      radial-gradient(ellipse 110px 75px at 45% 35%, var(--monet-cloud2, rgba(255,220,190,0.7)) 0%, transparent 65%),
+      radial-gradient(ellipse 180px 110px at 80% 50%, var(--monet-cloud1, rgba(255,235,200,0.6)) 0%, transparent 70%),
+      radial-gradient(ellipse 130px 80px at 30% 60%, var(--monet-cloud2, rgba(200,180,210,0.4)) 0%, transparent 65%),
+      radial-gradient(ellipse 100px 65px at 90% 30%, var(--monet-cloud1, rgba(255,245,230,0.5)) 0%, transparent 60%),
+      radial-gradient(ellipse 70px 50px at 60% 70%, var(--monet-cloud2, rgba(210,190,170,0.3)) 0%, transparent 60%),
+      linear-gradient(180deg, var(--monet-sky, #7A9DB8) 0%, var(--monet-sky2, #9DB5C5) 35%, var(--monet-bg, #E8DDD0) 100%);
+    height: 320px;
+  }
+
+  .d3 .brand { font-size: 34px; color: var(--monet-primary, #4A6741); font-weight: 400; }
+  .d3 .date-pill { background: var(--monet-primary, #4A6741); color: var(--monet-bg, #E8DDD0); font-family: 'DM Mono', monospace; }
+  .d3 .greeting { font-size: 17px; color: var(--monet-primary, #4A6741); }
+  .d3 .subtext { color: var(--monet-muted, #8B7355); font-family: 'DM Mono', monospace; }
+  .d3 .stat {
+    background: rgba(255,255,250,0.65);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.3);
+  }
+  .d3 .stat-num { font-size: 26px; color: var(--monet-accent, #E08B76); }
+  .d3 .stat-label { color: var(--monet-muted, #8B7355); }
+  .d3 .section-label { color: var(--monet-muted, #8B7355); }
+  .d3 .card {
+    background: rgba(255,255,250,0.6);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.25);
+  }
+  .d3 .card-title { color: var(--monet-muted, #8B7355); }
+  .d3 .card-meta { color: var(--monet-muted, #8B7355); }
+  .d3 .task { color: var(--monet-primary, #4A6741); }
+  .d3 .task-done { color: var(--monet-muted, #8B7355); }
+  .d3 .cb { border-color: var(--monet-primary, #4A6741); }
+  .d3 .cb.done { background: var(--monet-primary, #4A6741); }
+  .d3 .cb.done::after { border-color: var(--monet-bg, #E8DDD0); }
+  .d3 .cal-day { background: rgba(255,255,250,0.35); font-family: 'DM Mono', monospace; }
+  .d3 .cal-day-name { color: var(--monet-muted, #8B7355); }
+  .d3 .cal-day-num { color: var(--monet-primary, #4A6741); font-family: 'Playfair Display', serif; }
+  .d3 .cal-day.today { background: var(--monet-primary, #4A6741); }
+  .d3 .cal-day.today .cal-day-name { color: rgba(255,255,255,0.7); }
+  .d3 .cal-day.today .cal-day-num { color: #fff; }
+  .d3 .meal-chip {
+    background: rgba(255,255,250,0.4);
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+  .d3 .meal-label { color: var(--monet-muted, #8B7355); }
+  .d3 .meal-name { color: var(--monet-accent, #E08B76); }
+  .d3 .meal-cal { color: var(--monet-muted, #8B7355); }
+  .d3 .progress-bg { background: rgba(255,255,250,0.4); }
+  .d3 .progress-fill { background: var(--monet-accent, #E08B76); }
+  .d3 .progress-text { color: var(--monet-muted, #8B7355); }
+  .d3 .tracker-dot { border-color: var(--monet-accent, #E08B76); --dot-color: var(--monet-accent); --dot-bg: var(--monet-bg); }
+  .d3 .tracker-dot.filled { background: var(--monet-accent, #E08B76); }
+  .d3 .tracker-label { color: var(--monet-muted, #8B7355); }
+  .d3 .tab-bar { background: var(--monet-bg, #E8DDD0); }
+  .d3 .tab.active { background: rgba(255,255,250,0.5); backdrop-filter: blur(4px); }
+  .d3 .tab.active svg { color: var(--monet-primary, #4A6741); }
+  .d3 .tab svg { color: var(--monet-muted, #8B7355); }
+
+  .monet-tag {
+    text-align: center; margin-top: 6px;
+    font-size: 9px; color: #555; letter-spacing: 1px; font-style: italic;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-title"><h1>pebble</h1></div>
+<div class="page-subtitle">three directions — same soul</div>
+
+<div class="mockups">
+
+  <!-- ============= DESIGN 1: APPLE MODERN ============= -->
+  <div class="mockup-col">
+    <div class="mockup-label">apple modern</div>
+    <div class="mockup-desc">clean, spacious, glass cards — the manus energy</div>
+    <div class="phone d1">
+      <div class="screen cloud-bg">
+        <div class="top-bar">
+          <div class="brand">pebble</div>
+          <div class="date-pill">march 2026</div>
+        </div>
+        <div class="greeting">saturday, march 8</div>
+        <div class="subtext">good morning, gabby</div>
+        <div class="stats">
+          <div class="stat"><div class="stat-num">4</div><div class="stat-label">tasks</div></div>
+          <div class="stat"><div class="stat-num">1240</div><div class="stat-label">cals</div></div>
+          <div class="stat"><div class="stat-num">7</div><div class="stat-label">streak</div></div>
+        </div>
+        <div class="section-label">today's pebbles</div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">tasks</div><div class="card-meta">2 / 4</div></div>
+          <div class="task"><div class="cb done"></div><span class="task-done">record demo video</span></div>
+          <div class="task"><div class="cb done"></div><span class="task-done">polish landing page</span></div>
+          <div class="task"><div class="cb"></div><span>submit to skool</span></div>
+          <div class="task"><div class="cb"></div><span>grocery shopping</span></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">this week</div></div>
+          <div class="cal-strip">
+            <div class="cal-day"><span class="cal-day-name">thu</span><span class="cal-day-num">6</span></div>
+            <div class="cal-day"><span class="cal-day-name">fri</span><span class="cal-day-num">7</span></div>
+            <div class="cal-day today"><span class="cal-day-name">sat</span><span class="cal-day-num">8</span></div>
+            <div class="cal-day"><span class="cal-day-name">sun</span><span class="cal-day-num">9</span></div>
+            <div class="cal-day"><span class="cal-day-name">mon</span><span class="cal-day-num">10</span></div>
+            <div class="cal-day"><span class="cal-day-name">tue</span><span class="cal-day-num">11</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">meals today</div><div class="card-meta">1240 / 1800</div></div>
+          <div class="meal-row">
+            <div class="meal-chip"><div class="meal-label">brkfst</div><div class="meal-name">smoothie</div><div class="meal-cal">380 cal</div></div>
+            <div class="meal-chip"><div class="meal-label">lunch</div><div class="meal-name">buddha bowl</div><div class="meal-cal">520 cal</div></div>
+            <div class="meal-chip"><div class="meal-label">dinner</div><div class="meal-name">plan...</div><div class="meal-cal">—</div></div>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress-bg"><div class="progress-fill"></div></div>
+            <div class="progress-text">62%</div>
+          </div>
+        </div>
+        <div class="tab-bar">
+          <div class="tab active"><svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M3 10 L11 3 L19 10 L19 19 L3 19 Z" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+          <div class="tab"><svg width="20" height="20" viewBox="0 0 22 22" fill="none"><rect x="3" y="3" width="16" height="16" rx="3" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M3 8 L19 8" stroke="currentColor" stroke-width="1"/></svg></div>
+          <div class="tab"><svg width="20" height="20" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="1.3" fill="none"/></svg></div>
+          <div class="tab"><svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M4 4 L18 4 M4 9 L14 9 M4 14 L16 14 M4 19 L10 19" stroke="currentColor" stroke-width="1.3"/></svg></div>
+          <div class="tab"><svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M5 17 L5 8 M10 17 L10 5 M15 17 L15 10" stroke="currentColor" stroke-width="1.8"/></svg></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============= DESIGN 2: APPLE VINTAGE ILLUSTRATED ============= -->
+  <div class="mockup-col">
+    <div class="mockup-label">vintage illustrated</div>
+    <div class="mockup-desc">hand-drawn warmth, illustrated details, journaly</div>
+    <div class="phone d2">
+      <div class="screen cloud-bg">
+        <div class="top-bar">
+          <div class="brand">pebble</div>
+          <div class="date-pill">march 2026</div>
+        </div>
+        <div class="greeting">saturday, march 8</div>
+        <div class="subtext">good morning, gabby</div>
+        <div class="stats">
+          <div class="stat"><div class="stat-num">4</div><div class="stat-label">tasks</div></div>
+          <div class="stat"><div class="stat-num">1240</div><div class="stat-label">cals</div></div>
+          <div class="stat"><div class="stat-num">7</div><div class="stat-label">streak</div></div>
+        </div>
+        <div class="section-label">today's pebbles</div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">tasks</div><div class="card-meta">2 / 4</div></div>
+          <div class="task"><div class="cb done"></div><span class="task-done">record demo video</span></div>
+          <div class="task"><div class="cb done"></div><span class="task-done">polish landing page</span></div>
+          <div class="task"><div class="cb"></div><span>submit to skool</span></div>
+          <div class="task"><div class="cb"></div><span>grocery shopping</span></div>
+        </div>
+        <div class="divider-vine">❧</div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">this week</div></div>
+          <div class="cal-strip">
+            <div class="cal-day"><span class="cal-day-name">thu</span><span class="cal-day-num">6</span></div>
+            <div class="cal-day"><span class="cal-day-name">fri</span><span class="cal-day-num">7</span></div>
+            <div class="cal-day today"><span class="cal-day-name">sat</span><span class="cal-day-num">8</span></div>
+            <div class="cal-day"><span class="cal-day-name">sun</span><span class="cal-day-num">9</span></div>
+            <div class="cal-day"><span class="cal-day-name">mon</span><span class="cal-day-num">10</span></div>
+            <div class="cal-day"><span class="cal-day-name">tue</span><span class="cal-day-num">11</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">meals today</div><div class="card-meta">1240 / 1800</div></div>
+          <div class="meal-row">
+            <div class="meal-chip"><div class="meal-label">brkfst</div><div class="meal-name">smoothie</div><div class="meal-cal">380 cal</div></div>
+            <div class="meal-chip"><div class="meal-label">lunch</div><div class="meal-name">buddha bowl</div><div class="meal-cal">520 cal</div></div>
+            <div class="meal-chip"><div class="meal-label">dinner</div><div class="meal-name">plan...</div><div class="meal-cal">—</div></div>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress-bg"><div class="progress-fill"></div></div>
+            <div class="progress-text">62%</div>
+          </div>
+        </div>
+        <div class="tab-bar">
+          <div class="tab active"><svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M3 10 L11 3 L19 10 L19 19 L3 19 Z" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+          <div class="tab"><svg width="20" height="20" viewBox="0 0 22 22" fill="none"><rect x="3" y="3" width="16" height="16" rx="3" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M3 8 L19 8" stroke="currentColor" stroke-width="1"/></svg></div>
+          <div class="tab"><svg width="20" height="20" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="1.3" fill="none"/></svg></div>
+          <div class="tab"><svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M4 4 L18 4 M4 9 L14 9 M4 14 L16 14 M4 19 L10 19" stroke="currentColor" stroke-width="1.3"/></svg></div>
+          <div class="tab"><svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M5 17 L5 8 M10 17 L10 5 M15 17 L15 10" stroke="currentColor" stroke-width="1.8"/></svg></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============= DESIGN 3: MONET ============= -->
+  <div class="mockup-col">
+    <div class="mockup-label">sleek monet</div>
+    <div class="mockup-desc">painting as UI — a new monet gradient every day</div>
+    <div class="phone d3" id="monet-phone">
+      <div class="screen cloud-bg">
+        <div class="top-bar">
+          <div class="brand">pebble</div>
+          <div class="date-pill">march 2026</div>
+        </div>
+        <div class="greeting">saturday, march 8</div>
+        <div class="subtext">good morning, gabby</div>
+        <div class="stats">
+          <div class="stat"><div class="stat-num">4</div><div class="stat-label">tasks</div></div>
+          <div class="stat"><div class="stat-num">1240</div><div class="stat-label">cals</div></div>
+          <div class="stat"><div class="stat-num">7</div><div class="stat-label">streak</div></div>
+        </div>
+        <div class="section-label">today's pebbles</div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">tasks</div><div class="card-meta">2 / 4</div></div>
+          <div class="task"><div class="cb done"></div><span class="task-done">record demo video</span></div>
+          <div class="task"><div class="cb done"></div><span class="task-done">polish landing page</span></div>
+          <div class="task"><div class="cb"></div><span>submit to skool</span></div>
+          <div class="task"><div class="cb"></div><span>grocery shopping</span></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">this week</div></div>
+          <div class="cal-strip">
+            <div class="cal-day"><span class="cal-day-name">thu</span><span class="cal-day-num">6</span></div>
+            <div class="cal-day"><span class="cal-day-name">fri</span><span class="cal-day-num">7</span></div>
+            <div class="cal-day today"><span class="cal-day-name">sat</span><span class="cal-day-num">8</span></div>
+            <div class="cal-day"><span class="cal-day-name">sun</span><span class="cal-day-num">9</span></div>
+            <div class="cal-day"><span class="cal-day-name">mon</span><span class="cal-day-num">10</span></div>
+            <div class="cal-day"><span class="cal-day-name">tue</span><span class="cal-day-num">11</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">meals today</div><div class="card-meta">1240 / 1800</div></div>
+          <div class="meal-row">
+            <div class="meal-chip"><div class="meal-label">brkfst</div><div class="meal-name">smoothie</div><div class="meal-cal">380 cal</div></div>
+            <div class="meal-chip"><div class="meal-label">lunch</div><div class="meal-name">buddha bowl</div><div class="meal-cal">520 cal</div></div>
+            <div class="meal-chip"><div class="meal-label">dinner</div><div class="meal-name">plan...</div><div class="meal-cal">—</div></div>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress-bg"><div class="progress-fill"></div></div>
+            <div class="progress-text">62%</div>
+          </div>
+        </div>
+        <div class="tab-bar">
+          <div class="tab active"><svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M3 10 L11 3 L19 10 L19 19 L3 19 Z" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+          <div class="tab"><svg width="20" height="20" viewBox="0 0 22 22" fill="none"><rect x="3" y="3" width="16" height="16" rx="3" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M3 8 L19 8" stroke="currentColor" stroke-width="1"/></svg></div>
+          <div class="tab"><svg width="20" height="20" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="1.3" fill="none"/></svg></div>
+          <div class="tab"><svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M4 4 L18 4 M4 9 L14 9 M4 14 L16 14 M4 19 L10 19" stroke="currentColor" stroke-width="1.3"/></svg></div>
+          <div class="tab"><svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M5 17 L5 8 M10 17 L10 5 M15 17 L15 10" stroke="currentColor" stroke-width="1.8"/></svg></div>
+        </div>
+      </div>
+    </div>
+    <div class="monet-tag" id="monet-label"></div>
+  </div>
+
+</div>
+
+<script>
+  // ============= DAILY MONET GRADIENTS =============
+  // 7 palettes inspired by Monet paintings — one for each day
+  const monetPaintings = [
+    {
+      name: 'water lilies',
+      bg: '#E0E8E2', sky: '#6A8AA0', sky2: '#8AADBD',
+      cloud1: 'rgba(200,220,210,0.8)', cloud2: 'rgba(180,200,220,0.5)',
+      primary: '#4A6741', accent: '#7A9E90', muted: '#8B9E8A',
+      screenGradient: 'radial-gradient(ellipse 300px 300px at 30% 80%, rgba(120,160,140,0.2) 0%, transparent 70%), radial-gradient(ellipse 250px 250px at 70% 60%, rgba(140,180,160,0.15) 0%, transparent 70%)',
+    },
+    {
+      name: 'impression, sunrise',
+      bg: '#E8DDD0', sky: '#7A8E9E', sky2: '#A0AAB0',
+      cloud1: 'rgba(230,180,140,0.7)', cloud2: 'rgba(200,170,150,0.5)',
+      primary: '#4A5E50', accent: '#E08B60', muted: '#9A8A78',
+      screenGradient: 'radial-gradient(ellipse 200px 200px at 65% 30%, rgba(224,139,96,0.15) 0%, transparent 70%)',
+    },
+    {
+      name: 'haystacks at sunset',
+      bg: '#EDE4D4', sky: '#8A95A5', sky2: '#B0A898',
+      cloud1: 'rgba(240,210,160,0.8)', cloud2: 'rgba(200,180,140,0.5)',
+      primary: '#5A6040', accent: '#D4A060', muted: '#A09070',
+      screenGradient: 'radial-gradient(ellipse 300px 200px at 50% 70%, rgba(212,160,96,0.1) 0%, transparent 70%)',
+    },
+    {
+      name: 'japanese bridge',
+      bg: '#DDE8DF', sky: '#6A9090', sky2: '#88AAA5',
+      cloud1: 'rgba(200,230,210,0.8)', cloud2: 'rgba(160,200,190,0.5)',
+      primary: '#3A6A50', accent: '#88BB90', muted: '#7A9A85',
+      screenGradient: 'radial-gradient(ellipse 300px 300px at 40% 75%, rgba(100,160,120,0.12) 0%, transparent 70%)',
+    },
+    {
+      name: 'poppies',
+      bg: '#EAE5D8', sky: '#7A9AAA', sky2: '#A5B8B5',
+      cloud1: 'rgba(240,230,210,0.8)', cloud2: 'rgba(220,200,180,0.5)',
+      primary: '#4A6741', accent: '#D07050', muted: '#8A8A6A',
+      screenGradient: 'radial-gradient(ellipse 200px 200px at 30% 80%, rgba(208,112,80,0.1) 0%, transparent 70%), radial-gradient(ellipse 150px 150px at 70% 75%, rgba(208,112,80,0.08) 0%, transparent 70%)',
+    },
+    {
+      name: 'rouen cathedral',
+      bg: '#EDE8E0', sky: '#8090AA', sky2: '#AAB0C0',
+      cloud1: 'rgba(230,220,200,0.85)', cloud2: 'rgba(200,190,210,0.5)',
+      primary: '#5A5E7A', accent: '#C8A870', muted: '#A0988A',
+      screenGradient: 'radial-gradient(ellipse 250px 350px at 50% 50%, rgba(200,168,112,0.1) 0%, transparent 70%)',
+    },
+    {
+      name: 'sunset on the seine',
+      bg: '#E8DDE0', sky: '#8A7A90', sky2: '#AA9AAA',
+      cloud1: 'rgba(240,200,180,0.8)', cloud2: 'rgba(200,160,170,0.5)',
+      primary: '#4A5060', accent: '#E08B76', muted: '#9A8888',
+      screenGradient: 'radial-gradient(ellipse 300px 200px at 50% 40%, rgba(224,139,118,0.12) 0%, transparent 70%)',
+    },
+  ];
+
+  // Pick today's Monet
+  const today = new Date().getDay(); // 0=Sun, 6=Sat
+  const monet = monetPaintings[today];
+
+  // Apply to Design 3
+  const phone3 = document.getElementById('monet-phone');
+  const screen3 = phone3.querySelector('.screen');
+  const style = screen3.style;
+
+  style.setProperty('--monet-bg', monet.bg);
+  style.setProperty('--monet-sky', monet.sky);
+  style.setProperty('--monet-sky2', monet.sky2);
+  style.setProperty('--monet-cloud1', monet.cloud1);
+  style.setProperty('--monet-cloud2', monet.cloud2);
+  style.setProperty('--monet-primary', monet.primary);
+  style.setProperty('--monet-accent', monet.accent);
+  style.setProperty('--monet-muted', monet.muted);
+  screen3.style.background = monet.bg;
+
+  // Add the subtle painting gradient overlay
+  screen3.style.backgroundImage = monet.screenGradient;
+
+  // Label
+  document.getElementById('monet-label').textContent = 'today: "' + monet.name + '"';
+</script>
+
+</body>
+</html>

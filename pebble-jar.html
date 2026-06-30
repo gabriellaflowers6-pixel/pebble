@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pebble Jar</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #e8e2d8;
+    font-family: sans-serif;
+  }
+  .jar-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+  label {
+    font-size: 12px;
+    letter-spacing: 2px;
+    color: rgba(0,0,0,0.3);
+    text-transform: uppercase;
+  }
+  .bg-toggle { display: flex; gap: 10px; }
+  .bg-toggle button {
+    padding: 6px 14px;
+    border: 1px solid rgba(0,0,0,0.15);
+    border-radius: 20px;
+    background: none;
+    cursor: pointer;
+    font-size: 11px;
+    color: rgba(0,0,0,0.4);
+  }
+  .bg-toggle button:hover { background: rgba(0,0,0,0.05); }
+</style>
+</head>
+<body>
+
+<div class="jar-wrap">
+  <label>Pebble Jar</label>
+
+  <svg
+    id="jar"
+    width="220"
+    height="420"
+    viewBox="0 0 220 420"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <defs>
+
+      <!-- Glass body: whisper of aqua, almost invisible -->
+      <linearGradient id="gBody" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%"   stop-color="#7ab8be" stop-opacity="0.20"/>
+        <stop offset="5%"   stop-color="#ffffff" stop-opacity="0.75"/>
+        <stop offset="13%"  stop-color="#c8e4e7" stop-opacity="0.06"/>
+        <stop offset="50%"  stop-color="#d8eef0" stop-opacity="0.03"/>
+        <stop offset="87%"  stop-color="#c0dde0" stop-opacity="0.05"/>
+        <stop offset="95%"  stop-color="#ffffff" stop-opacity="0.55"/>
+        <stop offset="100%" stop-color="#6aaeb4" stop-opacity="0.22"/>
+      </linearGradient>
+
+      <!-- Glass bottom (thicker = more color) -->
+      <linearGradient id="gBase" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%"   stop-color="#90c8ce" stop-opacity="0.15"/>
+        <stop offset="100%" stop-color="#3a8890" stop-opacity="0.48"/>
+      </linearGradient>
+
+      <!-- Subtle glass edge blur -->
+      <filter id="softEdge" x="-20%" y="-10%" width="140%" height="120%">
+        <feGaussianBlur stdDeviation="0.7"/>
+      </filter>
+
+      <!-- Marble drop shadow blur -->
+      <filter id="mShadow" x="-40%" y="-40%" width="180%" height="180%">
+        <feGaussianBlur stdDeviation="1.8"/>
+      </filter>
+
+      <!-- ── Marble gradients — transparent glass sphere look ──
+           Structure: bright front face → nearly invisible center → dark back rim
+           This reads as see-through glass with a tint, not an opaque ball.      ── -->
+
+      <!-- m1: Stream — teal glass -->
+      <radialGradient id="m1" cx="36%" cy="30%" r="68%" fx="36%" fy="30%">
+        <stop offset="0%"   stop-color="#c8eef4" stop-opacity="0.52"/>
+        <stop offset="22%"  stop-color="#5db8c8" stop-opacity="0.14"/>
+        <stop offset="62%"  stop-color="#5db8c8" stop-opacity="0.07"/>
+        <stop offset="85%"  stop-color="#1a6878" stop-opacity="0.32"/>
+        <stop offset="100%" stop-color="#0d4858" stop-opacity="0.58"/>
+      </radialGradient>
+
+      <!-- m2: Planner — lavender glass -->
+      <radialGradient id="m2" cx="36%" cy="30%" r="68%" fx="36%" fy="30%">
+        <stop offset="0%"   stop-color="#dcd0f4" stop-opacity="0.52"/>
+        <stop offset="22%"  stop-color="#9d88d4" stop-opacity="0.14"/>
+        <stop offset="62%"  stop-color="#9d88d4" stop-opacity="0.07"/>
+        <stop offset="85%"  stop-color="#4e3590" stop-opacity="0.32"/>
+        <stop offset="100%" stop-color="#2e1860" stop-opacity="0.58"/>
+      </radialGradient>
+
+      <!-- m3: Journal — amber glass -->
+      <radialGradient id="m3" cx="36%" cy="30%" r="68%" fx="36%" fy="30%">
+        <stop offset="0%"   stop-color="#fae3a0" stop-opacity="0.52"/>
+        <stop offset="22%"  stop-color="#e8972a" stop-opacity="0.14"/>
+        <stop offset="62%"  stop-color="#e8972a" stop-opacity="0.07"/>
+        <stop offset="85%"  stop-color="#7a4008" stop-opacity="0.32"/>
+        <stop offset="100%" stop-color="#4a2000" stop-opacity="0.58"/>
+      </radialGradient>
+
+      <!-- m4: Kitchen — sage glass -->
+      <radialGradient id="m4" cx="36%" cy="30%" r="68%" fx="36%" fy="30%">
+        <stop offset="0%"   stop-color="#c4eacb" stop-opacity="0.52"/>
+        <stop offset="22%"  stop-color="#6ab87a" stop-opacity="0.14"/>
+        <stop offset="62%"  stop-color="#6ab87a" stop-opacity="0.07"/>
+        <stop offset="85%"  stop-color="#287040" stop-opacity="0.32"/>
+        <stop offset="100%" stop-color="#104820" stop-opacity="0.58"/>
+      </radialGradient>
+
+      <!-- m5: Gym — coral glass -->
+      <radialGradient id="m5" cx="36%" cy="30%" r="68%" fx="36%" fy="30%">
+        <stop offset="0%"   stop-color="#fac0c0" stop-opacity="0.52"/>
+        <stop offset="22%"  stop-color="#d85858" stop-opacity="0.14"/>
+        <stop offset="62%"  stop-color="#d85858" stop-opacity="0.07"/>
+        <stop offset="85%"  stop-color="#881818" stop-opacity="0.32"/>
+        <stop offset="100%" stop-color="#580000" stop-opacity="0.58"/>
+      </radialGradient>
+
+      <!-- m6: Self-Care — rose glass -->
+      <radialGradient id="m6" cx="36%" cy="30%" r="68%" fx="36%" fy="30%">
+        <stop offset="0%"   stop-color="#f8d0dc" stop-opacity="0.52"/>
+        <stop offset="22%"  stop-color="#e0748a" stop-opacity="0.14"/>
+        <stop offset="62%"  stop-color="#e0748a" stop-opacity="0.07"/>
+        <stop offset="85%"  stop-color="#882848" stop-opacity="0.32"/>
+        <stop offset="100%" stop-color="#580828" stop-opacity="0.58"/>
+      </radialGradient>
+
+      <!-- m7: Study — indigo glass -->
+      <radialGradient id="m7" cx="36%" cy="30%" r="68%" fx="36%" fy="30%">
+        <stop offset="0%"   stop-color="#c4ccf0" stop-opacity="0.52"/>
+        <stop offset="22%"  stop-color="#6878c0" stop-opacity="0.14"/>
+        <stop offset="62%"  stop-color="#6878c0" stop-opacity="0.07"/>
+        <stop offset="85%"  stop-color="#283080" stop-opacity="0.32"/>
+        <stop offset="100%" stop-color="#081058" stop-opacity="0.58"/>
+      </radialGradient>
+
+      <!-- m8: Tracker — orange glass -->
+      <radialGradient id="m8" cx="36%" cy="30%" r="68%" fx="36%" fy="30%">
+        <stop offset="0%"   stop-color="#fad8a8" stop-opacity="0.52"/>
+        <stop offset="22%"  stop-color="#e89840" stop-opacity="0.14"/>
+        <stop offset="62%"  stop-color="#e89840" stop-opacity="0.07"/>
+        <stop offset="85%"  stop-color="#885008" stop-opacity="0.32"/>
+        <stop offset="100%" stop-color="#582800" stop-opacity="0.58"/>
+      </radialGradient>
+
+      <!-- m9: Career — steel glass -->
+      <radialGradient id="m9" cx="36%" cy="30%" r="68%" fx="36%" fy="30%">
+        <stop offset="0%"   stop-color="#ccdce8" stop-opacity="0.52"/>
+        <stop offset="22%"  stop-color="#6888a8" stop-opacity="0.14"/>
+        <stop offset="62%"  stop-color="#6888a8" stop-opacity="0.07"/>
+        <stop offset="85%"  stop-color="#284860" stop-opacity="0.32"/>
+        <stop offset="100%" stop-color="#082838" stop-opacity="0.58"/>
+      </radialGradient>
+
+      <!-- m10: Notebook — lime glass -->
+      <radialGradient id="m10" cx="36%" cy="30%" r="68%" fx="36%" fy="30%">
+        <stop offset="0%"   stop-color="#d4ecb0" stop-opacity="0.52"/>
+        <stop offset="22%"  stop-color="#8ab850" stop-opacity="0.14"/>
+        <stop offset="62%"  stop-color="#8ab850" stop-opacity="0.07"/>
+        <stop offset="85%"  stop-color="#406018" stop-opacity="0.32"/>
+        <stop offset="100%" stop-color="#183800" stop-opacity="0.58"/>
+      </radialGradient>
+
+      <!-- m11: Build — terracotta glass -->
+      <radialGradient id="m11" cx="36%" cy="30%" r="68%" fx="36%" fy="30%">
+        <stop offset="0%"   stop-color="#eed0b0" stop-opacity="0.52"/>
+        <stop offset="22%"  stop-color="#c07850" stop-opacity="0.14"/>
+        <stop offset="62%"  stop-color="#c07850" stop-opacity="0.07"/>
+        <stop offset="85%"  stop-color="#602810" stop-opacity="0.32"/>
+        <stop offset="100%" stop-color="#380800" stop-opacity="0.58"/>
+      </radialGradient>
+
+      <!-- m12: [Future] Mint glass -->
+      <radialGradient id="m12" cx="36%" cy="30%" r="68%" fx="36%" fy="30%">
+        <stop offset="0%"   stop-color="#c4eee8" stop-opacity="0.52"/>
+        <stop offset="22%"  stop-color="#5ec8b8" stop-opacity="0.14"/>
+        <stop offset="62%"  stop-color="#5ec8b8" stop-opacity="0.07"/>
+        <stop offset="85%"  stop-color="#187868" stop-opacity="0.32"/>
+        <stop offset="100%" stop-color="#005040" stop-opacity="0.58"/>
+      </radialGradient>
+
+      <!-- m13: [Future] Peach glass -->
+      <radialGradient id="m13" cx="36%" cy="30%" r="68%" fx="36%" fy="30%">
+        <stop offset="0%"   stop-color="#fae0cc" stop-opacity="0.52"/>
+        <stop offset="22%"  stop-color="#e8a878" stop-opacity="0.14"/>
+        <stop offset="62%"  stop-color="#e8a878" stop-opacity="0.07"/>
+        <stop offset="85%"  stop-color="#905828" stop-opacity="0.32"/>
+        <stop offset="100%" stop-color="#603000" stop-opacity="0.58"/>
+      </radialGradient>
+
+      <!-- m14: [Future] Violet glass -->
+      <radialGradient id="m14" cx="36%" cy="30%" r="68%" fx="36%" fy="30%">
+        <stop offset="0%"   stop-color="#ecd0f4" stop-opacity="0.52"/>
+        <stop offset="22%"  stop-color="#b870c8" stop-opacity="0.14"/>
+        <stop offset="62%"  stop-color="#b870c8" stop-opacity="0.07"/>
+        <stop offset="85%"  stop-color="#602880" stop-opacity="0.32"/>
+        <stop offset="100%" stop-color="#380058" stop-opacity="0.58"/>
+      </radialGradient>
+
+      <!-- m15: [Future] Gold glass -->
+      <radialGradient id="m15" cx="36%" cy="30%" r="68%" fx="36%" fy="30%">
+        <stop offset="0%"   stop-color="#f4e8a0" stop-opacity="0.52"/>
+        <stop offset="22%"  stop-color="#d4b040" stop-opacity="0.14"/>
+        <stop offset="62%"  stop-color="#d4b040" stop-opacity="0.07"/>
+        <stop offset="85%"  stop-color="#806808" stop-opacity="0.32"/>
+        <stop offset="100%" stop-color="#504000" stop-opacity="0.58"/>
+      </radialGradient>
+
+    </defs>
+
+
+    <!-- ═══════════════════════════════════════
+         JAR BODY
+    ═══════════════════════════════════════ -->
+
+    <!-- Main silhouette — whisper fill -->
+    <path
+      d="
+        M 82,100
+        Q 48,112 36,136
+        L 36,355
+        Q 36,376 110,382
+        Q 184,376 184,355
+        L 184,136
+        Q 172,112 138,100
+        Z
+      "
+      fill="url(#gBody)"
+    />
+
+    <!-- Left glass wall (visible edge strip) -->
+    <path
+      d="
+        M 82,100
+        Q 48,112 36,136
+        L 36,355
+        Q 36,372 46,378
+        L 46,374
+        Q 38,368 38,355
+        L 38,136
+        Q 49,114 84,102
+        Z
+      "
+      fill="rgba(80,160,168,0.22)"
+    />
+
+    <!-- Right glass wall -->
+    <path
+      d="
+        M 138,100
+        Q 172,112 184,136
+        L 184,355
+        Q 184,372 174,378
+        L 174,374
+        Q 182,368 182,355
+        L 182,136
+        Q 171,114 136,102
+        Z
+      "
+      fill="rgba(80,160,168,0.18)"
+    />
+
+
+    <!-- ═══════════════════════════════════════
+         MARBLES — transparent glass, organic scatter
+         Settled at bottom of jar, not stacked in a pyramid.
+
+         Current sections (m1–m11):
+           Stream · Planner · Journal · Kitchen · Gym
+           Self-Care · Study · Tracker · Career · Notebook · Build
+         Future slots (m12–m15, labelled for later use):
+           Mint · Peach · Violet · Gold
+    ═══════════════════════════════════════ -->
+
+    <!-- Each marble: tinted glass circle + large primary specular + small secondary dot -->
+
+    <!-- m1 Stream — teal · (60,342) -->
+    <circle cx="60"  cy="342" r="13" fill="url(#m1)"/>
+    <ellipse cx="55" cy="336" rx="6"   ry="4.2" fill="rgba(255,255,255,0.78)" transform="rotate(-20,55,336)"/>
+    <ellipse cx="58" cy="339" rx="1.8" ry="1.3" fill="rgba(255,255,255,0.50)"/>
+
+    <!-- m2 Planner — lavender · (160,338) -->
+    <circle cx="160" cy="338" r="13" fill="url(#m2)"/>
+    <ellipse cx="155" cy="332" rx="6"  ry="4.2" fill="rgba(255,255,255,0.76)" transform="rotate(-20,155,332)"/>
+    <ellipse cx="158" cy="335" rx="1.8" ry="1.3" fill="rgba(255,255,255,0.48)"/>
+
+    <!-- m3 Journal — amber · (81,337) -->
+    <circle cx="81"  cy="337" r="13" fill="url(#m3)"/>
+    <ellipse cx="76" cy="331" rx="6"   ry="4.2" fill="rgba(255,255,255,0.78)" transform="rotate(-20,76,331)"/>
+    <ellipse cx="79" cy="334" rx="1.8" ry="1.3" fill="rgba(255,255,255,0.50)"/>
+
+    <!-- m4 Kitchen — sage · (100,343) -->
+    <circle cx="100" cy="343" r="13" fill="url(#m4)"/>
+    <ellipse cx="95" cy="337" rx="6"   ry="4.2" fill="rgba(255,255,255,0.76)" transform="rotate(-20,95,337)"/>
+    <ellipse cx="98" cy="340" rx="1.8" ry="1.3" fill="rgba(255,255,255,0.48)"/>
+
+    <!-- m5 Gym — coral · (120,338) -->
+    <circle cx="120" cy="338" r="13" fill="url(#m5)"/>
+    <ellipse cx="115" cy="332" rx="6"  ry="4.2" fill="rgba(255,255,255,0.78)" transform="rotate(-20,115,332)"/>
+    <ellipse cx="118" cy="335" rx="1.8" ry="1.3" fill="rgba(255,255,255,0.50)"/>
+
+    <!-- m6 Self-Care — rose · (140,342) -->
+    <circle cx="140" cy="342" r="13" fill="url(#m6)"/>
+    <ellipse cx="135" cy="336" rx="6"  ry="4.2" fill="rgba(255,255,255,0.76)" transform="rotate(-20,135,336)"/>
+    <ellipse cx="138" cy="339" rx="1.8" ry="1.3" fill="rgba(255,255,255,0.48)"/>
+
+    <!-- m7 Study — indigo · (70,318) -->
+    <circle cx="70"  cy="318" r="13" fill="url(#m7)"/>
+    <ellipse cx="65" cy="312" rx="6"   ry="4.2" fill="rgba(255,255,255,0.76)" transform="rotate(-20,65,312)"/>
+    <ellipse cx="68" cy="315" rx="1.8" ry="1.3" fill="rgba(255,255,255,0.48)"/>
+
+    <!-- m8 Tracker — orange · (91,315) -->
+    <circle cx="91"  cy="315" r="13" fill="url(#m8)"/>
+    <ellipse cx="86" cy="309" rx="6"   ry="4.2" fill="rgba(255,255,255,0.78)" transform="rotate(-20,86,309)"/>
+    <ellipse cx="89" cy="312" rx="1.8" ry="1.3" fill="rgba(255,255,255,0.50)"/>
+
+    <!-- m9 Career — steel · (114,320) -->
+    <circle cx="114" cy="320" r="13" fill="url(#m9)"/>
+    <ellipse cx="109" cy="314" rx="6"  ry="4.2" fill="rgba(255,255,255,0.76)" transform="rotate(-20,109,314)"/>
+    <ellipse cx="112" cy="317" rx="1.8" ry="1.3" fill="rgba(255,255,255,0.48)"/>
+
+    <!-- m10 Notebook — lime · (135,316) -->
+    <circle cx="135" cy="316" r="13" fill="url(#m10)"/>
+    <ellipse cx="130" cy="310" rx="6"  ry="4.2" fill="rgba(255,255,255,0.76)" transform="rotate(-20,130,310)"/>
+    <ellipse cx="133" cy="313" rx="1.8" ry="1.3" fill="rgba(255,255,255,0.48)"/>
+
+    <!-- m11 Build — terracotta · (155,320) -->
+    <circle cx="155" cy="320" r="13" fill="url(#m11)"/>
+    <ellipse cx="150" cy="314" rx="6"  ry="4.2" fill="rgba(255,255,255,0.74)" transform="rotate(-20,150,314)"/>
+    <ellipse cx="153" cy="317" rx="1.8" ry="1.3" fill="rgba(255,255,255,0.46)"/>
+
+    <!-- ── Future slots — scattered loosely above the main pile ── -->
+
+    <!-- m12 [Future] Mint · (78,296) -->
+    <circle cx="78"  cy="296" r="13" fill="url(#m12)"/>
+    <ellipse cx="73" cy="290" rx="6"   ry="4.2" fill="rgba(255,255,255,0.74)" transform="rotate(-20,73,290)"/>
+    <ellipse cx="76" cy="293" rx="1.8" ry="1.3" fill="rgba(255,255,255,0.46)"/>
+
+    <!-- m13 [Future] Peach · (108,292) -->
+    <circle cx="108" cy="292" r="13" fill="url(#m13)"/>
+    <ellipse cx="103" cy="286" rx="6"  ry="4.2" fill="rgba(255,255,255,0.74)" transform="rotate(-20,103,286)"/>
+    <ellipse cx="106" cy="289" rx="1.8" ry="1.3" fill="rgba(255,255,255,0.46)"/>
+
+    <!-- m14 [Future] Violet · (144,297) -->
+    <circle cx="144" cy="297" r="13" fill="url(#m14)"/>
+    <ellipse cx="139" cy="291" rx="6"  ry="4.2" fill="rgba(255,255,255,0.74)" transform="rotate(-20,139,291)"/>
+    <ellipse cx="142" cy="294" rx="1.8" ry="1.3" fill="rgba(255,255,255,0.46)"/>
+
+    <!-- m15 [Future] Gold · (88,272) — lone straggler, off-center -->
+    <circle cx="88"  cy="272" r="13" fill="url(#m15)"/>
+    <ellipse cx="83" cy="266" rx="6"   ry="4.2" fill="rgba(255,255,255,0.74)" transform="rotate(-20,83,266)"/>
+    <ellipse cx="86" cy="269" rx="1.8" ry="1.3" fill="rgba(255,255,255,0.46)"/>
+
+
+    <!-- ═══════════════════════════════════════
+         GLASS HIGHLIGHTS
+    ═══════════════════════════════════════ -->
+
+    <!-- Primary highlight — bright left stripe -->
+    <path
+      d="M 46,140 Q 44,248 45,352 Q 50,352 55,352 Q 56,248 57,140 Z"
+      fill="rgba(255,255,255,0.70)"
+      filter="url(#softEdge)"
+    />
+
+    <!-- Secondary highlight — softer, right of primary -->
+    <path
+      d="M 57,144 Q 55,250 56,350 Q 60,350 64,350 Q 65,250 66,144 Z"
+      fill="rgba(235,248,250,0.22)"
+      filter="url(#softEdge)"
+    />
+
+    <!-- Right edge highlight -->
+    <path
+      d="M 164,142 Q 166,250 165,352 Q 169,352 172,352 Q 173,250 171,142 Z"
+      fill="rgba(255,255,255,0.44)"
+      filter="url(#softEdge)"
+    />
+
+    <!-- Shoulder catch-light (the curved highlight where light hits the shoulder) -->
+    <path
+      d="
+        M 46,140
+        Q 42,124 84,108
+        Q 96,103 110,103
+        Q 124,103 136,108
+        Q 178,124 174,140
+        Q 148,126 110,126
+        Q 72,126 46,140
+        Z
+      "
+      fill="rgba(255,255,255,0.26)"
+    />
+
+    <!-- Small bright catch-light top-left shoulder -->
+    <ellipse cx="60" cy="124" rx="10" ry="5"
+      fill="rgba(255,255,255,0.58)"
+      transform="rotate(-22, 60, 124)"
+      filter="url(#softEdge)"/>
+
+
+    <!-- ═══════════════════════════════════════
+         NECK / RIM
+    ═══════════════════════════════════════ -->
+
+    <!-- Thread ridges on neck -->
+    <rect x="77" y="78"  width="66" height="3.5" rx="1.75"
+      fill="rgba(130,200,205,0.30)" stroke="rgba(180,225,228,0.35)" stroke-width="0.3"/>
+    <rect x="77" y="83"  width="66" height="3.5" rx="1.75"
+      fill="rgba(120,190,196,0.25)" stroke="rgba(180,225,228,0.30)" stroke-width="0.3"/>
+    <rect x="77" y="88"  width="66" height="3.5" rx="1.75"
+      fill="rgba(120,190,196,0.22)" stroke="rgba(180,225,228,0.28)" stroke-width="0.3"/>
+    <rect x="77" y="93"  width="66" height="3.5" rx="1.75"
+      fill="rgba(115,185,192,0.20)" stroke="rgba(175,220,224,0.25)" stroke-width="0.3"/>
+
+    <!-- Neck left highlight -->
+    <rect x="80" y="78" width="8" height="20" rx="2"
+      fill="rgba(255,255,255,0.58)" filter="url(#softEdge)"/>
+
+    <!-- Neck right highlight -->
+    <rect x="132" y="78" width="6" height="20" rx="2"
+      fill="rgba(255,255,255,0.40)" filter="url(#softEdge)"/>
+
+    <!-- Rim top ellipse (opening) -->
+    <ellipse cx="110" cy="78" rx="33" ry="6"
+      fill="rgba(185,220,224,0.45)"
+      stroke="rgba(160,210,215,0.55)"
+      stroke-width="0.5"/>
+
+    <!-- Rim catch-light -->
+    <ellipse cx="99" cy="77" rx="13" ry="3"
+      fill="rgba(255,255,255,0.78)"/>
+
+    <!-- Rim inner opening shadow (gives depth) -->
+    <ellipse cx="110" cy="79" rx="28" ry="4"
+      fill="rgba(60,130,138,0.12)"/>
+
+
+    <!-- ═══════════════════════════════════════
+         BASE
+    ═══════════════════════════════════════ -->
+
+    <!-- Base bottom ellipse -->
+    <ellipse cx="110" cy="362" rx="74" ry="14"
+      fill="url(#gBase)"
+      stroke="rgba(80,160,168,0.25)"
+      stroke-width="0.5"/>
+
+    <!-- Base interior disc -->
+    <ellipse cx="110" cy="360" rx="56" ry="9"
+      fill="rgba(140,200,208,0.18)"/>
+
+    <!-- Base catch-light -->
+    <ellipse cx="96" cy="358" rx="18" ry="5"
+      fill="rgba(220,245,248,0.32)"
+      transform="rotate(-8, 96, 358)"/>
+
+    <!-- Base outer glow (bottom edge) -->
+    <path
+      d="M 36,355 Q 36,374 110,380 Q 184,374 184,355 Q 184,370 110,376 Q 36,370 36,355 Z"
+      fill="rgba(255,255,255,0.10)"/>
+
+
+    <!-- ═══════════════════════════════════════
+         INTERIOR AMBIENT
+    ═══════════════════════════════════════ -->
+
+    <!-- Interior fill — barely-there aqua, makes the glass readable -->
+    <path
+      d="
+        M 84,130
+        Q 52,140 48,152
+        L 48,352
+        Q 48,366 110,372
+        Q 172,366 172,352
+        L 172,152
+        Q 168,140 136,130
+        Z
+      "
+      fill="rgba(200,232,235,0.032)"
+    />
+
+    <!-- Light pool at top interior (light entering the open jar) -->
+    <ellipse cx="110" cy="138" rx="50" ry="8"
+      fill="rgba(220,245,248,0.07)"/>
+
+  </svg>
+
+  <div class="bg-toggle">
+    <button onclick="document.body.style.background='#e8e2d8'">Warm</button>
+    <button onclick="document.body.style.background='#ffffff'">White</button>
+    <button onclick="document.body.style.background='#1a1a2e'">Dark</button>
+    <button onclick="document.body.style.background='#2d5a3d'">Green</button>
+  </div>
+
+</div>
+
+</body>
+</html>
