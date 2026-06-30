@@ -257,3 +257,10 @@ Durable key fix (Netlify proxy) and mic button (roadmap C) still open from befor
 **Tested (desktop):** boots clean, no errors; baked Veo source contains escRevealOrder + the fixed emoji. In-game flow (navigate a story's Modo Escucha, get order wrong) → on-device test.
 **Committed/Pushed:** YES — b08254e, origin/main.
 **Backlog now:** only flashcard Phase 2 (AI organize/split into themed decks) remains from the session's asks. Everything (BUILD 1-9) still UNCONFIRMED on Gabby's phone (cache / build-number check outstanding).
+
+## 2026-06-29 — Flashcard Phase 2: AI suggest + organize/split into themed decks (BUILD 10)
+**What:** FlashEditor gains AI (shown when deck has cards + apiKey): 'sugerir palabras' (Claude proposes 8 new related words → tap chips to add, deduped) and 'organizar' (Claude categorizes each card → per-category buttons 'cat (n) →' split those cards into a new themed deck). Helpers: aiCall + parseJ (fence-strip + brace-salvage), suggestAI, organizeAI, splitCategory. Uses ES_FLASH_NEW_SET (now stores `themed`) + ES_FLASH_MOVE_CARDS.
+**Migration made themed-safe (critical):** mergeConvoSets now keeps themed decks (only flattens non-themed into convo-all); ES_FLASH_MERGE_ALL no-ops unless a legacy non-convo, non-themed deck exists; the migration useEffect `needsMerge` ignores themed decks → no render loop, themed decks survive reloads.
+**Tested (desktop):** compiles, editor opens, add works (no regression), no errors. AI buttons correctly gated on apiKey (hidden on the keyless test browser). The AI suggest/organize/split + themed-deck-survives-reload flow needs a real key → on-device test.
+**Committed/Pushed:** YES — fc53da1, origin/main.
+**SESSION BACKLOG CLEARED.** Shipped BUILD 1-10 this session. Still UNCONFIRMED end-to-end on Gabby's phone (she said "its good" once but never reported a specific BUILD number); the AI flashcard features especially need an on-device run with her key.
