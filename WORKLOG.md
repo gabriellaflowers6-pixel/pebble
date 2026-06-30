@@ -236,3 +236,10 @@ Durable key fix (Netlify proxy) and mic button (roadmap C) still open from befor
 **Committed:** YES — 2749989, a56f21a, cd5bcd0 (+ plan abf8b1e). **Pushed:** NO — awaiting Gabby's OK.
 **Recurring issue:** git index keeps corrupting (tracked count → 0, everything shows deleted) after some operations — a crashed git leaves it empty. Fix each time: back up working files, `git reset --mixed HEAD` (rebuilds index from HEAD, working tree untouched), recommit. Working files are never lost.
 **Notes for next session:** Editor is usable + reachable now. Phone test (after push + reload, confirm Settings shows BUILD 4): open Español → Tarjetas → Administrar tarjetas → add/edit/delete a card. Keyboard BUILD 3 test still pending too.
+
+## 2026-06-29 — Spanish chat corrections + explicar + guardar (BUILD 6)
+**Working on:** Feature from spec docs/superpowers/specs/2026-06-29-spanish-corrections-design.md (approved). Built inline this session, React-side only (no re-bake).
+**What:** ES_SYSTEM extended so the Spanish reply JSON also returns `correction:{fixed,en,changed}` for the user's latest message (folded into the existing reply call, no extra cost). esCall parses it; sendSpanish attaches it to the last user message in esMsgs. SpanishChatBubble user branch now renders the correction under the bubble ("más natural ·" / "✓ suena bien ·" + fixed + en) with two buttons: `explicar` (separate AI call via explainSpanish, cached on the message as m.explanation) and `＋ guardar` (saveSpanishCard('sentence', fixed, en), deduped). Always-on (option 2: shows natural version even when correct). BUILD 6.
+**Tested (desktop):** compiles + mounts clean, no errors. The live AI correction/explain flow needs a valid key → on-device test only.
+**Committed:** YES — 476b0e2 (+ spec 48b4af6). **Pushed:** NO — awaiting OK.
+**Backlog remaining:** flashcard "from your chats" suggestions (Task 2); facts/quotes with heart (needs design); Modo Escucha skip bug; keyboard BUILD 3 on-device confirm. Across-the-board: still UNCONFIRMED on Gabby's phone whether any BUILD (3-6) is loading (cache) — she keeps deferring the Settings BUILD-number check.
