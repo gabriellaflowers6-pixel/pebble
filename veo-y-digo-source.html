@@ -6038,7 +6038,16 @@ let fcRenderToken=0;
 function renderCard(){
   const c=fcDeck[fcIdx];
   const myTok = ++fcRenderToken;
-  document.getElementById('fcCard').classList.remove('flipped');
+  // Snap back to the front WITHOUT animating: if we let the 0.6s flip-back play, the
+  // already-repopulated back face (the new card's answer) is visible mid-rotation and
+  // spoils it. Kill the transition for this one reset, then restore it for user taps.
+  const fcCardEl = document.getElementById('fcCard');
+  if(fcCardEl.classList.contains('flipped')){
+    fcCardEl.style.transition = 'none';
+    fcCardEl.classList.remove('flipped');
+    void fcCardEl.offsetWidth;            // force reflow so the snap lands before re-enabling
+    fcCardEl.style.transition = '';
+  }
   const svgFallback = art[c.art]||'';
   const artEl = document.getElementById('fcArt');
   // Session cards (saved from the Pebble chat) carry their Spanish text in c.front; show it on the front face.
