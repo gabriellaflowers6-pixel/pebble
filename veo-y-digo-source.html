@@ -452,6 +452,18 @@
   .lecc-phase { font-family:'DM Mono',monospace; font-size:0.72rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--olive); margin:16px 0 6px; }
   .lecc-row { display:block; width:100%; text-align:left; background:var(--paper); border:1px solid rgba(42,33,24,0.08); border-radius:12px; padding:11px 14px; margin:6px 0; font-size:0.95rem; color:var(--ink); cursor:pointer; }
   .lecc-mark { display:inline-block; width:1.1em; color:var(--terracotta); font-weight:700; }
+  .lecc-loading { color:var(--olive); font-size:0.9rem; margin:18px 0; }
+  .lecc-h { font-family:'Fraunces',serif; font-size:1.3rem; margin:8px 0; color:var(--ink); }
+  .lecc-h2 { font-family:'DM Mono',monospace; font-size:0.72rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--olive); margin:18px 0 6px; }
+  .lecc-teach { font-size:0.98rem; line-height:1.5; color:var(--ink); margin:8px 0; }
+  .lecc-ex { margin:8px 0; padding:8px 10px; background:var(--paper); border-radius:10px; }
+  .lecc-es { font-weight:600; } .lecc-en { color:var(--olive); font-size:0.88rem; }
+  .lecc-mini { font-size:0.72rem; padding:2px 8px; border:1px solid rgba(42,33,24,0.15); border-radius:999px; background:transparent; cursor:pointer; margin-left:4px; }
+  .lecc-pattern { white-space:pre-wrap; font-family:'DM Mono',monospace; font-size:0.82rem; background:#fff8ec; border:1px solid rgba(42,33,24,0.08); border-radius:10px; padding:10px; margin:8px 0; }
+  .lecc-q { margin:12px 0; } .lecc-qtext { font-size:0.95rem; margin-bottom:6px; }
+  .lecc-opt { display:block; width:100%; text-align:left; margin:4px 0; padding:9px 12px; border:1px solid rgba(42,33,24,0.12); border-radius:10px; background:var(--paper); cursor:pointer; }
+  .lecc-opt.right { background:#d8e8cf; border-color:#5f7a43; } .lecc-opt.wrong { background:#f3d2cc; border-color:#c75c3a; }
+  .lecc-why { font-size:0.85rem; color:var(--olive); margin-top:6px; }
 </style>
 </head>
 <body>
@@ -817,6 +829,7 @@
     <div class="progress" id="leccProgress"></div>
     <button class="mode" onclick="leccionDeHoy()">Lección de hoy</button>
     <div id="leccList"></div>
+    <div id="leccView" style="display:none"></div>
   </section>
 
 <script>
@@ -6169,7 +6182,77 @@ function leccionDeHoy(){
   for (const g of LECCIONES) for (const t of g.topics) if (leccStatus(t.id) !== 'done') { openLeccion(t.id); return; }
   openLeccion(LECCIONES[0].topics[0].id);
 }
-function openLeccion(topicId){ show('lecciones'); /* full view added in Task 4 */ }
+let leccState = null; // { topic, lesson, answers:{} }
+async function openLeccion(topicId){
+  show('lecciones');
+  const topic = leccTopicById(topicId); if (!topic) return;
+  document.getElementById('leccList').style.display = 'none';
+  document.getElementById('leccProgress').style.display = 'none';
+  const view = document.getElementById('leccView');
+  view.style.display = 'block';
+  view.innerHTML = '<p class="lecc-loading">Cargando lección…</p>';
+  let lesson = (window.__esLessons[topicId] && window.__esLessons[topicId].lesson) || null;
+  if (!lesson) {
+    if (!window.__claudeKey) { view.innerHTML = '<p class="lecc-loading">Agrega tu clave de API en ajustes para generar esta lección.</p><button class="mode" onclick="leccBackToList()">← volver</button>'; return; }
+    try { lesson = await leccGenerate(topic); }
+    catch(e){ view.innerHTML = '<p class="lecc-loading">No se pudo generar la lección. Intenta de nuevo.</p><button class="mode" onclick="leccBackToList()">← volver</button>'; return; }
+  }
+  leccState = { topic, lesson, answers:{} };
+  try { window.parent.postMessage({ type:'esLessonProgress', topicId, status:'in-progress', score:null }, '*'); } catch(e){}
+  renderLeccionView();
+}
+function leccBackToList(){
+  document.getElementById('leccView').style.display = 'none';
+  document.getElementById('leccList').style.display = 'block';
+  document.getElementById('leccProgress').style.display = 'block';
+  renderLecciones();
+}
+function esc(s){ return (''+s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function renderLeccionView(){
+  const { topic, lesson } = leccState;
+  const view = document.getElementById('leccView');
+  let html = '<button class="nav-btn back" onclick="leccBackToList()">← lista</button>';
+  html += '<h3 class="lecc-h">'+esc(topic.label)+'</h3>';
+  html += '<p class="lecc-teach">'+esc(lesson.teach)+'</p>';
+  html += '<div class="lecc-examples">' + (lesson.examples||[]).map((ex,i) =>
+      '<div class="lecc-ex"><span class="lecc-es">'+esc(ex.es)+'</span> <button class="lecc-mini" onclick="leccHear('+i+')">oír</button> <button class="lecc-mini" onclick="leccSaveEx('+i+')">guardar</button><br><span class="lecc-en">'+esc(ex.en)+'</span></div>'
+    ).join('') + '</div>';
+  html += '<pre class="lecc-pattern">'+esc(lesson.pattern)+'</pre>';
+  html += '<div class="lecc-h2">Practica</div>';
+  html += (lesson.practice||[]).map((q,i) => leccQuestionHtml('practice', q, i)).join('');
+  html += '<div class="lecc-h2">Mini examen</div>';
+  html += (lesson.quiz||[]).map((q,i) => leccQuestionHtml('quiz', q, i)).join('');
+  html += '<button class="mode primary" id="leccFinishBtn" onclick="leccFinishQuiz()">Terminar</button>';
+  view.innerHTML = html;
+}
+function leccQuestionHtml(section, q, i){
+  const opts = (q.options||[]).map(o => '<button class="lecc-opt" onclick="leccAnswer(\''+section+'\','+i+',this)" data-opt="'+esc(o)+'">'+esc(o)+'</button>').join('');
+  return '<div class="lecc-q" data-section="'+section+'" data-i="'+i+'"><div class="lecc-qtext">'+esc(q.q)+'</div>'+opts+'<div class="lecc-why" style="display:none"></div></div>';
+}
+function leccAnswer(section, i, btn){
+  const q = leccState.lesson[section][i];
+  const card = btn.closest('.lecc-q');
+  const correct = btn.getAttribute('data-opt') === q.answer;
+  leccState.answers[section+'-'+i] = correct;
+  card.querySelectorAll('.lecc-opt').forEach(b => { b.disabled = true; if (b.getAttribute('data-opt') === q.answer) b.classList.add('right'); });
+  if (!correct) btn.classList.add('wrong');
+  const why = card.querySelector('.lecc-why');
+  why.textContent = (correct ? 'Correcto. ' : 'La respuesta es "'+q.answer+'". ') + (q.why||'');
+  why.style.display = 'block';
+}
+function leccFinishQuiz(){
+  const quiz = leccState.lesson.quiz || [];
+  let got = 0; quiz.forEach((q,i) => { if (leccState.answers['quiz-'+i]) got++; });
+  const score = quiz.length ? got/quiz.length : 0;
+  const status = score >= 0.6 ? 'done' : 'in-progress';
+  try { window.parent.postMessage({ type:'esLessonProgress', topicId: leccState.topic.id, status, score }, '*'); } catch(e){}
+  if (window.__esLessons[leccState.topic.id]) { window.__esLessons[leccState.topic.id].status = status; window.__esLessons[leccState.topic.id].score = score; }
+  const view = document.getElementById('leccView');
+  const msg = document.createElement('p'); msg.className = 'lecc-loading';
+  msg.textContent = status === 'done' ? ('Lección completa. '+got+' / '+quiz.length) : ('Sigue practicando: '+got+' / '+quiz.length+'. Necesitas 60%.');
+  view.appendChild(msg);
+  setTimeout(leccBackToList, 1400);
+}
 
 /* ---- Task 3: lesson generator + cache ---- */
 function leccParseJson(text){
@@ -6195,9 +6278,11 @@ async function leccGenerate(topic){
     headers: { 'Content-Type':'application/json', 'x-api-key': window.__claudeKey, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
     body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 2000, messages: [{ role:'user', content: prompt }] })
   });
+  if (!res.ok) throw new Error('api-' + res.status);
   const j = await res.json();
   const text = (j && j.content && j.content[0] && j.content[0].text) || '';
   const lesson = leccParseJson(text);
+  if (!lesson || typeof lesson.teach !== 'string' || !Array.isArray(lesson.practice)) throw new Error('bad-lesson');
   window.__esLessons[topic.id] = window.__esLessons[topic.id] || { status:'new', lesson:null, score:null };
   window.__esLessons[topic.id].lesson = lesson;
   try { window.parent.postMessage({ type:'esLessonCache', topicId: topic.id, lesson: lesson }, '*'); } catch(e){}
