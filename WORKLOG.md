@@ -297,3 +297,15 @@ Durable key fix (Netlify proxy) and mic button (roadmap C) still open from befor
 **Verified:** `checkblock.py` -> JS SYNTAX OK; `rebake.py` -> re-bake OK marker-present. Live API call deferred to on-device test (key not available in this session).
 **Committed:** YES -- 31c4623. NOT pushed.
 **Notes for next session:** Task 4 will wire `openLeccion` into the full lesson view, calling `leccGenerate`/`leccTopicById`. The three new functions are in place and ready.
+
+## 2026-06-30 -- Lecciones: "teach me X" command in Spanish chat (Task 6)
+**Working on:** Task 6 of the Spanish Lecciones feature. Added the `teach me X` / `enseñame X` shortcut to the main Pebble Spanish chat (ChatBar in `pebble-app.html`). React-side only -- no re-bake, no Veo source touched.
+**Files changed:** `pebble-app.html` only (+26 lines).
+**What:**
+- `teachSpanish(topic, userText)` added before `sendSpanish`. Uses a direct fetch to `api.anthropic.com` (same pattern as `explainSpanish`), asks Claude for `{"teach":"...","examples":[{"es":"...","en":"..."}]}`, parses with an inline `stripParse` fence-stripper. Builds `sentences = [{es: teach explanation, en:'', words:[]}].concat(examples)`, appends `{role:'assistant', sentences, teach:true}` to `esMsgs`, and calls `speakSpanish`. No-key path mirrors sendSpanish. Try/catch/finally wraps the whole body.
+- In `sendSpanish`, after the `if (sending) return;` guard: `const teachMatch = userText.match(/^(?:teach me|ens[eeñ]ame)\s+(.*)/i); if (teachMatch) { return teachSpanish(teachMatch[1].trim(), userText); }`.
+- `SpanishChatBubble` already renders `m.sentences` for all assistant messages; no rendering change needed. `teach:true` is a marker only.
+- `aiCall`/`parseJ` (FlashEditor scope, not ChatBar) are NOT used -- direct fetch + inline parser instead.
+**Verified:** `node scratchpad/checkbabel.js pebble-app.html "function ChatBar"` -> BABEL SYNTAX OK. Same for "teachSpanish" -> BABEL SYNTAX OK.
+**Committed:** YES -- 94ade67. NOT pushed.
+**Notes for next session:** On-device test: type "teach me the future tense" in Spanish mode -- expect an assistant bubble with an English explanation + 2-3 Spanish examples with hear/save controls. Normal Spanish messages unchanged.
