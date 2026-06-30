@@ -2991,6 +2991,9 @@ ${(data.plans || []).length ? '\nActive plans: ' + (data.plans || []).map(p => p
       if (!data.settings?.apiKey) throw new Error('no-key');
       const apiMsgs = next.map(m => ({ role: m.role, content: m.role === 'user' ? (m.es || '') : (m.sentences ? m.sentences.map(s => s.es).join(' ') : (m.es || '')) }));
       const { sentences, correction } = await esCall(apiMsgs);
+      const recentItems = [];
+      sentences.forEach(s => (s.words || []).forEach(w => { const word = (w.w || '').replace(/[.,;:¿?¡!"']/g, '').trim(); if (word.length > 2) recentItems.push({ kind: 'word', es: w.w, en: w.t || '' }); }));
+      if (recentItems.length) dispatch({ type: 'ES_FLASH_PUSH_RECENT', items: recentItems });
       setEsMsgs(prev => {
         const copy = prev.slice();
         if (correction) { for (let k = copy.length - 1; k >= 0; k--) { if (copy[k].role === 'user') { copy[k] = { ...copy[k], correction }; break; } } }
@@ -5386,8 +5389,8 @@ function ThemeSwatch({ id, theme, isActive, onSelect, onDelete, isCustom }) {
   );
 }
 
-const PEBBLE_BUILD = 6;
-const PEBBLE_BUILD_NOTE = 'Spanish chat now shows a correction under your message (explicar + guardar) + flashcard editor + slower voice';
+const PEBBLE_BUILD = 7;
+const PEBBLE_BUILD_NOTE = 'flashcard editor now suggests words from your Spanish chats (de tus chats) + corrections + slower voice';
 
 function SettingsPanel({ open, onClose }) {
   const { themeId, setTheme, customThemes, deleteCustomTheme } = useContext(ThemeCtx);
