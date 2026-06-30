@@ -1,60 +1,53 @@
-# Pebble — Spanish app: next-session prompt
+# Pebble — next-session prompt
 
 Paste this to start the next session.
 
 ---
 
-## >>> DO THIS FIRST (2026-06-28, after laptop restart) <<<
+## >>> READ FIRST <<<
 
-There is finished, committed, UNPUSHED work on branch **`convo-one-deck`**. Gabby restarted her laptop mid-session; the plan is to push after restart.
+Read `WORKLOG.md` (newest entries at the bottom) and the memory note `project_pebble_spanish_app.md`. Everything below is current as of 2026-06-29.
 
-**The feature:** convo flashcards now collapse into ONE rolling "Conversación" deck instead of one deck per chat, and existing per-chat decks merge into it on load. All React-side in `pebble-app.html`, Veo source and base64 untouched (no re-bake). Spec + plan in `docs/superpowers/`. Built and reviewed clean (final review: READY TO MERGE). Commits: `fb8d0fa`, `3c117ca`, `ed3db8f`, plus docs/WORKLOG.
+## State: BUILD 10, all pushed to origin/main + live on GitHub Pages
 
-**Step 1 — sanity check nothing got evicted by the restart:**
-```
-cd ~/Desktop/my\ projects/pebble && git status && git log --oneline -6
-```
-You should be on `convo-one-deck`, working tree clean, those commits present. (If `.git` looks damaged from iCloud eviction, STOP and tell Gabby — do not force anything.)
+Live link: `https://gabriellaflowers6-pixel.github.io/pebble/pebble-app.html`
 
-**Step 2 — on-device check BEFORE merging to main (Gabby does this on her iPhone):** save a word in two separate Spanish chats, open the Veo **Tarjetas** section, confirm a single "Conversación" deck holds both words and the old separate per-chat decks are gone.
+There is a **BUILD number** shown at the top of Settings (`PEBBLE_BUILD` / `PEBBLE_BUILD_NOTE` consts in `pebble-app.html`). It is the cache-confirmation tool: if Settings shows the latest BUILD, the phone is on fresh code. **Bump it on every user-visible change.** Currently **BUILD 10**.
 
-**Step 3 — push (only after Gabby confirms):** Gabby wants to push. Confirm the target with her, then:
-```
-git checkout main && git merge convo-one-deck && git push
-```
-(or push the branch and open a PR if she prefers). NEVER push without her explicit go-ahead. Note: the public API-key issue still stands (Pages serves the baked sk-ant key) — proxy before sharing widely.
+**Shipped this session (BUILD 1-10), all on main + Pages:**
+1. API key is device-local (no more resetting) — removed apiKey from the URL hash (getHashCreds/updateHashCreds); the frozen home-screen URL no longer overwrites the pasted key.
+2-3. Keyboard: chat composer is a `contenteditable` (`.pebble-ce`, no iOS form bar/autofill); keyboard-aware shrink (`--app-h`, html.kb-chat) is chat-only so Atajos/Journal are normal; `.phone-frame` is `position:fixed` on mobile to kill the gap.
+4. Flashcard editor — `FlashEditor` component, opened by "Administrar tarjetas" in the Veo Tarjetas section (posts `openFlashEditor`). List/add/edit/delete, dedup.
+5. Slower Spanish voice (speakSpanish + Veo convo voice rate 0.95 → 0.85).
+6. Spanish corrections — reply JSON now returns `correction{fixed,en,changed}`; SpanishChatBubble user branch shows it + `explicar` (separate cached call) + `＋ guardar`.
+7. Flashcard "de tus chats" suggestions — sendSpanish pushes reply words to `data.esFlash.recent`.
+8. Heart quotes + fun facts on the picks page (NotebookPage); scrollable "saved" section with remove. Reducer: SAVE_PICK dedups + author, added REMOVE_SAVE.
+9. Modo Escucha fix — wrong word-order gives "Ver respuesta y seguir" (escRevealOrder), no longer traps; fixed finish 🎉. (Veo source, re-baked.)
+10. Flashcard Phase 2 AI — `sugerir palabras` + `organizar` (categorizes → per-category "make a deck" splits into themed decks). Migration made themed-safe (mergeConvoSets/MERGE_ALL/needsMerge skip `themed` decks).
 
----
+## DO THIS FIRST: on-device confirmation (Gabby, iPhone)
 
-We're building out the **Veo & Digo** Spanish-learning app embedded inside **Pebble** (`Desktop/my projects/pebble/pebble-app.html`). Read `pebble/WORKLOG.md` and the memory note `project_pebble_spanish_app.md` first. Key facts so you don't relearn them the hard way:
+Nothing this session was confirmed end-to-end on her phone. Have her:
+1. Open the link, Settings → confirm it says **BUILD 10** (if not, it's a CACHE problem — there is NO service worker; consider adding a network-first SW so the PWA always updates).
+2. Make sure her API key is pasted in Settings (device-local now; needs a fresh, non-revoked key from console.anthropic.com).
+3. Spot-check: Spanish message → correction shows; flashcard editor → ✨ organizar splits into themed decks; heart a quote; the keyboard sits above the chat with no gap; voice is slower.
 
-**How the embed works / how to edit the Spanish app**
-- Editable source: `pebble/veo-y-digo-source.html` (~5.5MB). Edit THAT, never the base64.
-- It's base64'd into `window.VEO_DIGO_B64` in `pebble-app.html` (a plain `<script>`, not the Babel one) and shown via an iframe (async blob decode).
-- Re-bake after editing: `b64 = base64(source, utf-8)`, then regex-replace `window.VEO_DIGO_B64="[^"]*";` in `pebble-app.html`. (See the scratchpad python helpers from last session for the exact pattern.)
-- Files are huge — grep/sed/python, don't Read them whole.
+## How to work on Pebble (important)
 
-**Do not break these**
-- `@babel/standalone` is PINNED to `7.23.10`. Unpinning = blank app (the floating CDN compiles to ESM imports). Leave it.
-- pebble-app.html is ~15MB now (baked audio). Loads fine; if it grows a lot, split audio into a separate fetched bank.
-- Verify any change by injecting a tiny error-capture `<script>` into `<head>` of a /tmp copy, headless `--dump-dom`, and reading `document.title` for `phoneFrame=true ERRS(0)`. Headless `--screenshot` of the top page is unreliable for width — render the Veo app inside a 375px iframe to preview layout.
+- Two huge files: `pebble-app.html` (~15MB) and `veo-y-digo-source.html` (~11MB) with base64 blobs. **NEVER read them whole.** Grep/sed/python with targeted anchors; edit via python string-replace with `assert count==1`. Verify with a local server (`python3 -m http.server PORT`) + Chrome + the javascript_tool (programmatic `.focus()` won't fire focus events in an automation tab — dispatch synthetic FocusEvent/InputEvent).
+- The Veo Spanish app is base64'd into `window.VEO_DIGO_B64`. Edit `veo-y-digo-source.html`, then RE-BAKE (base64 → regex-replace the assignment) and verify the bake round-trips. React-side changes (pebble-app.html only) do NOT need a re-bake.
+- `@babel/standalone` PINNED to 7.23.10 — never change.
+- Key device-local; never bake it into source (it was public + auto-revoked before). Durable fix = a Netlify-function proxy so no key lives client-side.
+- **git index keeps corrupting** mid-session (an external `git ls-files --recurse-submodules` watcher on the folder, e.g. an open editor, collides). Symptom: `git ls-files` → 0, everything shows deleted. Fix: `rm -f .git/index.lock; git reset --mixed HEAD` (rebuilds index from HEAD, working tree untouched), then recommit. Working files are never lost.
+- Never push without asking (private repo, but ask). Commit liberally.
 
-**AI is live** — Anthropic `sk-ant` key is baked into `DEFAULT_DATA.settings.apiKey` + `window.PEBBLE_API_KEY` fallback; `EspanolPage` postMessages it to the iframe as `window.__claudeKey`. Model `claude-sonnet-4-6`. Browser-direct headers: `x-api-key`, `anthropic-version: 2023-06-01`, `anthropic-dangerous-direct-browser-access: true`.
+## Remaining roadmap (older, NOT from this session — pick with Gabby)
 
-**Audio** — Kokoro, local + free (Google TTS still 403s, billing off). Pre-baked clips in `FC_AUDIO`, voice `em_alex @0.85`, via `fcPlay()`. Generate with `/opt/homebrew/bin/python3.11` + `kokoro_onnx` (model at `~/.cache/hyperframes/tts`). Conversación live voice = local server `pebble/kokoro-tts-server.py` (Dora/`ef_dora`, port 7070) — start it for the nice voice; app falls back to device voice otherwise.
+- **Mic button** — 🎤 doesn't work (iOS SpeechRecognition; iframe `allow="microphone"` + webkitSpeechRecognition quirks).
+- **Translator button** — quick EN↔ES panel (Header corner), uses the key.
+- **Recommendations** — AI suggestions; ask scope first.
+- **Oz Ch. 4-8 comprehension questions** — author into `ozQ`.
+- **Phone-voice decision** — device SpeechSynthesis (free) vs cloud TTS (paid, best). Mónica Enhanced = iOS Settings download, not code.
+- **Netlify-function key proxy** — so the key is never client-side / public.
 
-**Done:** embed + Español page, Atajos (gerund hack) + audio, polished jar, Study→Español link, Oz Modo Escucha (all 8 chapters audio + listen/order/meaning; comprehension Qs for Ch.1–3), Diario autocorrect, Conversación (live chat w/ Dora + subtitles). All committed, NOT pushed.
-
-**Pick up here (roadmap, in priority order):**
-
-**NEW — phone-first priorities (Gabby, 2026-06-28):** Pebble is used MOSTLY ON HER PHONE. These three are now top of the list.
-- **A. Voice must work on the phone without the Mac.** The nice Dora voice currently needs the local Kokoro server (`kokoro-tts-server.py`, 127.0.0.1:7070) running on the Mac. It dies when the terminal/session ends and the phone can't reach 127.0.0.1 anyway (and https page → http localhost is mixed-content blocked). So on the phone there is effectively NO Dora. Fix: pick a voice path that needs no running Mac — (a) device `SpeechSynthesis` Spanish voice (free, offline, iOS voices like Mónica/Paulina are decent), or (b) a cloud TTS API called browser-direct (best quality, costs per call, works anywhere). DECISION NEEDED from Gabby. Until then the app already falls back to the device voice.
-- **B. Merge Conversación (Dora chat) into the main "talk to Pebble" chat.** Instead of a separate Veo `#convo` screen, add a button/toggle in Pebble's own chat that switches it into live Spanish-conversation mode. One chat, a mode switch.
-- **C. Fix the microphone (speak + type both work).** The 🎤 button doesn't work. Goal: speak to the AI, it understands and replies (voice+subtitles), AND typing still works. Likely cause: the iframe embedding the Veo app is missing `allow="microphone"` (and possibly `autoplay`) permission delegation, so `SpeechRecognition` is blocked. Also handle iOS Safari `webkitSpeechRecognition` quirks. Investigate the iframe `allow=` attr in `EspanolPage` first.
-
-**Original roadmap (still open):**
-1. **Translator button** — a button in Pebble's top corner (Header, next to settings/jar) that opens a quick EN↔ES translator panel. Uses the baked key. Self-contained.
-2. **Recommendations** — AI suggestions in the Spanish app. ASK Gabby the scope first: next story to read / words to drill / a daily "try this".
-3. **Oz Ch.4–8 comprehension questions** — author into `ozQ` (the engine already handles them, currently skips when absent). Ch.7 is ~104 pages; consider whether to author all or sample. Sentences via the extract snippet in `generate_oz1_audio.py`.
-
-Never push without asking. Commit liberally (private repo).
+Specs/plans this session: `docs/superpowers/specs/2026-06-29-flashcard-editor-design.md`, `docs/superpowers/plans/2026-06-29-flashcard-editor-phase1.md`, `docs/superpowers/specs/2026-06-29-spanish-corrections-design.md`.
