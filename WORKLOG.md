@@ -250,3 +250,10 @@ Durable key fix (Netlify proxy) and mic button (roadmap C) still open from befor
 **Tested (desktop):** compiles, mounts clean, picks page renders. Could not exercise the heart on the test browser — its gist-synced data has an empty dailyPick (no AI pick generated) so nothing to heart; edits mirror the existing working rec-heart pattern. On-device test needed.
 **Committed/Pushed:** YES — 649a79c, origin/main.
 **Backlog now:** Modo Escucha skip fix; flashcard Phase 2 (AI organize/split). All features this session (BUILD 1-8) STILL UNCONFIRMED on Gabby's phone — she keeps deferring the Settings BUILD-number check; if cached, none of it is reaching her.
+
+## 2026-06-29 — Modo Escucha wrong-order escape + finish emoji (BUILD 9)
+**Bug fixed:** Modo Escucha (Spanish story listening mode, Veo source) step 2 "Ordena la frase" had no escape — a wrong word order only said "Casi… inténtalo otra vez" with no skip, trapping the user (her report). The meaning/comprehension steps already advance on wrong; only order trapped.
+**Fix:** escCheckOrder wrong-branch now shows a "Ver respuesta y seguir →" button → escRevealOrder() reveals the correct phrase + a Continuar button (escAdvance). Retry still available. Also fixed a pre-existing bug: escFinish showed literal "\U0001F389" (JS has no \U escape) → real 🎉. Re-baked into VEO_DIGO_B64 (round-trips). BUILD 9.
+**Tested (desktop):** boots clean, no errors; baked Veo source contains escRevealOrder + the fixed emoji. In-game flow (navigate a story's Modo Escucha, get order wrong) → on-device test.
+**Committed/Pushed:** YES — b08254e, origin/main.
+**Backlog now:** only flashcard Phase 2 (AI organize/split into themed decks) remains from the session's asks. Everything (BUILD 1-9) still UNCONFIRMED on Gabby's phone (cache / build-number check outstanding).
