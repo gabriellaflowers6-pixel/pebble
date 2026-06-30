@@ -3017,15 +3017,15 @@ ${(data.plans || []).length ? '\nActive plans: ' + (data.plans || []).map(p => p
       const parsed = stripParse(raw);
       const sentences = [{ es: parsed.teach, en: '', words: [] }].concat((parsed.examples || []).map(ex => ({ es: ex.es, en: ex.en, words: [] })));
       setEsMsgs(prev => [...prev, { role: 'assistant', sentences, teach: true }]);
-      speakSpanish(sentences.map(s => s.es).join(' '));
+      speakSpanish(sentences.slice(1).map(s => s.es).join(' '));
     } catch {
-      setEsMsgs(prev => [...prev, { role: 'assistant', sentences: [{ es: 'No pude generar la explicacion. Intenta de nuevo.', en: '', words: [] }] }]);
+      setEsMsgs(prev => [...prev, { role: 'assistant', sentences: [{ es: 'No pude generar la explicación. Intenta de nuevo.', en: '', words: [] }] }]);
     } finally { setSending(false); }
   };
 
   const sendSpanish = async (userText) => {
     if (sending) return;
-    const teachMatch = userText.match(/^(?:teach me|ens[eeñ]ame)\s+(.*)/i);
+    const teachMatch = userText.match(/^(?:teach me|ens[eé][ñn]ame)\s+(.*)/i);
     if (teachMatch) { return teachSpanish(teachMatch[1].trim(), userText); }
     const next = [...esMsgs, { role: 'user', es: userText }];
     setEsMsgs(next); setSending(true);
