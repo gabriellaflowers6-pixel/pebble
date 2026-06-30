@@ -243,3 +243,10 @@ Durable key fix (Netlify proxy) and mic button (roadmap C) still open from befor
 **Tested (desktop):** compiles + mounts clean, no errors. The live AI correction/explain flow needs a valid key → on-device test only.
 **Committed:** YES — 476b0e2 (+ spec 48b4af6). **Pushed:** NO — awaiting OK.
 **Backlog remaining:** flashcard "from your chats" suggestions (Task 2); facts/quotes with heart (needs design); Modo Escucha skip bug; keyboard BUILD 3 on-device confirm. Across-the-board: still UNCONFIRMED on Gabby's phone whether any BUILD (3-6) is loading (cache) — she keeps deferring the Settings BUILD-number check.
+
+## 2026-06-29 — Heart quotes/facts + scrollable saved section (BUILD 8)
+**Working on:** Gabby's "save facts and quotes with a heart, scroll a saved section underneath" — turned out the feature already exists (NotebookPage "pebble's picks": daily quote + funFact + rec; only rec was heartable, tiny saved list).
+**What:** Added a heart to the quote card and the fun-fact card (toggle save + dedup); made the rec heart toggle too; enlarged the "saved" list to a scrollable section (maxHeight 260) showing full content (quote+author / fact text / rec) each with a remove (✕). Reducer: SAVE_PICK now dedups + stores `author`; added `REMOVE_SAVE`. BUILD 8.
+**Tested (desktop):** compiles, mounts clean, picks page renders. Could not exercise the heart on the test browser — its gist-synced data has an empty dailyPick (no AI pick generated) so nothing to heart; edits mirror the existing working rec-heart pattern. On-device test needed.
+**Committed/Pushed:** YES — 649a79c, origin/main.
+**Backlog now:** Modo Escucha skip fix; flashcard Phase 2 (AI organize/split). All features this session (BUILD 1-8) STILL UNCONFIRMED on Gabby's phone — she keeps deferring the Settings BUILD-number check; if cached, none of it is reaching her.
