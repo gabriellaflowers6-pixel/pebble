@@ -2999,8 +2999,34 @@ ${(data.plans || []).length ? '\nActive plans: ' + (data.plans || []).map(p => p
       finally { setSending(false); }
     })();
   };
+  const teachSpanish = async (topic, userText) => {
+    const next = [...esMsgs, { role: 'user', es: userText }];
+    setEsMsgs(next); setSending(true);
+    if (!data.settings?.apiKey) {
+      setEsMsgs(prev => [...prev, { role: 'assistant', sentences: [{ es: 'Agrega tu clave de API en ajustes para aprender.', en: 'Add your API key in settings to learn.', words: [] }] }]);
+      setSending(false); return;
+    }
+    const prompt = 'Teach an English speaker this Spanish topic: "' + topic + '". Reply with a short plain-English explanation (2-3 sentences) of the rule and sentence structure, then 2-3 example sentences. Return ONLY JSON: {"teach":"...","examples":[{"es":"...","en":"..."}]}. No markdown.';
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST',
+        headers: { 'x-api-key': data.settings.apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json', 'anthropic-dangerous-direct-browser-access': 'true' },
+        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 600, messages: [{ role: 'user', content: prompt }] }) });
+      const j = await res.json();
+      const raw = (j.content || []).filter(b => b.type === 'text').map(b => b.text).join('').trim();
+      const stripParse = (r) => { let s = (r || '').replace(/```json|```/g, '').trim(); const a = s.indexOf('{'), b = s.lastIndexOf('}'); if (a >= 0 && b > a) s = s.slice(a, b + 1); return JSON.parse(s); };
+      const parsed = stripParse(raw);
+      const sentences = [{ es: parsed.teach, en: '', words: [] }].concat((parsed.examples || []).map(ex => ({ es: ex.es, en: ex.en, words: [] })));
+      setEsMsgs(prev => [...prev, { role: 'assistant', sentences, teach: true }]);
+      speakSpanish(sentences.map(s => s.es).join(' '));
+    } catch {
+      setEsMsgs(prev => [...prev, { role: 'assistant', sentences: [{ es: 'No pude generar la explicacion. Intenta de nuevo.', en: '', words: [] }] }]);
+    } finally { setSending(false); }
+  };
+
   const sendSpanish = async (userText) => {
     if (sending) return;
+    const teachMatch = userText.match(/^(?:teach me|ens[eeñ]ame)\s+(.*)/i);
+    if (teachMatch) { return teachSpanish(teachMatch[1].trim(), userText); }
     const next = [...esMsgs, { role: 'user', es: userText }];
     setEsMsgs(next); setSending(true);
     try {
