@@ -44,7 +44,7 @@
 
   .phone-frame {
     width: 375px; max-height: 812px; height: var(--app-h, 100vh);
-    background: var(--bg); position: fixed; top: 0; left: 0; right: 0; overflow: hidden;
+    background: var(--bg); position: fixed; top: var(--kb-top, 0px); left: 0; right: 0; overflow: hidden;
     margin: 0 auto; border-radius: 0;
     display: flex; flex-direction: column;
   }
@@ -5405,7 +5405,7 @@ function ThemeSwatch({ id, theme, isActive, onSelect, onDelete, isCustom }) {
   );
 }
 
-const PEBBLE_BUILD = 10;
+const PEBBLE_BUILD = 11;
 const PEBBLE_BUILD_NOTE = 'flashcard editor AI: sugerir palabras + organizar (split cards into themed decks by type) + Modo Escucha fix';
 
 function SettingsPanel({ open, onClose }) {
@@ -6276,8 +6276,17 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   function isChat(t){ return fieldName(t).indexOf('pebble-chat') === 0; }
   function applyViewport() {
     if (!vv) return;
-    if (root.classList.contains('kb-chat')) root.style.setProperty('--app-h', Math.round(vv.height) + 'px');
-    else root.style.removeProperty('--app-h');
+    if (root.classList.contains('kb-chat')) {
+      root.style.setProperty('--app-h', Math.round(vv.height) + 'px');
+      // iOS scrolls the LAYOUT viewport to reveal the focused composer, but the
+      // position:fixed frame stays pinned at top:0 — leaving a dead gap (= offsetTop)
+      // between the chatbox and the keyboard. Track offsetTop so the frame glues to
+      // the visible region and the composer sits flush above the keyboard.
+      root.style.setProperty('--kb-top', Math.round(vv.offsetTop) + 'px');
+    } else {
+      root.style.removeProperty('--app-h');
+      root.style.removeProperty('--kb-top');
+    }
   }
   if (vv) {
     vv.addEventListener('resize', applyViewport);
@@ -6308,6 +6317,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           var sd = divs[j], oy = getComputedStyle(sd).overflowY;
           if ((oy === 'auto' || oy === 'scroll') && sd.scrollHeight > sd.clientHeight + 4) sd.scrollTop = sd.scrollHeight;
         }
+        applyViewport(); // re-pin once iOS has settled offsetTop after the keyboard animation
       }, 320);
     }
   });
