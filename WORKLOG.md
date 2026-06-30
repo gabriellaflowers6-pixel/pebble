@@ -286,3 +286,14 @@ Durable key fix (Netlify proxy) and mic button (roadmap C) still open from befor
 **Tested (this session):** `node --check` on the full Veo script block (10.9MB) = OK; React-side untouched this build. Visual no-spoiler behavior → on-device.
 **Committed/Pushed:** Committed locally — NOT pushed (deploy rule). Bundled with BUILD 11 keyboard fix for one push when Gabby OKs.
 **On-device:** confirm Settings shows BUILD 12; Español → Tarjetas (theme or story deck), flip a card to see the meaning, tap next → the next card should appear front-first with no glimpse of its answer.
+
+## 2026-06-30 — Lecciones: Claude lesson generator (Task 3)
+**Working on:** Task 3 of the Spanish Lecciones feature (branch `lecciones`). Added the AI lesson generator functions to `veo-y-digo-source.html`, re-baked into `pebble-app.html`.
+**Files changed:** `veo-y-digo-source.html` (35 lines added), `pebble-app.html` (re-baked).
+**What:** Three functions inserted after `openLeccion` in the Lecciones section:
+- `leccParseJson(text)` -- strips code fences, slices outer braces, calls JSON.parse.
+- `async leccGenerate(topic)` -- builds lesson prompt, calls Claude (claude-sonnet-4-6, headers matching convoCall exactly), writes result to window.__esLessons + posts esLessonCache to parent.
+- `leccTopicById(id)` -- linear search through LECCIONES groups to find a topic by id.
+**Verified:** `checkblock.py` -> JS SYNTAX OK; `rebake.py` -> re-bake OK marker-present. Live API call deferred to on-device test (key not available in this session).
+**Committed:** YES -- 31c4623. NOT pushed.
+**Notes for next session:** Task 4 will wire `openLeccion` into the full lesson view, calling `leccGenerate`/`leccTopicById`. The three new functions are in place and ready.
