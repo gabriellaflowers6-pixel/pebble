@@ -6171,6 +6171,40 @@ function leccionDeHoy(){
 }
 function openLeccion(topicId){ show('lecciones'); /* full view added in Task 4 */ }
 
+/* ---- Task 3: lesson generator + cache ---- */
+function leccParseJson(text){
+  let t = (text || '').trim();
+  t = t.replace(/^```(?:json)?/i,'').replace(/```$/,'').trim();
+  const a = t.indexOf('{'), b = t.lastIndexOf('}');
+  if (a !== -1 && b !== -1) t = t.slice(a, b+1);
+  return JSON.parse(t);
+}
+async function leccGenerate(topic){
+  if (!window.__claudeKey) throw new Error('no-key');
+  const prompt =
+    'You are a Spanish teacher for an English speaker (CEFR A1 to B1). Create a short lesson on: "'
+    + topic.label + '". Return ONLY valid JSON, no prose, with this exact shape:\n'
+    + '{"teach":"2-4 sentence plain-English explanation of the rule AND the sentence structure",'
+    + '"examples":[{"es":"Spanish sentence","en":"English"}],'
+    + '"pattern":"the conjugation table or formula, lines separated by \\n",'
+    + '"practice":[{"q":"question text (may be English with a Spanish blank)","options":["a","b","c","d"],"answer":"the correct option exactly","why":"one-sentence why in English"}],'
+    + '"quiz":[{"q":"...","options":["..."],"answer":"...","why":"..."}]}\n'
+    + 'Give 2 or 3 examples, 6 practice items, 4 quiz items. Keep it tight for a 10-minute lesson. No markdown.';
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type':'application/json', 'x-api-key': window.__claudeKey, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
+    body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 2000, messages: [{ role:'user', content: prompt }] })
+  });
+  const j = await res.json();
+  const text = (j && j.content && j.content[0] && j.content[0].text) || '';
+  const lesson = leccParseJson(text);
+  window.__esLessons[topic.id] = window.__esLessons[topic.id] || { status:'new', lesson:null, score:null };
+  window.__esLessons[topic.id].lesson = lesson;
+  try { window.parent.postMessage({ type:'esLessonCache', topicId: topic.id, lesson: lesson }, '*'); } catch(e){}
+  return lesson;
+}
+function leccTopicById(id){ for (const g of LECCIONES) for (const t of g.topics) if (t.id === id) return t; return null; }
+
 // ---- Wikipedia image fetch with SVG fallback ----
 const wikiImgCache = {};
 async function fetchWikiImage(term, svgFallback, artEl, tok){
