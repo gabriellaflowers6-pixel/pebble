@@ -1109,6 +1109,7 @@ const DEFAULT_DATA = {
   settings: { gistId: '', gistToken: '', apiKey: '', oneSignalAppId: '', oneSignalRestKey: '', jarIcon: 'images/pebble-logo.png', navStyle: 'jar' },
   chat: { messages: [] },
   esFlash: { sets: [], recent: [] },
+  esLessons: {},
   memory: { pending: [] },
 };
 
@@ -1424,6 +1425,15 @@ function dataReducer(state, action) {
       const add = (action.items || []).filter(it => it && it.es && !seen[convoCardKey(it)]);
       const recent = [...add, ...cur].slice(0, 50);
       return { ...state, esFlash: { ...state.esFlash, recent } };
+    }
+
+    case 'ES_LESSON_CACHE': {
+      const cur = state.esLessons[action.topicId] || { status: 'new', lesson: null, score: null };
+      return { ...state, esLessons: { ...state.esLessons, [action.topicId]: { ...cur, lesson: action.lesson } } };
+    }
+    case 'ES_LESSON_PROGRESS': {
+      const cur = state.esLessons[action.topicId] || { status: 'new', lesson: null, score: null };
+      return { ...state, esLessons: { ...state.esLessons, [action.topicId]: { ...cur, status: action.status, score: (action.score != null ? action.score : cur.score) } } };
     }
 
     case 'ADD_MEMORY_PENDING': {
@@ -5885,7 +5895,7 @@ function CardQuizOverlay({ quiz, onClose }) {
    ══════════════════════════════════════════ */
 /* ── Español (Veo & Digo) embedded app ── */
 function EspanolPage() {
-  const { data } = React.useContext(DataCtx);
+  const { data, dispatch } = React.useContext(DataCtx);
   const apiKey = (data && data.settings && data.settings.apiKey) || window.PEBBLE_API_KEY || '';
   const [url, setUrl] = React.useState(null);
   const pageRef = React.useRef(null);
@@ -5911,6 +5921,25 @@ function EspanolPage() {
     try { if (frameRef.current && frameRef.current.contentWindow) frameRef.current.contentWindow.postMessage({ type: 'esFlashSets', sets: (data.esFlash && data.esFlash.sets) || [] }, '*'); } catch (e) {}
   }, [data.esFlash]);
   React.useEffect(() => { postSets(); }, [data.esFlash, url, postSets]);
+  // Push saved lesson state into the embedded app so it can restore progress
+  const postLessons = React.useCallback(() => {
+    try { if (frameRef.current && frameRef.current.contentWindow) frameRef.current.contentWindow.postMessage({ type: 'esLessonsData', lessons: data.esLessons || {} }, '*'); } catch (e) {}
+  }, [data.esLessons]);
+  React.useEffect(() => { postLessons(); }, [data.esLessons, url, postLessons]);
+  // Listen for lesson-related messages from the iframe
+  React.useEffect(() => {
+    const onMsg = (e) => {
+      const d = e && e.data; if (!d) return;
+      if (d.type === 'esLessonCache') dispatch({ type: 'ES_LESSON_CACHE', topicId: d.topicId, lesson: d.lesson });
+      else if (d.type === 'esLessonProgress') dispatch({ type: 'ES_LESSON_PROGRESS', topicId: d.topicId, status: d.status, score: d.score });
+      else if (d.type === 'saveEsCard' && d.card && d.card.es) {
+        dispatch({ type: 'ES_FLASH_NEW_SET', id: 'lecciones', label: 'Lecciones', date: new Date().toISOString().slice(0, 10), themed: true });
+        dispatch({ type: 'ES_FLASH_ADD_CARD', setId: 'lecciones', card: { kind: d.card.kind || 'word', es: d.card.es, en: d.card.en || '' } });
+      }
+    };
+    window.addEventListener('message', onMsg);
+    return () => window.removeEventListener('message', onMsg);
+  }, [dispatch]);
   React.useEffect(() => {
     // The iframe has no intrinsic height; give it the page area's real pixel height
     // so it fills the phone frame instead of collapsing to the 150px default.
@@ -5925,7 +5954,7 @@ function EspanolPage() {
   return (
     <div ref={pageRef} className="swipe-page" style={{ padding: 0, height: h }}>
       {url
-        ? <iframe ref={frameRef} src={url} onLoad={() => { postKey(); postSets(); }} title="Veo y Digo" allow="microphone; autoplay; clipboard-read; clipboard-write" style={{ width: '100%', height: '100%', border: 'none', display: 'block' }} />
+        ? <iframe ref={frameRef} src={url} onLoad={() => { postKey(); postSets(); postLessons(); }} title="Veo y Digo" allow="microphone; autoplay; clipboard-read; clipboard-write" style={{ width: '100%', height: '100%', border: 'none', display: 'block' }} />
         : <div style={{ padding: 24, fontFamily: 'sans-serif', color: '#999' }}>Cargando Español…</div>}
     </div>
   );
