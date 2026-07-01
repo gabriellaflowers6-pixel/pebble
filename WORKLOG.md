@@ -378,4 +378,17 @@ Durable key fix (Netlify proxy) and mic button (roadmap C) still open from befor
 **BUILD 15 (live, 877debc):** (A) heart-to-save — heart on the lesson view toggles a topic into a "Guardadas" section at the top of the Lecciones list; `ES_LESSON_SAVE` reducer + `esLessonSave` message + `saved` flag on data.esLessons (preserved across cache/progress updates). (B) per-lesson flashcard decks — "Hacer tarjetas de esta leccion" builds a themed deck `Leccion: <topic>` from the examples (es/en sentence cards) + highlighted words (word cards) via a new `esMakeDeck` message. Plus polish: flex header for the heart, in-place heart toggle (does not blank quiz feedback), guard leccMakeDeck, and a split/join highlight-injection hardening.
 **Built subagent-driven; each build reviewed (v2 Approved w/ minors; save/decks Approved; polish applied). All static-verified + re-baked + LIVE on main.**
 **Committed/Pushed:** YES — main at 877debc, pushed to GitHub Pages.
-**On-device to confirm (BUILD 15):** open a lesson — table renders as rows, example target word is highlighted + labeled, tips on their own lines, list shows English; heart a lesson → appears under "Guardadas"; "Hacer tarjetas de esta leccion" → a "Leccion: X" deck shows in Tarjetas; heart toggle mid-quiz no longer blanks answers.
+**On-device to confirm (BUILD 15):** open a lesson -- table renders as rows, example target word is highlighted + labeled, tips on their own lines, list shows English; heart a lesson → appears under "Guardadas"; "Hacer tarjetas de esta leccion" → a "Leccion: X" deck shows in Tarjetas; heart toggle mid-quiz no longer blanks answers.
+
+## 2026-07-01 — Lecciones: no auto-regen + manual regenerar + custom topic input (BUILD 16)
+**Working on:** Three fixes per spec docs/superpowers/specs/2026-07-01-lecciones-no-autoregen-custom.md.
+**Files changed:** `veo-y-digo-source.html` (6 edits), `pebble-app.html` (reducer + handler + BUILD bump + re-baked).
+**What:**
+- (A) Deleted the `_v !== 2` line from `openLeccion`. Cached lessons of any version are now used as-is; no auto-regen. Only a topic with NO cached lesson triggers generation. leccGenerate still sets `_v = 2` on new lessons.
+- (B) Added a "regenerar" lecc-mini button in the lesson header (alongside the heart). Added `leccRegen()`: shows a loading state, calls `leccGenerate`, resets `leccState`, re-renders. Only spends a credit on explicit tap.
+- (C) Custom topic input: `<div class="lecc-custom">` with text input + "Crear leccion" button above `leccList`. `leccSlug()` + `leccCreateCustom()` handle input → `custom-<slug>` id → `window.__customTopics`. `leccTopicById` falls back to `window.__customTopics`. `leccGenerate` posts `label: topic.label` in the `esLessonCache` message. `applyEsLessons` rebuilds `window.__customTopics` from cached custom entries on reload. `renderLecciones` adds a "Mis lecciones" phase for any custom- id with a cached lesson (label escaped via `esc()`). React: `ES_LESSON_CACHE` reducer stores optional `label`; `esLessonCache` handler passes `label` through.
+- PEBBLE_BUILD bumped 15 -> 16.
+**Verification:** checkblock.py -> JS SYNTAX OK; rebake.py -> re-bake OK marker-present; checkbabel.js -> BABEL SYNTAX OK. All grep markers confirmed. Full report: `.superpowers/sdd/lecciones-b16-report.md`.
+**Committed:** YES -- 395be26
+**Uncommitted:** none.
+**Notes for next session:** NOT pushed -- push when Gabby OKs. On-device: open any existing lesson -- should load from cache without regenerating. Tap "regenerar" to force a new one. Scroll to top of Lecciones list, type a custom topic, tap "Crear leccion" -- lesson generates, custom topic appears in "Mis lecciones" on subsequent visits.
