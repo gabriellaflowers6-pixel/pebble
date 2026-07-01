@@ -480,6 +480,8 @@
   .lecc-heart { background:none; border:none; cursor:pointer; font-size:1.3rem; line-height:1; color:var(--terracotta); padding:2px 6px; }
   .lecc-heart.on { color:var(--berry,#b23a48); }
   .lecc-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+  .lecc-custom { margin:8px 0 14px; }
+  .lecc-custom input { width:100%; padding:10px 12px; border:1px solid rgba(42,33,24,0.15); border-radius:10px; font-size:0.9rem; margin-bottom:8px; background:var(--paper); color:var(--ink); }
 </style>
 </head>
 <body>
@@ -843,7 +845,11 @@
     </div>
     <div class="picker-title">Lecciones</div>
     <div class="progress" id="leccProgress"></div>
-    <button class="mode" onclick="leccionDeHoy()">Lección de hoy</button>
+    <button class="mode" onclick="leccionDeHoy()">Lecci&#243;n de hoy</button>
+    <div class="lecc-custom">
+      <input id="leccCustomInput" type="text" placeholder="&#191;Qu&#233; quieres aprender? (ej: el subjuntivo con ojal&#225;)" />
+      <button class="mode" onclick="leccCreateCustom()">Crear lecci&#243;n</button>
+    </div>
     <div id="leccList"></div>
     <div id="leccView" style="display:none"></div>
   </section>
@@ -5324,7 +5330,7 @@ function applyEsFlashSets(sets){
 }
 window.addEventListener('message',function(e){ if(e&&e.data&&e.data.type==='esFlashSets'){ applyEsFlashSets(e.data.sets); } });
 window.__esLessons = {};
-function applyEsLessons(l){ try { if (l && typeof l === 'object') { window.__esLessons = l; if (typeof currentScreen !== 'undefined' && currentScreen === 'lecciones') renderLecciones(); } } catch(e){} }
+function applyEsLessons(l){ try { if (l && typeof l === 'object') { window.__esLessons = l; window.__customTopics = window.__customTopics || {}; Object.keys(l||{}).forEach(function(id){ if (id.indexOf('custom-')===0 && l[id] && l[id].label) window.__customTopics[id] = { id:id, label:l[id].label, en:'' }; }); if (typeof currentScreen !== 'undefined' && currentScreen === 'lecciones') renderLecciones(); } } catch(e){} }
 window.addEventListener('message', function(e){ if (e && e.data && e.data.type === 'esLessonsData') applyEsLessons(e.data.lessons); });
 async function diarioSave(){
   const raw = document.getElementById('diarioInput').value.trim();
@@ -6207,6 +6213,15 @@ function renderLecciones(){
       html += '<button class="lecc-row" onclick="openLeccion(\''+t.id+'\')"><span class="lecc-mark">&#x2665;</span> <span class="lecc-label">'+t.label+'</span><span class="lecc-en-sm">'+(t.en||'')+'</span></button>';
     });
   }
+  const mine = Object.keys(window.__esLessons||{}).filter(function(id){ return id.indexOf('custom-')===0 && window.__esLessons[id] && window.__esLessons[id].lesson; });
+  if (mine.length) {
+    html += '<div class="lecc-phase">Mis lecciones</div>';
+    mine.forEach(function(id){
+      const lbl = (window.__esLessons[id].label) || (window.__customTopics[id] && window.__customTopics[id].label) || id;
+      const st = leccStatus(id); const mark = st==='done'?'&#x2713;':(st==='in-progress'?'&#xB7;':'');
+      html += '<button class="lecc-row" onclick="openLeccion(\''+id+'\')"><span class="lecc-mark">'+mark+'</span> <span class="lecc-label">'+esc(lbl)+'</span></button>';
+    });
+  }
   LECCIONES.forEach(group => {
     html += '<div class="lecc-phase">'+group.phase+'</div>';
     group.topics.forEach(t => {
@@ -6232,7 +6247,6 @@ async function openLeccion(topicId){
   view.style.display = 'block';
   view.innerHTML = '<p class="lecc-loading">Cargando lección…</p>';
   let lesson = (window.__esLessons[topicId] && window.__esLessons[topicId].lesson) || null;
-  if (lesson && lesson._v !== 2) lesson = null;   // old shape: force regenerate into the new format
   if (!lesson) {
     if (!window.__claudeKey) { view.innerHTML = '<p class="lecc-loading">Agrega tu clave de API en ajustes para generar esta lección.</p><button class="mode" onclick="leccBackToList()">← volver</button>'; return; }
     try { lesson = await leccGenerate(topic); }
@@ -6250,13 +6264,30 @@ function leccBackToList(){
   document.getElementById('leccProgress').style.display = 'block';
   renderLecciones();
 }
+async function leccRegen(){
+  if (!leccState) return;
+  const topic = leccState.topic;
+  if (!window.__claudeKey) return;
+  const view = document.getElementById('leccView');
+  view.innerHTML = '<p class="lecc-loading">Regenerando leccion&#8230;</p>';
+  try {
+    const lesson = await leccGenerate(topic);
+    leccState = { topic, lesson, answers:{} };
+    renderLeccionView();
+  } catch(e) {
+    view.innerHTML = '<p class="lecc-loading">No se pudo regenerar. Intenta de nuevo.</p><button class="mode" onclick="leccBackToList()">&#8592; volver</button>';
+  }
+}
 function esc(s){ return (''+s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function renderLeccionView(){
   const { topic, lesson } = leccState;
   const view = document.getElementById('leccView');
   let html = '<div class="lecc-head">'
            + '<button class="nav-btn back" onclick="leccBackToList()">&#8592; lista</button>'
+           + '<span>'
+           + '<button class="lecc-mini" onclick="leccRegen()">regenerar</button>'
            + '<button id="leccHeartBtn" class="lecc-heart'+(leccIsSaved(topic.id)?' on':'')+'" onclick="leccToggleSave(\''+topic.id+'\')" aria-label="guardar">'+(leccIsSaved(topic.id)?'&#x2665;':'&#x2661;')+'</button>'
+           + '</span>'
            + '</div>';
   html += '<h3 class="lecc-h">'+esc(topic.label)+'</h3>';
   // intro
@@ -6384,10 +6415,22 @@ async function leccGenerate(topic){
   lesson._v = 2;
   window.__esLessons[topic.id] = window.__esLessons[topic.id] || { status:'new', lesson:null, score:null };
   window.__esLessons[topic.id].lesson = lesson;
-  try { window.parent.postMessage({ type:'esLessonCache', topicId: topic.id, lesson: lesson }, '*'); } catch(e){}
+  try { window.parent.postMessage({ type:'esLessonCache', topicId: topic.id, lesson: lesson, label: topic.label }, '*'); } catch(e){}
   return lesson;
 }
-function leccTopicById(id){ for (const g of LECCIONES) for (const t of g.topics) if (t.id === id) return t; return null; }
+function leccTopicById(id){ for (const g of LECCIONES) for (const t of g.topics) if (t.id === id) return t; return (window.__customTopics && window.__customTopics[id]) || null; }
+window.__customTopics = window.__customTopics || {};
+function leccSlug(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40); }
+function leccCreateCustom(){
+  const el = document.getElementById('leccCustomInput');
+  const text = el ? (el.value||'').trim() : '';
+  if (!text) return;
+  const id = 'custom-' + (leccSlug(text) || 'tema');
+  const topic = { id: id, label: text, en: '' };
+  window.__customTopics[id] = topic;
+  if (el) el.value = '';
+  openLeccion(id);
+}
 
 // ---- Wikipedia image fetch with SVG fallback ----
 const wikiImgCache = {};
