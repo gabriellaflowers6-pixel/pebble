@@ -46,6 +46,14 @@ If you find an uncommitted entry from another bot: do not overwrite. Commit it o
 **Committed:** YES — this commit
 **Notes for next session:** To extend audio, edit `veo-y-digo-source.html`, run the scratchpad generators (Kokoro via `/opt/homebrew/bin/python3.11`; model cached at `~/.cache/hyperframes/tts`), then `integrate_audio.py` re-bakes into `pebble-app.html`. Voice `em_alex`, speed 0.85, MP3 mono 24kHz 48k, keyed by exact spoken phrase. `sayLine`/`sayPhrase` (story/phrase sentences) still use the browser voice (not pre-baked). File is now ~7.4MB.
 
+## 2026-06-30 — Final-review fixes (Lecciones)
+**Working on:** Three precise fixes from final review of the Lecciones feature.
+**Files changed:** `veo-y-digo-source.html` (3 edits), `pebble-app.html` (re-baked).
+**What:** Fix 1 - wrapped the 'in-progress' postMessage in openLeccion with a done-status guard so reopening a completed lesson does not downgrade it. Fix 2 - added three display-reset lines at the top of renderLecciones so re-entering the section always shows the checklist, not a stale lesson view. Fix 3 - extended leccGenerate's shape guard to also reject an empty/missing quiz array.
+**Committed:** YES -- 4b32858
+**Uncommitted:** none
+**Notes for next session:** .superpowers/sdd/task-7-report.md is gitignored; report lives only locally.
+
 ## ROADMAP — Spanish app (Veo & Digo embedded in Pebble) — as of 2026-06-27
 1. **Bake keys into defaults** (`DEFAULT_DATA.settings` line ~1108: apiKey/gistId/gistToken/oneSignal*). Blocked: need Gabby's export-data JSON. Git is private, so baking is OK.
 2. **Polished jar redesign** — `MarbleJar` (~line 2028). Make data-driven (currently hardcoded 12 marbles, MISSING Español page). Gabby chose: keep jar metaphor, neat rows, include all pages, bigger labels.
