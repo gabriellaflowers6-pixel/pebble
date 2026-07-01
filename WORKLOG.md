@@ -334,6 +334,23 @@ Durable key fix (Netlify proxy) and mic button (roadmap C) still open from befor
 **Deferred Minors (for final review / follow-up):** home Lecciones button has no .icon SVG like siblings; leccFinishQuiz does not disable its button against a double-tap; cache shape-guard checks practice but not quiz (empty-quiz response could not be completed).
 **On-device test plan (BUILD 13):** confirm Settings shows BUILD 13. Español -> Lecciones: checklist renders; tap a topic (with API key set) -> lesson generates (teach, pattern, practice, mini-quiz), finishing at >=60% checks it off; reopen loads instantly from cache; hear + save an example -> appears in Tarjetas "Lecciones" deck; in the Spanish chat, "teach me the future tense" returns an explanation + examples.
 
+## 2026-07-01 — Lecciones v2 formatting upgrade (BUILD 14)
+**Working on:** Upgrading Lecciones lesson rendering per Gabby's on-device feedback.
+**Files changed:** `veo-y-digo-source.html` (7 edits), `pebble-app.html` (BUILD bump + re-baked).
+**What:**
+- Generator prompt updated to request v2 JSON shape: teach (1-2 sentences), tips[], patternTable{headers,rows}, examples[{es,en,highlight,label}], practice, quiz.
+- Shape guard now also requires `Array.isArray(lesson.examples)`; sets `lesson._v = 2` after parsing.
+- `openLeccion` treats any cached lesson without `_v === 2` as stale, forcing regeneration into the new format.
+- All 34 LECCIONES topics gained an `en:'...'` field with exact English labels from spec.
+- `renderLecciones` now shows the English as a small muted `lecc-en-sm` line under each Spanish label.
+- `renderLeccionView` now renders: teach paragraph, tips bullet list, a real `<table class="lecc-table">` (fallback to `<pre>` for old string pattern), and highlighted/labeled examples (first occurrence of `highlight` wrapped in `<span class="lecc-hl">`; short `<span class="lecc-tag">` label pill).
+- 13 new CSS rules added to the lecc style block (.lecc-tips, .lecc-table, .lecc-hl, .lecc-tag, .lecc-ex-line, .lecc-ex-tools, .lecc-label, .lecc-en-sm).
+- PEBBLE_BUILD bumped 13 -> 14 with updated note.
+**Verification:** checkblock.py -> JS SYNTAX OK; rebake.py -> re-bake OK marker-present; checkbabel.js -> BABEL SYNTAX OK. All grep markers confirmed.
+**Committed:** YES -- 2e05a41
+**Uncommitted:** none.
+**Notes for next session:** ON-DEVICE TEST NEEDED. Old cached lessons will auto-regenerate on first open (by design). Full report: `.superpowers/sdd/lecciones-v2-report.md`. NOT pushed -- push when Gabby is ready.
+
 ## 2026-06-30 — Lecciones merged to main + LIVE (BUILD 13); repo moved to ~/dev
 **Working on:** Shipping the Lecciones feature and relocating the repo out of iCloud.
 **Went live:** merged `lecciones` -> `main` (fast-forward to 2eea589) and pushed. `origin/main` now serves BUILD 13 via GitHub Pages. This deploy also carried the earlier BUILD 11 (keyboard offsetTop gap fix) and BUILD 12 (flashcard flip-back spoiler fix) that had not reached the phone yet. The `lecciones` branch is kept on origin as a backup.
