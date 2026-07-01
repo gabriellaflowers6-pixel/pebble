@@ -351,6 +351,18 @@ Durable key fix (Netlify proxy) and mic button (roadmap C) still open from befor
 **Uncommitted:** none.
 **Notes for next session:** ON-DEVICE TEST NEEDED. Old cached lessons will auto-regenerate on first open (by design). Full report: `.superpowers/sdd/lecciones-v2-report.md`. NOT pushed -- push when Gabby is ready.
 
+## 2026-07-01 -- Lecciones: heart-to-save (Guardadas) + per-lesson flashcard decks (BUILD 15)
+**Working on:** Two new features on top of the v2 lesson formatting: (A) heart a lesson to save it to a "Guardadas" list, and (B) a "Hacer tarjetas de esta leccion" button that builds a per-lesson flashcard deck.
+**Files changed:** `veo-y-digo-source.html` (7 edits), `pebble-app.html` (reducer + message handlers + BUILD bump + re-baked).
+**What:**
+- veo source: `.lecc-heart` / `.lecc-heart.on` CSS; `leccIsSaved(id)` + `leccToggleSave(id)` helpers; heart button in `renderLeccionView` header; Guardadas section at top of `renderLecciones`; "Hacer tarjetas de esta leccion" button before Terminar; `leccMakeDeck()` function; `split(h).join` fix for the `$` hazard in the highlight replace.
+- pebble-app.html: `ES_LESSON_SAVE` reducer case (spreads `...cur`, so the `saved` flag survives later cache/progress updates, which was confirmed -- both reducers use `...cur`); `esLessonSave` + `esMakeDeck` message handlers in `EspanolPage`.
+- PEBBLE_BUILD bumped 14 -> 15.
+**Verification:** checkblock.py -> JS SYNTAX OK; rebake.py -> re-bake OK marker-present; checkbabel.js x2 -> BABEL SYNTAX OK. All grep markers confirmed. Report: `.superpowers/sdd/lecciones-save-decks-report.md`.
+**Committed:** YES -- (see commit)
+**Uncommitted:** none.
+**Notes for next session:** ON-DEVICE: open a Lecciones lesson, tap the heart, back out, confirm it appears in "Guardadas" at the top of the list. Tap "Hacer tarjetas", confirm "Tarjetas creadas" message appears, then open Tarjetas and verify the "Leccion: ..." deck is present. NOT pushed -- push when Gabby OKs.
+
 ## 2026-06-30 — Lecciones merged to main + LIVE (BUILD 13); repo moved to ~/dev
 **Working on:** Shipping the Lecciones feature and relocating the repo out of iCloud.
 **Went live:** merged `lecciones` -> `main` (fast-forward to 2eea589) and pushed. `origin/main` now serves BUILD 13 via GitHub Pages. This deploy also carried the earlier BUILD 11 (keyboard offsetTop gap fix) and BUILD 12 (flashcard flip-back spoiler fix) that had not reached the phone yet. The `lecciones` branch is kept on origin as a backup.
