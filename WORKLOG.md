@@ -333,3 +333,12 @@ Durable key fix (Netlify proxy) and mic button (roadmap C) still open from befor
 **Committed:** branch `lecciones`, NOT merged to main, NOT pushed (deploy rule).
 **Deferred Minors (for final review / follow-up):** home Lecciones button has no .icon SVG like siblings; leccFinishQuiz does not disable its button against a double-tap; cache shape-guard checks practice but not quiz (empty-quiz response could not be completed).
 **On-device test plan (BUILD 13):** confirm Settings shows BUILD 13. Español -> Lecciones: checklist renders; tap a topic (with API key set) -> lesson generates (teach, pattern, practice, mini-quiz), finishing at >=60% checks it off; reopen loads instantly from cache; hear + save an example -> appears in Tarjetas "Lecciones" deck; in the Spanish chat, "teach me the future tense" returns an explanation + examples.
+
+## 2026-06-30 — Lecciones merged to main + LIVE (BUILD 13); repo moved to ~/dev
+**Working on:** Shipping the Lecciones feature and relocating the repo out of iCloud.
+**Went live:** merged `lecciones` -> `main` (fast-forward to 2eea589) and pushed. `origin/main` now serves BUILD 13 via GitHub Pages. This deploy also carried the earlier BUILD 11 (keyboard offsetTop gap fix) and BUILD 12 (flashcard flip-back spoiler fix) that had not reached the phone yet. The `lecciones` branch is kept on origin as a backup.
+**Repo moved (rule #5):** pebble relocated from `Desktop/my projects/pebble` to **`~/dev/pebble`** via a fresh `git clone` from GitHub (avoids iCloud dataless-placeholder corruption), checked out `lecciones`, carried over the gitignored `scratchpad/` helpers + `.superpowers/` ledger, verified (clean tree, BUILD 13, bake in sync, helpers run), then removed the Desktop copy. Updated memory notes + CLAUDE.md rule #5 to point at `~/dev/pebble`.
+**Files changed:** merge brought in veo-y-digo-source.html + pebble-app.html (Lecciones) + docs/superpowers specs/plans; this entry + NEXT-SESSION rewrite are docs only.
+**Committed:** YES — feature at 2eea589 on main (pushed). Docs update commit follows.
+**Uncommitted:** none.
+**Notes for next session:** ON-DEVICE TEST STILL PENDING — confirm Settings shows BUILD 13, then walk the Lecciones flow (see NEXT-SESSION.md). Non-blocking follow-up polish (home Lecciones icon, leccFinishBtn double-tap disable, e.origin check, teachSpanish English-in-es-slot) documented in NEXT-SESSION.md. Lecciones v2 ideas: typed-answer questions, spaced-repetition review, streak.
