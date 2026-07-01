@@ -465,6 +465,18 @@
   .lecc-opt { display:block; width:100%; text-align:left; margin:4px 0; padding:9px 12px; border:1px solid rgba(42,33,24,0.12); border-radius:10px; background:var(--paper); cursor:pointer; }
   .lecc-opt.right { background:#d8e8cf; border-color:#5f7a43; } .lecc-opt.wrong { background:#f3d2cc; border-color:#c75c3a; }
   .lecc-why { font-size:0.85rem; color:var(--olive); margin-top:6px; }
+  .lecc-tips { margin:8px 0 8px 18px; padding:0; }
+  .lecc-tips li { margin:4px 0; font-size:0.9rem; color:var(--ink); line-height:1.4; }
+  .lecc-table { width:100%; border-collapse:collapse; margin:10px 0; font-size:0.9rem; }
+  .lecc-table th { text-align:left; font-family:'DM Mono',monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--olive); border-bottom:2px solid rgba(42,33,24,0.15); padding:6px 8px; }
+  .lecc-table td { padding:6px 8px; border-bottom:1px solid rgba(42,33,24,0.08); color:var(--ink); }
+  .lecc-table tr td:first-child { font-weight:600; color:var(--terracotta); white-space:nowrap; }
+  .lecc-hl { background:#fbe7c6; color:var(--terracotta-dk,#9a3f22); border-radius:4px; padding:0 3px; font-weight:700; }
+  .lecc-tag { display:inline-block; font-family:'DM Mono',monospace; font-size:0.66rem; text-transform:uppercase; letter-spacing:0.06em; background:var(--olive); color:var(--paper); border-radius:999px; padding:2px 8px; vertical-align:middle; }
+  .lecc-ex-line { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .lecc-ex-tools { margin-top:4px; }
+  .lecc-label { }
+  .lecc-en-sm { display:block; font-size:0.76rem; color:var(--olive); margin-top:2px; }
 </style>
 </head>
 <body>
@@ -4766,50 +4778,50 @@ const screens = ['home','flashHome','storyHome','reader','phrase','test','worksh
 /* ===================== LECCIONES TOPIC SPINE ===================== */
 const LECCIONES = [
   { phase: 'Fundamentos', topics: [
-    { id:'pronunciacion', label:'Pronunciación y acentos' },
-    { id:'genero',        label:'Género y artículos' },
-    { id:'concordancia',  label:'Concordancia de adjetivos' },
-    { id:'pronombres',    label:'Pronombres de sujeto' },
-    { id:'ser-estar',     label:'Ser vs estar' },
-    { id:'preguntas',     label:'Preguntas (qué, quién, dónde...)' },
-    { id:'negacion',      label:'Negación (no, nada, nunca...)' },
+    { id:'pronunciacion', label:'Pronunciación y acentos',           en:'Pronunciation & stress' },
+    { id:'genero',        label:'Género y artículos',                en:'Noun gender & articles' },
+    { id:'concordancia',  label:'Concordancia de adjetivos',         en:'Adjective agreement' },
+    { id:'pronombres',    label:'Pronombres de sujeto',              en:'Subject pronouns' },
+    { id:'ser-estar',     label:'Ser vs estar',                      en:'The two verbs for to be' },
+    { id:'preguntas',     label:'Preguntas (qué, quién, dónde...)',  en:'Question words' },
+    { id:'negacion',      label:'Negación (no, nada, nunca...)',     en:'Negation' },
   ]},
   { phase: 'Presente', topics: [
-    { id:'presente-reg',  label:'Presente regular (-ar/-er/-ir)' },
-    { id:'cambio-radical',label:'Verbos con cambio radical' },
-    { id:'irregulares',   label:'Irregulares comunes (tener, ir, hacer...)' },
-    { id:'reflexivos',    label:'Verbos reflexivos' },
-    { id:'progresivo',    label:'Presente progresivo (estar + -ando)' },
-    { id:'gustar',        label:'Gustar y verbos como gustar' },
+    { id:'presente-reg',  label:'Presente regular (-ar/-er/-ir)',    en:'Regular present tense' },
+    { id:'cambio-radical',label:'Verbos con cambio radical',         en:'Stem-changing verbs' },
+    { id:'irregulares',   label:'Irregulares comunes (tener, ir, hacer...)', en:'Common irregular verbs' },
+    { id:'reflexivos',    label:'Verbos reflexivos',                 en:'Reflexive verbs' },
+    { id:'progresivo',    label:'Presente progresivo (estar + -ando)', en:'Present progressive (-ing)' },
+    { id:'gustar',        label:'Gustar y verbos como gustar',       en:'Gustar and similar verbs (to like)' },
   ]},
   { phase: 'Pronombres y conectores', topics: [
-    { id:'od',            label:'Objeto directo (lo, la, los, las)' },
-    { id:'oi',            label:'Objeto indirecto (me, te, le, nos, les)' },
-    { id:'dobles',        label:'Doble pronombre (se lo, me lo)' },
-    { id:'posesivos',     label:'Posesivos y demostrativos' },
-    { id:'por-para',      label:'Por vs para' },
-    { id:'preposiciones', label:'Preposiciones comunes (al, del...)' },
+    { id:'od',            label:'Objeto directo (lo, la, los, las)', en:'Direct object pronouns' },
+    { id:'oi',            label:'Objeto indirecto (me, te, le, nos, les)', en:'Indirect object pronouns' },
+    { id:'dobles',        label:'Doble pronombre (se lo, me lo)',    en:'Double object pronouns' },
+    { id:'posesivos',     label:'Posesivos y demostrativos',         en:'Possessives & demonstratives' },
+    { id:'por-para',      label:'Por vs para',                       en:'Por vs para (for)' },
+    { id:'preposiciones', label:'Preposiciones comunes (al, del...)',en:'Common prepositions' },
   ]},
   { phase: 'Pasado', topics: [
-    { id:'preterito',     label:'Pretérito (regular e irregular)' },
-    { id:'imperfecto',    label:'Imperfecto' },
-    { id:'pret-vs-imp',   label:'Pretérito vs imperfecto' },
-    { id:'pres-perfecto', label:'Presente perfecto (he/has...)' },
+    { id:'preterito',     label:'Pretérito (regular e irregular)',   en:'Preterite (completed past)' },
+    { id:'imperfecto',    label:'Imperfecto',                        en:'Imperfect (ongoing past)' },
+    { id:'pret-vs-imp',   label:'Pretérito vs imperfecto',           en:'Preterite vs imperfect' },
+    { id:'pres-perfecto', label:'Presente perfecto (he/has...)',     en:'Present perfect (have done)' },
   ]},
   { phase: 'Futuro y modos', topics: [
-    { id:'ir-a',          label:'Ir a + infinitivo (futuro próximo)' },
-    { id:'futuro',        label:'Futuro simple' },
-    { id:'condicional',   label:'Condicional' },
-    { id:'imperativo',    label:'Imperativo (mandatos)' },
-    { id:'subjuntivo',    label:'Presente de subjuntivo' },
-    { id:'subj-imp',      label:'Imperfecto de subjuntivo' },
-    { id:'si-clausulas',  label:'Cláusulas con si' },
+    { id:'ir-a',          label:'Ir a + infinitivo (futuro próximo)',en:'Going to (near future)' },
+    { id:'futuro',        label:'Futuro simple',                     en:'Simple future (will)' },
+    { id:'condicional',   label:'Condicional',                       en:'Conditional (would)' },
+    { id:'imperativo',    label:'Imperativo (mandatos)',              en:'Commands' },
+    { id:'subjuntivo',    label:'Presente de subjuntivo',            en:'Present subjunctive' },
+    { id:'subj-imp',      label:'Imperfecto de subjuntivo',          en:'Imperfect subjunctive' },
+    { id:'si-clausulas',  label:'Cláusulas con si',                  en:'If / conditional clauses' },
   ]},
   { phase: 'Pulido', topics: [
-    { id:'se-pasivo',     label:'Se pasivo e impersonal' },
-    { id:'relativos',     label:'Cláusulas relativas (qué, quién...)' },
-    { id:'comparativos',  label:'Comparativos y superlativos' },
-    { id:'conectores',    label:'Conectores del discurso' },
+    { id:'se-pasivo',     label:'Se pasivo e impersonal',            en:'Passive & impersonal se' },
+    { id:'relativos',     label:'Cláusulas relativas (qué, quién...)',en:'Relative clauses' },
+    { id:'comparativos',  label:'Comparativos y superlativos',       en:'Comparatives & superlatives' },
+    { id:'conectores',    label:'Conectores del discurso',           en:'Discourse connectors' },
   ]},
 ];
 
@@ -6176,7 +6188,7 @@ function renderLecciones(){
     group.topics.forEach(t => {
       total++; const st = leccStatus(t.id); if (st === 'done') done++;
       const mark = st === 'done' ? '✓' : (st === 'in-progress' ? '·' : '');
-      html += '<button class="lecc-row" onclick="openLeccion(\''+t.id+'\')"><span class="lecc-mark">'+mark+'</span> '+t.label+'</button>';
+      html += '<button class="lecc-row" onclick="openLeccion(\''+t.id+'\')"><span class="lecc-mark">'+mark+'</span> <span class="lecc-label">'+t.label+'</span><span class="lecc-en-sm">'+(t.en||'')+'</span></button>';
     });
   });
   list.innerHTML = html;
@@ -6196,6 +6208,7 @@ async function openLeccion(topicId){
   view.style.display = 'block';
   view.innerHTML = '<p class="lecc-loading">Cargando lección…</p>';
   let lesson = (window.__esLessons[topicId] && window.__esLessons[topicId].lesson) || null;
+  if (lesson && lesson._v !== 2) lesson = null;   // old shape: force regenerate into the new format
   if (!lesson) {
     if (!window.__claudeKey) { view.innerHTML = '<p class="lecc-loading">Agrega tu clave de API en ajustes para generar esta lección.</p><button class="mode" onclick="leccBackToList()">← volver</button>'; return; }
     try { lesson = await leccGenerate(topic); }
@@ -6219,11 +6232,34 @@ function renderLeccionView(){
   const view = document.getElementById('leccView');
   let html = '<button class="nav-btn back" onclick="leccBackToList()">← lista</button>';
   html += '<h3 class="lecc-h">'+esc(topic.label)+'</h3>';
+  // intro
   html += '<p class="lecc-teach">'+esc(lesson.teach)+'</p>';
-  html += '<div class="lecc-examples">' + (lesson.examples||[]).map((ex,i) =>
-      '<div class="lecc-ex"><span class="lecc-es">'+esc(ex.es)+'</span> <button class="lecc-mini" onclick="leccHear('+i+')">oír</button> <button class="lecc-mini" onclick="leccSaveEx('+i+')">guardar</button><br><span class="lecc-en">'+esc(ex.en)+'</span></div>'
-    ).join('') + '</div>';
-  html += '<pre class="lecc-pattern">'+esc(lesson.pattern)+'</pre>';
+  // tips, each on its own line
+  if (Array.isArray(lesson.tips) && lesson.tips.length) {
+    html += '<ul class="lecc-tips">' + lesson.tips.map(t => '<li>'+esc(t)+'</li>').join('') + '</ul>';
+  }
+  // pattern table (fallback to old string pattern if no table)
+  if (lesson.patternTable && Array.isArray(lesson.patternTable.rows) && lesson.patternTable.rows.length) {
+    const pt = lesson.patternTable;
+    let t = '<table class="lecc-table">';
+    if (Array.isArray(pt.headers) && pt.headers.length) t += '<thead><tr>' + pt.headers.map(h => '<th>'+esc(h)+'</th>').join('') + '</tr></thead>';
+    t += '<tbody>' + pt.rows.map(r => '<tr>' + (Array.isArray(r) ? r : [r]).map(c => '<td>'+esc(c)+'</td>').join('') + '</tr>').join('') + '</tbody></table>';
+    html += t;
+  } else if (typeof lesson.pattern === 'string' && lesson.pattern) {
+    html += '<pre class="lecc-pattern">'+esc(lesson.pattern)+'</pre>';
+  }
+  // examples: highlight the target word, label the sentence
+  html += '<div class="lecc-examples">' + (lesson.examples||[]).map((ex,i) => {
+    let esHtml = esc(ex.es);
+    if (ex.highlight) {
+      const h = esc(ex.highlight);
+      if (esHtml.indexOf(h) !== -1) esHtml = esHtml.replace(h, '<span class="lecc-hl">'+h+'</span>');
+    }
+    const tag = ex.label ? '<span class="lecc-tag">'+esc(ex.label)+'</span>' : '';
+    return '<div class="lecc-ex"><div class="lecc-ex-line"><span class="lecc-es">'+esHtml+'</span> '+tag+'</div>'
+         + '<div class="lecc-ex-tools"><button class="lecc-mini" onclick="leccHear('+i+')">oír</button> <button class="lecc-mini" onclick="leccSaveEx('+i+')">guardar</button></div>'
+         + '<span class="lecc-en">'+esc(ex.en)+'</span></div>';
+  }).join('') + '</div>';
   html += '<div class="lecc-h2">Practica</div>';
   html += (lesson.practice||[]).map((q,i) => leccQuestionHtml('practice', q, i)).join('');
   html += '<div class="lecc-h2">Mini examen</div>';
@@ -6280,13 +6316,18 @@ async function leccGenerate(topic){
   if (!window.__claudeKey) throw new Error('no-key');
   const prompt =
     'You are a Spanish teacher for an English speaker (CEFR A1 to B1). Create a short lesson on: "'
-    + topic.label + '". Return ONLY valid JSON, no prose, with this exact shape:\n'
-    + '{"teach":"2-4 sentence plain-English explanation of the rule AND the sentence structure",'
-    + '"examples":[{"es":"Spanish sentence","en":"English"}],'
-    + '"pattern":"the conjugation table or formula, lines separated by \\n",'
-    + '"practice":[{"q":"question text (may be English with a Spanish blank)","options":["a","b","c","d"],"answer":"the correct option exactly","why":"one-sentence why in English"}],'
+    + topic.label + '". Return ONLY valid JSON, no markdown, matching this exact shape:\n'
+    + '{"teach":"1-2 sentences plain-English intro to the rule",'
+    + '"tips":["short tip, one idea","another tip"],'
+    + '"patternTable":{"headers":["Pronombre","Forma"],"rows":[["yo","soy"],["tú","eres"]]},'
+    + '"examples":[{"es":"Yo soy alta.","en":"I am tall.","highlight":"soy","label":"ser"}],'
+    + '"practice":[{"q":"question","options":["a","b","c","d"],"answer":"the correct option exactly","why":"one-sentence why in English"}],'
     + '"quiz":[{"q":"...","options":["..."],"answer":"...","why":"..."}]}\n'
-    + 'Give 2 or 3 examples, 6 practice items, 4 quiz items. Keep it tight for a 10-minute lesson. No markdown.';
+    + 'Rules: teach = 1-2 sentences only; put remember notes, exceptions, gotchas as separate tips entries, NOT in teach. '
+    + 'patternTable: for a conjugation give one row per pronoun (yo, tú, él/ella/usted, nosotros, vosotros, ellos/ustedes) with the conjugated form; for a contrast topic give a comparison table; every row length must equal headers length. '
+    + 'examples: give 2 or 3; on each, highlight must be an exact substring of es, and label names the point (for ser vs estar, label each example ser or estar). '
+    + '6 practice items, 4 quiz items, each {q, options[4], answer (exactly one option), why}. '
+    + 'Do not include _v in the JSON. Keep it tight for a 10-minute lesson.';
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'Content-Type':'application/json', 'x-api-key': window.__claudeKey, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
@@ -6296,7 +6337,8 @@ async function leccGenerate(topic){
   const j = await res.json();
   const text = (j && j.content && j.content[0] && j.content[0].text) || '';
   const lesson = leccParseJson(text);
-  if (!lesson || typeof lesson.teach !== 'string' || !Array.isArray(lesson.practice) || !Array.isArray(lesson.quiz) || !lesson.quiz.length) throw new Error('bad-lesson');
+  if (!lesson || typeof lesson.teach !== 'string' || !Array.isArray(lesson.practice) || !Array.isArray(lesson.quiz) || !lesson.quiz.length || !Array.isArray(lesson.examples)) throw new Error('bad-lesson');
+  lesson._v = 2;
   window.__esLessons[topic.id] = window.__esLessons[topic.id] || { status:'new', lesson:null, score:null };
   window.__esLessons[topic.id].lesson = lesson;
   try { window.parent.postMessage({ type:'esLessonCache', topicId: topic.id, lesson: lesson }, '*'); } catch(e){}
