@@ -6166,6 +6166,9 @@ function toggleCardEn(){
 /* ===================== LECCIONES ===================== */
 function leccStatus(id){ return (window.__esLessons[id] && window.__esLessons[id].status) || 'new'; }
 function renderLecciones(){
+  var _v = document.getElementById('leccView'); if (_v) _v.style.display = 'none';
+  var _ls = document.getElementById('leccList'); if (_ls) _ls.style.display = 'block';
+  var _pr = document.getElementById('leccProgress'); if (_pr) _pr.style.display = 'block';
   const list = document.getElementById('leccList');
   let total = 0, done = 0, html = '';
   LECCIONES.forEach(group => {
@@ -6199,7 +6202,9 @@ async function openLeccion(topicId){
     catch(e){ view.innerHTML = '<p class="lecc-loading">No se pudo generar la lección. Intenta de nuevo.</p><button class="mode" onclick="leccBackToList()">← volver</button>'; return; }
   }
   leccState = { topic, lesson, answers:{} };
-  try { window.parent.postMessage({ type:'esLessonProgress', topicId, status:'in-progress', score:null }, '*'); } catch(e){}
+  if (!(window.__esLessons[topicId] && window.__esLessons[topicId].status === 'done')) {
+    try { window.parent.postMessage({ type:'esLessonProgress', topicId, status:'in-progress', score:null }, '*'); } catch(e){}
+  }
   renderLeccionView();
 }
 function leccBackToList(){
@@ -6291,7 +6296,7 @@ async function leccGenerate(topic){
   const j = await res.json();
   const text = (j && j.content && j.content[0] && j.content[0].text) || '';
   const lesson = leccParseJson(text);
-  if (!lesson || typeof lesson.teach !== 'string' || !Array.isArray(lesson.practice)) throw new Error('bad-lesson');
+  if (!lesson || typeof lesson.teach !== 'string' || !Array.isArray(lesson.practice) || !Array.isArray(lesson.quiz) || !lesson.quiz.length) throw new Error('bad-lesson');
   window.__esLessons[topic.id] = window.__esLessons[topic.id] || { status:'new', lesson:null, score:null };
   window.__esLessons[topic.id].lesson = lesson;
   try { window.parent.postMessage({ type:'esLessonCache', topicId: topic.id, lesson: lesson }, '*'); } catch(e){}
