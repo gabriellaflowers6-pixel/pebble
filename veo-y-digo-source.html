@@ -6269,7 +6269,7 @@ async function leccRegen(){
   const topic = leccState.topic;
   if (!window.__claudeKey) return;
   const view = document.getElementById('leccView');
-  view.innerHTML = '<p class="lecc-loading">Regenerando leccion&#8230;</p>';
+  view.innerHTML = '<p class="lecc-loading">Regenerando lección&#8230;</p>';
   try {
     const lesson = await leccGenerate(topic);
     leccState = { topic, lesson, answers:{} };
