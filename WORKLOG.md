@@ -392,3 +392,13 @@ Durable key fix (Netlify proxy) and mic button (roadmap C) still open from befor
 **Committed:** YES -- 395be26
 **Uncommitted:** none.
 **Notes for next session:** NOT pushed -- push when Gabby OKs. On-device: open any existing lesson -- should load from cache without regenerating. Tap "regenerar" to force a new one. Scroll to top of Lecciones list, type a custom topic, tap "Crear leccion" -- lesson generates, custom topic appears in "Mis lecciones" on subsequent visits.
+
+## 2026-07-01 — BUILD 16 LIVE: no auto-regen + manual regenerate + custom lessons
+**From Gabby's feedback (regenerating an already-loaded lesson wastes credits; wants to type her own topic).**
+- **Removed the auto-regen** (`_v!==2` line in openLeccion). A cached lesson of any version now always loads free; old-format lessons render via backward-compat fallbacks. NEVER auto-regenerate (credit rule saved to memory).
+- **Manual `leccRegen()` + "regenerar" button** — regenerates a lesson only on explicit tap.
+- **Custom lessons:** `leccCreateCustom` input on the Lecciones screen ("¿Qué quieres aprender?") builds a topic, generates a lesson, caches it (esLessonCache now carries `label`; React ES_LESSON_CACHE stores it; applyEsLessons rebuilds `window.__customTopics`), and lists it under "Mis lecciones" so it reopens for free after reload.
+- Accent fix "Regenerando lección". BUILD 16.
+**Reviewed (Approved): credit fix airtight, custom round-trip sound, slug safe ([a-z0-9-]), user label esc()'d.** Deferred minor: all-symbols custom input collapses to `custom-tema` (low stakes).
+**Committed/Pushed:** YES — main 906464a, live on Pages.
+**On-device (BUILD 16):** reopen ser vs estar (or any loaded lesson) → loads instantly, no regen; "regenerar" refreshes on tap; type a topic → "Crear lección" generates it and it appears under "Mis lecciones".
