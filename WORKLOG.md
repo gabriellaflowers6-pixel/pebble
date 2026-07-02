@@ -417,3 +417,11 @@ Durable key fix (Netlify proxy) and mic button (roadmap C) still open from befor
 - On device: swipe-close webclip, reopen, Settings should read BUILD 17. Check the new CTA/bar/inline create on the Lecciones list, and "Reiniciar test" on a lesson resets all answers with no regeneration.
 - Not in scope but noticed: the two bottom lesson buttons ("Hacer tarjetas de esta leccion", "Terminar") still use the off-theme `.mode` card style; easy follow-up to theme them to match the new reset button.
 - Optional polish: shuffle option order on "Reiniciar test" so a retake isn't just position memory (left same-order for v1).
+
+## 2026-07-02 — Lecciones lesson-view buttons themed (BUILD 18)
+**Working on:** Follow-up from the previous entry: themed the two remaining off-theme lesson buttons.
+**Files changed:** `veo-y-digo-source.html` (re-baked, marker "lecc-finish"), `pebble-app.html` (BUILD 17 → 18).
+**What changed:** "Terminar" → solid olive primary CTA (`.lecc-finish`, Fraunces italic, 3D shadow). "Hacer tarjetas de esta leccion" → "Hacer tarjetas" olive outline (`.lecc-makecards`), now paired in a flex row beside "Reiniciar test". Removed the last `.mode`/`.mode primary` cards from the lesson view.
+**Verify:** checkblock renderLeccionView JS SYNTAX OK; rebake OK marker-present; headless sample-lesson render shows the three themed buttons correct (scratchpad/lecc-view2.png).
+**Committed:** local only — NOT pushed.
+**Notes for next session:** BUILD 18 on device check. Optional: shuffle options on Reiniciar test.
