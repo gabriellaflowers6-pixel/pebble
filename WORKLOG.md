@@ -402,3 +402,18 @@ Durable key fix (Netlify proxy) and mic button (roadmap C) still open from befor
 **Reviewed (Approved): credit fix airtight, custom round-trip sound, slug safe ([a-z0-9-]), user label esc()'d.** Deferred minor: all-symbols custom input collapses to `custom-tema` (low stakes).
 **Committed/Pushed:** YES — main 906464a, live on Pages.
 **On-device (BUILD 16):** reopen ser vs estar (or any loaded lesson) → loads instantly, no regen; "regenerar" refreshes on tap; type a topic → "Crear lección" generates it and it appears under "Mis lecciones".
+
+## 2026-07-02 — Lecciones buttons re-theme + reiniciar test (BUILD 17)
+**Working on:** Lecciones screen polish + a retake control, per Gabby's on-device feedback that "Lección de hoy" and "Crear lección" were ugly, off-theme, badly placed (they used the big `.mode` home-card class).
+**Files changed:** `veo-y-digo-source.html` (edited + re-baked into `pebble-app.html` via `scratchpad/rebake.py "lecc-today"`), `pebble-app.html` (PEBBLE_BUILD 16 → 17 + note).
+**What changed:**
+- Lecciones list header redesigned to the theme (Option B, approved): title + "done / total" count in a topbar, a gold→terracotta progress bar, a dark ink "Lección de hoy" CTA (Fraunces italic, sun icon, 3D shadow), an "o crea una lección tuya" divider, and a compact inline custom-topic input + olive outline "Crear" button. All wrapped in `#leccHome` so these controls hide when a lesson is open (previously they stayed visible above the lesson).
+- `renderLecciones` now fills the count text + bar width; `openLeccion` hides `#leccHome`.
+- New **"↺ Reiniciar test"** button in the lesson view (`leccResetTest`): clears `leccState.answers` and re-renders from the cached lesson, so the whole test resets for a retake. NO API call — respects the credit rule. (Brand-new questions remain the separate "regenerar" button.)
+- CSS added for `.lecc-topbar/.lecc-count/.lecc-bar/.lecc-today/.lecc-or/.lecc-make-b/.lecc-test-actions/.lecc-reset`.
+**Verify:** checkblock JS SYNTAX OK on renderLeccionView/renderLecciones/leccResetTest; rebake OK marker-present; rendered the real source list + a sample lesson view headless (both correct, see scratchpad/lecc-live.png, lecc-view.png).
+**Committed:** local only — NOT pushed (awaiting Gabby's OK to deploy).
+**Notes for next session:**
+- On device: swipe-close webclip, reopen, Settings should read BUILD 17. Check the new CTA/bar/inline create on the Lecciones list, and "Reiniciar test" on a lesson resets all answers with no regeneration.
+- Not in scope but noticed: the two bottom lesson buttons ("Hacer tarjetas de esta leccion", "Terminar") still use the off-theme `.mode` card style; easy follow-up to theme them to match the new reset button.
+- Optional polish: shuffle option order on "Reiniciar test" so a retake isn't just position memory (left same-order for v1).

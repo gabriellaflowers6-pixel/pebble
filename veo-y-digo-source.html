@@ -482,6 +482,22 @@
   .lecc-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
   .lecc-custom { margin:8px 0 14px; }
   .lecc-custom input { width:100%; padding:10px 12px; border:1px solid rgba(42,33,24,0.15); border-radius:10px; font-size:0.9rem; margin-bottom:8px; background:var(--paper); color:var(--ink); }
+  .lecc-topbar { display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin:6px 0 10px; align-self:stretch; }
+  .lecc-topbar .picker-title { margin:0; }
+  .lecc-count { font-family:'DM Mono',monospace; font-size:0.74rem; letter-spacing:0.04em; color:var(--olive); white-space:nowrap; }
+  .lecc-bar { height:7px; border-radius:99px; background:rgba(42,33,24,0.10); overflow:hidden; margin:0 0 18px; align-self:stretch; }
+  .lecc-bar > i { display:block; height:100%; width:0%; border-radius:99px; background:linear-gradient(90deg,var(--gold),var(--terracotta)); transition:width 0.4s ease; }
+  .lecc-today { align-self:stretch; width:100%; display:flex; align-items:center; justify-content:center; gap:10px; font-family:'Fraunces',serif; font-weight:900; font-style:italic; font-size:1.12rem; color:var(--paper); background:var(--ink); border:none; border-radius:16px; padding:15px 18px; box-shadow:0 5px 0 #1a120b; cursor:pointer; }
+  .lecc-today:active { transform:translateY(2px); box-shadow:0 3px 0 #1a120b; }
+  .lecc-today .ico { font-size:1.2rem; }
+  .lecc-or { font-family:'DM Mono',monospace; font-size:0.66rem; text-transform:uppercase; letter-spacing:0.14em; color:#8a7a62; text-align:center; margin:14px 0 10px; }
+  .lecc-make-b { display:flex; gap:8px; align-self:stretch; margin-bottom:6px; }
+  .lecc-make-b input { flex:1; font-family:'DM Mono',monospace; font-size:0.78rem; padding:11px 12px; border:1.5px solid rgba(42,33,24,0.22); border-radius:12px; background:var(--paper); color:var(--ink); }
+  .lecc-make-b button { font-family:'DM Mono',monospace; font-size:0.78rem; font-weight:500; letter-spacing:0.03em; border:1.5px solid var(--olive); background:transparent; color:var(--olive); border-radius:12px; padding:0 18px; white-space:nowrap; cursor:pointer; }
+  .lecc-make-b button:active { background:rgba(85,100,52,0.10); }
+  .lecc-test-actions { margin:16px 0 4px; align-self:stretch; }
+  .lecc-reset { font-family:'DM Mono',monospace; font-size:0.8rem; font-weight:500; letter-spacing:0.03em; border:1.5px solid var(--terracotta); background:transparent; color:var(--terracotta); border-radius:12px; padding:10px 18px; cursor:pointer; }
+  .lecc-reset:active { background:rgba(199,92,58,0.10); }
 </style>
 </head>
 <body>
@@ -843,12 +859,18 @@
     <div class="reader-nav">
       <button onclick="show('home')">← Inicio</button>
     </div>
-    <div class="picker-title">Lecciones</div>
-    <div class="progress" id="leccProgress"></div>
-    <button class="mode" onclick="leccionDeHoy()">Lecci&#243;n de hoy</button>
-    <div class="lecc-custom">
-      <input id="leccCustomInput" type="text" placeholder="&#191;Qu&#233; quieres aprender? (ej: el subjuntivo con ojal&#225;)" />
-      <button class="mode" onclick="leccCreateCustom()">Crear lecci&#243;n</button>
+    <div id="leccHome">
+      <div class="lecc-topbar">
+        <div class="picker-title">Lecciones</div>
+        <div class="lecc-count" id="leccProgress"></div>
+      </div>
+      <div class="lecc-bar"><i id="leccBarFill"></i></div>
+      <button class="lecc-today" onclick="leccionDeHoy()"><span class="ico">&#9728;</span> Lecci&#243;n de hoy</button>
+      <div class="lecc-or">o crea una lecci&#243;n tuya</div>
+      <div class="lecc-make-b">
+        <input id="leccCustomInput" type="text" placeholder="ej: el subjuntivo con ojal&#225;" />
+        <button onclick="leccCreateCustom()">Crear</button>
+      </div>
     </div>
     <div id="leccList"></div>
     <div id="leccView" style="display:none"></div>
@@ -6203,6 +6225,7 @@ function renderLecciones(){
   var _v = document.getElementById('leccView'); if (_v) _v.style.display = 'none';
   var _ls = document.getElementById('leccList'); if (_ls) _ls.style.display = 'block';
   var _pr = document.getElementById('leccProgress'); if (_pr) _pr.style.display = 'block';
+  var _hm = document.getElementById('leccHome'); if (_hm) _hm.style.display = 'block';
   const list = document.getElementById('leccList');
   let total = 0, done = 0, html = '';
   const saved = [];
@@ -6231,7 +6254,8 @@ function renderLecciones(){
     });
   });
   list.innerHTML = html;
-  document.getElementById('leccProgress').textContent = done + ' / ' + total + ' completadas';
+  var _cnt = document.getElementById('leccProgress'); if (_cnt) _cnt.textContent = done + ' / ' + total;
+  var _bar = document.getElementById('leccBarFill'); if (_bar) _bar.style.width = (total ? Math.round(done / total * 100) : 0) + '%';
 }
 function leccionDeHoy(){
   for (const g of LECCIONES) for (const t of g.topics) if (leccStatus(t.id) !== 'done') { openLeccion(t.id); return; }
@@ -6243,6 +6267,7 @@ async function openLeccion(topicId){
   const topic = leccTopicById(topicId); if (!topic) return;
   document.getElementById('leccList').style.display = 'none';
   document.getElementById('leccProgress').style.display = 'none';
+  var _hm = document.getElementById('leccHome'); if (_hm) _hm.style.display = 'none';
   const view = document.getElementById('leccView');
   view.style.display = 'block';
   view.innerHTML = '<p class="lecc-loading">Cargando lección…</p>';
@@ -6322,6 +6347,7 @@ function renderLeccionView(){
   html += (lesson.practice||[]).map((q,i) => leccQuestionHtml('practice', q, i)).join('');
   html += '<div class="lecc-h2">Mini examen</div>';
   html += (lesson.quiz||[]).map((q,i) => leccQuestionHtml('quiz', q, i)).join('');
+  html += '<div class="lecc-test-actions"><button class="lecc-reset" onclick="leccResetTest()">&#8635; Reiniciar test</button></div>';
   html += '<button class="mode" onclick="leccMakeDeck()">Hacer tarjetas de esta leccion</button>';
   html += '<button class="mode primary" id="leccFinishBtn" onclick="leccFinishQuiz()">Terminar</button>';
   view.innerHTML = html;
@@ -6353,6 +6379,14 @@ function leccFinishQuiz(){
   msg.textContent = status === 'done' ? ('Lección completa. '+got+' / '+quiz.length) : ('Sigue practicando: '+got+' / '+quiz.length+'. Necesitas 60%.');
   view.appendChild(msg);
   setTimeout(leccBackToList, 1400);
+}
+function leccResetTest(){
+  if (!leccState) return;
+  leccState.answers = {};
+  renderLeccionView();
+  var v = document.getElementById('leccView');
+  var h = v && v.querySelector('.lecc-h2');
+  if (h && h.scrollIntoView) h.scrollIntoView({ behavior:'smooth', block:'start' });
 }
 
 /* ---- Task 5: hear and save on lesson examples ---- */
