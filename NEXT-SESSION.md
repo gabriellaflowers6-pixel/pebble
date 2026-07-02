@@ -12,32 +12,39 @@ Read `WORKLOG.md` (newest entries at the bottom) and the memory note `project_pe
 
 Pebble now lives at **`~/dev/pebble`** (moved off `Desktop/my projects/` on 2026-06-30 per CLAUDE.md rule #5, iCloud was evicting `.git` and killing repos). Work here, not on the Desktop. GitHub: `gabriellaflowers6-pixel/pebble`.
 
-## State: BUILD 13, LIVE on main + GitHub Pages
+## State: BUILD 16, LIVE on main + GitHub Pages
 
 Live link: `https://gabriellaflowers6-pixel.github.io/pebble/pebble-app.html`
 
-`main` = `origin/main` = the Lecciones merge. The `lecciones` branch is merged and also kept on origin as a backup.
+`main` = `origin/main`. All work commits straight to `main` in rapid-iterate mode; the old `lecciones` branch is on origin as a backup.
 
-BUILD number is at the top of Settings (`PEBBLE_BUILD` in `pebble-app.html`), the cache-confirmation tool (no service worker; iOS caches the webclip hard). Bump it on every user-visible change. Currently **BUILD 13**.
+BUILD number is at the top of Settings (`PEBBLE_BUILD` in `pebble-app.html`), the cache-confirmation tool (no service worker; iOS caches the webclip hard). Bump it on every user-visible change. Currently **BUILD 16**.
 
-## Shipped and now live (BUILD 11-13)
+**CREDIT RULE (Gabby):** never auto-regenerate a cached lesson; each Claude generation costs money. Generate a topic once, cache forever, only regenerate on an explicit "regenerar" tap. Treat AI generations as expensive.
 
-- **BUILD 11** — keyboard gap fix: `.phone-frame` tracks `visualViewport.offsetTop` via `--kb-top` so the chat composer sits flush above the iOS keyboard (the offsetTop translate that BUILD 2/3 predicted but never added).
-- **BUILD 12** — flashcard flip-back spoiler fix: `renderCard` snaps the 3D card to the front without animating, so tapping next no longer flashes the new card's answer.
-- **BUILD 13 — Lecciones (new Spanish lessons feature).** New `lecciones` screen in the Veo source: a phased road-to-fluency checklist (`LECCIONES` const), "Lección de hoy" button, home nav entry. Each topic generates a ~10-min lesson via Claude (`leccGenerate`, claude-sonnet-4-6, cached to `data.esLessons` on the React side, posted in via `esLessonsData` / out via `esLessonCache`+`esLessonProgress`; cache-poisoning guarded by res.ok + shape check). Lesson view = teach + pattern + multiple-choice practice (with "why") + mini-quiz (0.6 pass marks the topic done). Hear (`leccHear`/fcSpeak) + save (`leccSaveEx` → `saveEsCard` → themed `lecciones` flashcard deck) on each example. "teach me X" / "enseñame X" in the Spanish chat (`teachSpanish` in ChatBar; speaks only the examples). Spec: `docs/superpowers/specs/2026-06-29-spanish-lecciones-design.md`; plan: `docs/superpowers/plans/2026-06-30-spanish-lecciones.md`. Built subagent-driven, every task + the whole branch reviewed.
+## Shipped and now live (BUILD 11-16)
+
+- **BUILD 11** — keyboard gap fix: `.phone-frame` tracks `visualViewport.offsetTop` via `--kb-top` so the chat composer sits flush above the iOS keyboard.
+- **BUILD 12** — flashcard flip-back spoiler fix: `renderCard` snaps the 3D card to the front without animating.
+- **BUILD 13 — Lecciones (new Spanish lessons feature).** `lecciones` screen: phased road-to-fluency checklist (`LECCIONES` const), "Lección de hoy", home nav. Each topic generates a ~10-min lesson via Claude (`leccGenerate`, claude-sonnet-4-6, cached to `data.esLessons` on the React side; `esLessonsData` in / `esLessonCache`+`esLessonProgress` out; res.ok + shape guard). Lesson = teach + pattern + multiple-choice practice (with "why") + mini-quiz (0.6 pass marks done). Hear + save on examples. "teach me X" / "enseñame X" in the Spanish chat (`teachSpanish`). Spec: `docs/superpowers/specs/2026-06-29-spanish-lecciones-design.md`; plan: `docs/superpowers/plans/2026-06-30-spanish-lecciones.md`.
+- **BUILD 14 — lesson formatting v2** (shape `_v:2`): pattern is a real horizontal TABLE (`patternTable{headers,rows}`); examples HIGHLIGHT the target word + TAG it (ser/estar); teach is a short intro + `tips[]` per line; the lesson LIST shows English (`en` on all 34 topics). Renderer has backward-compat fallbacks for old-shape lessons. Spec: `docs/superpowers/specs/2026-07-01-lecciones-formatting.md`.
+- **BUILD 15 — save + per-lesson decks.** Heart a lesson → "Guardadas" section (`ES_LESSON_SAVE`, `esLessonSave`, `saved` flag). "Hacer tarjetas de esta lección" → themed `Leccion: <topic>` deck from examples + highlighted words (`esMakeDeck`). Spec: `docs/superpowers/specs/2026-07-01-lecciones-save-and-decks.md`.
+- **BUILD 16 — no auto-regen + custom lessons.** Removed the `_v!==2` auto-regen (was silently re-creating already-loaded lessons = wasted credits). Added a manual "regenerar" button (`leccRegen`, regenerates only on tap). Added a custom-topic input ("¿Qué quieres aprender?" → `leccCreateCustom`) that generates a lesson for any typed topic and lists it under "Mis lecciones" (`window.__customTopics`; `esLessonCache` now carries `label`; React `ES_LESSON_CACHE` stores it; `applyEsLessons` rebuilds custom topics). Spec: `docs/superpowers/specs/2026-07-01-lecciones-no-autoregen-custom.md`.
 
 ## DO THIS FIRST: on-device confirmation (Gabby, iPhone)
 
-Runtime was never exercised in a browser (all verification was static + the AI paths need her device-local key). Have her:
-1. Swipe-close the webclip, reopen, Settings → confirm **BUILD 13** (if lower, it is CACHE — no service worker; consider a network-first SW so the PWA always updates).
+All builds through 16 are verified statically + reviewed, but runtime is confirmed on Gabby's phone as she goes (she has been testing and giving feedback each round). Standing checks after any push:
+1. Swipe-close the webclip, reopen, Settings → confirm the latest BUILD number (if lower, it is CACHE — no service worker; consider a network-first SW so the PWA always updates).
 2. API key pasted in Settings (device-local; needs a fresh non-revoked key from console.anthropic.com).
-3. Spot-check: keyboard sits flush above the chat (no gap); flashcard next has no answer-flash; **Lecciones** → tap a topic → lesson generates → mini-quiz 60%+ checks it off → reopen loads from cache → oír/guardar an example → it appears in Tarjetas "Lecciones" deck; chat "teach me the future tense" returns an explanation + examples.
+3. Lecciones spot-check: lesson shows a real table + highlighted/labeled examples + tips-per-line + English on the list; reopening a loaded lesson is instant with NO regeneration; "regenerar" refreshes on tap; typing a custom topic → "Crear lección" generates + lists it under "Mis lecciones"; heart → "Guardadas"; "Hacer tarjetas de esta lección" → a "Leccion: X" deck in Tarjetas.
 
-## Lecciones follow-up polish (documented, non-blocking, from the final review)
+## Lecciones follow-up polish (documented, non-blocking)
 
 - Home "Lecciones" `.mode` button has no `.icon` SVG like its siblings (renders without the icon column).
-- `leccFinishQuiz` does not disable its button → a double-tap within 1400ms enqueues a duplicate timer + redundant `esLessonProgress` post (not data-corrupting). Fix: disable `#leccFinishBtn` at the top of the function.
 - The iframe message listener does not validate `e.origin` (matches the existing esFlashSets pattern; device-local app).
+- `teachSpanish` (chat) stores the English teach text in the first sentence's `es` slot, so its per-sentence hear/save treats English as Spanish (TTS already skips it; edge-case only). The chat "teach me X" path did NOT get the v2 formatting (table/highlight) or the credit-conscious caching; it is a separate lighter path.
+- Custom-topic slug: an all-symbols input (e.g. "!!!") collapses to `custom-tema` and could overwrite a prior such entry (low stakes).
+- Considered but NOT done: a "regenerar todas al formato nuevo" bulk upgrade (rejected on credit grounds; upgrades are one-at-a-time via the manual button).
 - `teachSpanish` stores the English teach text in the first sentence's `es` slot, so its per-sentence hear/save treats English as Spanish (edge-case only; TTS already skips it).
 
 ## How to work on Pebble (important)
