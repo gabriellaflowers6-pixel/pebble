@@ -425,3 +425,15 @@ Durable key fix (Netlify proxy) and mic button (roadmap C) still open from befor
 **Verify:** checkblock renderLeccionView JS SYNTAX OK; rebake OK marker-present; headless sample-lesson render shows the three themed buttons correct (scratchpad/lecc-view2.png).
 **Committed:** local only — NOT pushed.
 **Notes for next session:** BUILD 18 on device check. Optional: shuffle options on Reiniciar test.
+
+## 2026-07-02 — Lecciones: Test nuevo (fresh questions) + rename Repetir test (BUILD 19)
+**Working on:** Gabby wants two retake modes: redo the same test, AND generate a whole new set of questions after passing (so she isn't retested on answers she already knows).
+**Files changed:** `veo-y-digo-source.html` (re-baked, marker "leccGenTest"), `pebble-app.html` (BUILD 18 → 19).
+**What changed:**
+- Renamed "Reiniciar test" → **"Repetir test"** (same questions, retake, free, no API — function still `leccResetTest`).
+- New **"Test nuevo"** button (`leccNewTest` + `leccGenTest`): explicit-tap call to claude-sonnet-4-6 that regenerates ONLY the practice+quiz (not the whole lesson), tells the model to avoid already-seen questions, swaps them into `leccState.lesson`, clears answers, persists via `esLessonCache` postMessage, re-renders. max_tokens 1500 (cheaper than the 2000 full-lesson gen). Loading + error states inline.
+- Layout: [Repetir test][Test nuevo] row (gold Test nuevo stands out), then full-width "Hacer tarjetas", then olive "Terminar".
+**Credit rule:** compliant — generation only on explicit user tap, questions-only (smaller call), no auto-regen. This is the user-requested paid path, distinct from the free Repetir test.
+**Verify:** checkblock OK on renderLeccionView / leccNewTest / leccGenTest; rebake OK marker-present; headless sample-lesson render shows the four themed buttons correct (scratchpad/lecc-view3.png).
+**Committed:** local only — NOT pushed.
+**Notes for next session:** BUILD 19 device check: "Test nuevo" should show "Creando un test nuevo…" then load different questions; "Repetir test" resets same ones. Both need a valid API key for Test nuevo (Repetir works offline). Optional: a tiny "usa IA" hint under Test nuevo; shuffle options on Repetir.

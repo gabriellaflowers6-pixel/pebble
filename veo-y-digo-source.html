@@ -501,6 +501,9 @@
   .lecc-reset:active { background:rgba(199,92,58,0.10); }
   .lecc-makecards { font-family:'DM Mono',monospace; font-size:0.8rem; font-weight:500; letter-spacing:0.03em; border:1.5px solid var(--olive); background:transparent; color:var(--olive); border-radius:12px; padding:10px 12px; text-align:center; cursor:pointer; }
   .lecc-makecards:active { background:rgba(85,100,52,0.10); }
+  .lecc-newtest { font-family:'DM Mono',monospace; font-size:0.8rem; font-weight:500; letter-spacing:0.03em; border:none; background:var(--gold); color:var(--ink); border-radius:12px; padding:10px 12px; text-align:center; cursor:pointer; }
+  .lecc-newtest:active { filter:brightness(0.94); }
+  .lecc-full { align-self:stretch; width:100%; display:block; margin:0 0 8px; }
   .lecc-finish { align-self:stretch; width:100%; display:block; font-family:'Fraunces',serif; font-weight:900; font-style:italic; font-size:1.12rem; color:var(--paper); background:var(--olive); border:none; border-radius:16px; padding:15px 18px; box-shadow:0 5px 0 #3d4826; cursor:pointer; margin-top:2px; }
   .lecc-finish:active { transform:translateY(2px); box-shadow:0 3px 0 #3d4826; }
 </style>
@@ -6353,9 +6356,10 @@ function renderLeccionView(){
   html += '<div class="lecc-h2">Mini examen</div>';
   html += (lesson.quiz||[]).map((q,i) => leccQuestionHtml('quiz', q, i)).join('');
   html += '<div class="lecc-test-actions">'
-       +  '<button class="lecc-reset" onclick="leccResetTest()">&#8635; Reiniciar test</button>'
-       +  '<button class="lecc-makecards" onclick="leccMakeDeck()">Hacer tarjetas</button>'
+       +  '<button class="lecc-reset" onclick="leccResetTest()">&#8635; Repetir test</button>'
+       +  '<button class="lecc-newtest" onclick="leccNewTest()">Test nuevo</button>'
        +  '</div>';
+  html += '<button class="lecc-makecards lecc-full" onclick="leccMakeDeck()">Hacer tarjetas</button>';
   html += '<button class="lecc-finish" id="leccFinishBtn" onclick="leccFinishQuiz()">Terminar</button>';
   view.innerHTML = html;
 }
@@ -6394,6 +6398,45 @@ function leccResetTest(){
   var v = document.getElementById('leccView');
   var h = v && v.querySelector('.lecc-h2');
   if (h && h.scrollIntoView) h.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+async function leccNewTest(){
+  if (!leccState) return;
+  const topic = leccState.topic;
+  const view = document.getElementById('leccView');
+  if (!window.__claudeKey) {
+    const n = document.createElement('p'); n.className='lecc-loading'; n.textContent='Agrega tu clave de API en ajustes para crear un test nuevo.'; view.appendChild(n); return;
+  }
+  view.innerHTML = '<p class="lecc-loading">Creando un test nuevo&#8230;</p>';
+  const seen = [].concat(leccState.lesson.practice||[], leccState.lesson.quiz||[]).map(function(q){ return q.q; });
+  try {
+    const qs = await leccGenTest(topic, seen);
+    leccState.lesson = Object.assign({}, leccState.lesson, { practice: qs.practice, quiz: qs.quiz });
+    leccState.answers = {};
+    if (window.__esLessons[topic.id]) window.__esLessons[topic.id].lesson = leccState.lesson;
+    try { window.parent.postMessage({ type:'esLessonCache', topicId: topic.id, lesson: leccState.lesson, label: topic.label }, '*'); } catch(e){}
+    renderLeccionView();
+    const v = document.getElementById('leccView'); const h = v && v.querySelector('.lecc-h2');
+    if (h && h.scrollIntoView) h.scrollIntoView({ behavior:'smooth', block:'start' });
+  } catch(e) {
+    renderLeccionView();
+    const n = document.createElement('p'); n.className='lecc-loading'; n.textContent='No se pudo crear el test nuevo. Intenta de nuevo.'; document.getElementById('leccView').appendChild(n);
+  }
+}
+async function leccGenTest(topic, seen){
+  if (!window.__claudeKey) throw new Error('no-key');
+  const avoid = (seen && seen.length) ? (' Do NOT reuse or lightly reword any of these already-seen questions: ' + JSON.stringify(seen.slice(0,20)) + '.') : '';
+  const prompt = 'You are a Spanish teacher for an English speaker (CEFR A1 to B1). For the topic "' + topic.label + '", write a FRESH set of practice and quiz questions. Return ONLY valid JSON, no markdown, matching this exact shape: {"practice":[{"q":"question","options":["a","b","c","d"],"answer":"the correct option exactly","why":"one-sentence why in English"}],"quiz":[{"q":"...","options":["..."],"answer":"...","why":"..."}]}. 6 practice items and 4 quiz items; each has exactly 4 options and an answer that matches one option verbatim. Vary the format (fill in the blank, choose the correct form, translate a short phrase).' + avoid + ' Keep them tight and at the right level.';
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type':'application/json', 'x-api-key': window.__claudeKey, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
+    body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1500, messages: [{ role:'user', content: prompt }] })
+  });
+  if (!res.ok) throw new Error('api-' + res.status);
+  const j = await res.json();
+  const text = (j && j.content && j.content[0] && j.content[0].text) || '';
+  const out = leccParseJson(text);
+  if (!out || !Array.isArray(out.practice) || !Array.isArray(out.quiz) || !out.quiz.length) throw new Error('bad-test');
+  return out;
 }
 
 /* ---- Task 5: hear and save on lesson examples ---- */
