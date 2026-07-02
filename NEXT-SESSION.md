@@ -6,7 +6,7 @@ Paste this to start the next session.
 
 ## >>> READ FIRST <<<
 
-Read `WORKLOG.md` (newest entries at the bottom) and the memory note `project_pebble_spanish_app.md`. Current as of 2026-06-30.
+Read `WORKLOG.md` (newest entries at the bottom) and the memory note `project_pebble_spanish_app.md`. Current as of 2026-07-01.
 
 ## Repo location (IMPORTANT)
 
@@ -45,7 +45,6 @@ All builds through 16 are verified statically + reviewed, but runtime is confirm
 - `teachSpanish` (chat) stores the English teach text in the first sentence's `es` slot, so its per-sentence hear/save treats English as Spanish (TTS already skips it; edge-case only). The chat "teach me X" path did NOT get the v2 formatting (table/highlight) or the credit-conscious caching; it is a separate lighter path.
 - Custom-topic slug: an all-symbols input (e.g. "!!!") collapses to `custom-tema` and could overwrite a prior such entry (low stakes).
 - Considered but NOT done: a "regenerar todas al formato nuevo" bulk upgrade (rejected on credit grounds; upgrades are one-at-a-time via the manual button).
-- `teachSpanish` stores the English teach text in the first sentence's `es` slot, so its per-sentence hear/save treats English as Spanish (edge-case only; TTS already skips it).
 
 ## How to work on Pebble (important)
 
