@@ -506,3 +506,6 @@ Durable key fix (Netlify proxy) and mic button (roadmap C) still open from befor
 **Verify:** inline node syntax gate (all script blocks parse), rebake round-trip OK marker-present, checkbabel BABEL SYNTAX OK. PEBBLE_BUILD 21 -> 22.
 **Committed:** YES - 56264cd. **Pushed:** NO - awaiting Gabby's OK (this + the BUILD 21 worksheet feature are both queued to deploy together).
 **Notes:** This was task 1 of 4 in Gabby's flashcard batch (do one at a time): (1) DONE audio fix; (2) word-list view with add/delete [NOTE: a FlashEditor already exists via "Administrar tarjetas" - verify overlap before building]; (3) add-word English->Spanish AI translate + improve; (4) create-deck-by-subject button (e.g. "beach" -> themed deck, credit rule: explicit tap).
+
+## 2026-07-09 - DEPLOYED: BUILD 21 (paper worksheet) + BUILD 22 (audio fix) LIVE
+Pushed e370c6c..5c163e7 to origin/main -> GitHub Pages. Ships the Hoja de Trabajo "modo papel" feature (BUILD 21) and the conversation-flashcard audio fix (BUILD 22) together. Verifying live via curl for PEBBLE_BUILD = 22.
