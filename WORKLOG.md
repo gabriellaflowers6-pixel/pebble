@@ -534,3 +534,6 @@ Pushed e370c6c..5c163e7 to origin/main -> GitHub Pages. Ships the Hoja de Trabaj
 **Verify (Chrome MCP, stubbed fetch, no spend):** "beach" -> deck "La playa", 3 cards, subject:"beach", exactly 1 fetch; "generar 5 mas" 3->5 (la marea/el faro), 1 fetch; dedup verified at data level (5 stayed 5) and filter logic confirmed (wouldFilter true). Known-minor: the "+N añadidas" toast can overcount under machine-speed double-tap (stale closure) but the button is disabled during the call so real usage uses fresh state and the reducer guarantees no duplicate cards. Test deck + key cleaned from the localhost origin.
 **Committed:** YES - 4d95724. **Pushed:** NO. **BATCH COMPLETE (items 1-4).**
 **Deploy note:** BUILD 24 (translate) + 25 (create deck) are committed and NOT pushed; BUILD 22/23 are already live. Push 24+25 together on Gabby's OK.
+
+## 2026-07-09 - DEPLOYED: BUILD 24 + 25 (flashcard batch complete) LIVE
+Pushed c4647f7..cc167d8 to origin/main -> GitHub Pages. Ships item 3 (AI translate in add box, BUILD 24) and item 4 (create deck by subject + generar 5 mas, BUILD 25). Whole flashcard batch (items 1-4) now live. Verifying PEBBLE_BUILD = 25 via curl.
