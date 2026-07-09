@@ -1110,6 +1110,7 @@ const DEFAULT_DATA = {
   chat: { messages: [] },
   esFlash: { sets: [], recent: [] },
   esLessons: {},
+  wsExtra: {},
   memory: { pending: [] },
 };
 
@@ -1440,6 +1441,16 @@ function dataReducer(state, action) {
     case 'ES_LESSON_SAVE': {
       const cur = state.esLessons[action.topicId] || { status: 'new', lesson: null, score: null };
       return { ...state, esLessons: { ...state.esLessons, [action.topicId]: { ...cur, saved: !!action.saved } } };
+    }
+
+    case 'WS_EXTRA_ADD': {
+      const all = state.wsExtra || {};
+      const cur = all[action.catId] || [];
+      const key = ex => (ex.before || '') + '|' + (ex.after || '');
+      const seen = {}; cur.forEach(ex => { seen[key(ex)] = true; });
+      const add = (action.exercises || []).filter(ex => ex && typeof ex.after === 'string' && Array.isArray(ex.options) && ex.answer && !seen[key(ex)]);
+      if (!add.length) return state;
+      return { ...state, wsExtra: { ...all, [action.catId]: [...cur, ...add] } };
     }
 
     case 'ADD_MEMORY_PENDING': {
@@ -5958,6 +5969,11 @@ function EspanolPage() {
     try { if (frameRef.current && frameRef.current.contentWindow) frameRef.current.contentWindow.postMessage({ type: 'esLessonsData', lessons: data.esLessons || {} }, '*'); } catch (e) {}
   }, [data.esLessons]);
   React.useEffect(() => { postLessons(); }, [data.esLessons, url, postLessons]);
+  // Push cached AI-generated worksheet questions into the embedded app (paper mode)
+  const postWsExtra = React.useCallback(() => {
+    try { if (frameRef.current && frameRef.current.contentWindow) frameRef.current.contentWindow.postMessage({ type: 'wsExtraData', extra: data.wsExtra || {} }, '*'); } catch (e) {}
+  }, [data.wsExtra]);
+  React.useEffect(() => { postWsExtra(); }, [data.wsExtra, url, postWsExtra]);
   // Listen for lesson-related messages from the iframe
   React.useEffect(() => {
     const onMsg = (e) => {
@@ -5965,6 +5981,7 @@ function EspanolPage() {
       if (d.type === 'esLessonCache') dispatch({ type: 'ES_LESSON_CACHE', topicId: d.topicId, lesson: d.lesson, label: d.label });
       else if (d.type === 'esLessonProgress') dispatch({ type: 'ES_LESSON_PROGRESS', topicId: d.topicId, status: d.status, score: d.score });
       else if (d.type === 'esLessonSave') dispatch({ type: 'ES_LESSON_SAVE', topicId: d.topicId, saved: d.saved });
+      else if (d.type === 'wsExtra' && d.catId && Array.isArray(d.exercises)) dispatch({ type: 'WS_EXTRA_ADD', catId: d.catId, exercises: d.exercises });
       else if (d.type === 'esMakeDeck' && d.id && Array.isArray(d.cards)) {
         dispatch({ type: 'ES_FLASH_NEW_SET', id: d.id, label: d.label || d.id, date: new Date().toISOString().slice(0, 10), themed: true });
         d.cards.forEach(c => { if (c && c.es) dispatch({ type: 'ES_FLASH_ADD_CARD', setId: d.id, card: { kind: c.kind || 'sentence', es: c.es, en: c.en || '' } }); });
