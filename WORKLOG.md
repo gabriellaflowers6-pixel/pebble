@@ -517,3 +517,11 @@ Pushed e370c6c..5c163e7 to origin/main -> GitHub Pages. Ships the Hoja de Trabaj
 **Verify:** inline node syntax gate all-parse, checkbabel OK, rebake round-trip OK marker-present. Chrome-MCP: button hidden for Naturaleza / shown for Conversacion, posts correct deckLabel; parent editor pre-selects the matching deck (Mazo Dos, 2 cards), no-match (Naturaleza) falls back without crashing; test decks cleaned from the localhost origin.
 **Committed:** YES - ecb2704. **Pushed:** NO - awaiting Gabby's OK. On-device BUILD 23 check pending.
 **Next:** item 3 (add-word: type English -> AI translates to Spanish -> improve/pick, into the same editor's add box); item 4 (create-deck-by-subject button).
+
+## 2026-07-09 - Flashcards item 3: bidirectional AI translate in add box (BUILD 24)
+**Working on:** Item 3 of the flashcard batch. Gabby: type English, AI translates to Spanish, review, add. Confirmed with her: review step (not one-tap add) + both directions.
+**What shipped:** A "traducir" button beside "añadir" in FlashEditor's add card. Type in either box; translate() picks direction (english->spanish if english filled, else spanish->english; english drives if both filled), key-gated (flash if no key, no call), uses aiCall (claude-sonnet-4-6, device key), strips wrapping quotes, fills the OTHER box. User reviews/tweaks then taps añadir. aiBusy shows "…" + disables; try/catch/finally.
+**Files:** pebble-app.html only (React-side, no re-bake). Spec docs/superpowers/specs/2026-07-09-flashcard-translate-add.md. PEBBLE_BUILD 23 -> 24.
+**Verify (Chrome MCP, stubbed fetch, no real spend):** button renders + wired; no-key -> flash "agrega tu clave", 0 fetches; with key -> en"beach"->es"la playa", es"la playa"->en"the beach", each exactly ONE fetch per tap (verified no double-spend; an initial "4 fetches" reading was a nested-stub artifact, clean re-test = 1). Test key cleaned from the localhost origin afterward.
+**Committed:** YES - 4793221. **Pushed:** NO - awaiting Gabby's OK. On-device BUILD 24 pending.
+**Next:** item 4 (create-deck-by-subject button: type e.g. "beach" -> AI generates a themed deck; credit rule: explicit tap, cache).
