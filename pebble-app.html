@@ -5458,8 +5458,8 @@ function ThemeSwatch({ id, theme, isActive, onSelect, onDelete, isCustom }) {
   );
 }
 
-const PEBBLE_BUILD = 23;
-const PEBBLE_BUILD_NOTE = 'tarjetas: boton editar lista en la pantalla de tarjetas';
+const PEBBLE_BUILD = 24;
+const PEBBLE_BUILD_NOTE = 'tarjetas: boton traducir en el editor (ingles<->espanol con IA)';
 
 function SettingsPanel({ open, onClose }) {
   const { themeId, setTheme, customThemes, deleteCustomTheme } = useContext(ThemeCtx);
@@ -6049,6 +6049,22 @@ function FlashEditor({ open, deckLabel, onClose }) {
     dispatch({ type: 'ES_FLASH_ADD_CARD', setId: deck.id, card });
     setEs(''); setEn(''); flash('añadida ✓');
   };
+  const translate = async () => {
+    if (!data.settings?.apiKey) { flash('agrega tu clave en ajustes'); return; }
+    const dir = en.trim() ? 'en2es' : (es.trim() ? 'es2en' : null);
+    if (!dir) { flash('escribe algo primero'); return; }
+    setAiBusy('translate');
+    try {
+      const prompt = dir === 'en2es'
+        ? 'Translate to natural Latin American Spanish. Return ONLY the translation, no quotes, no explanation: ' + en.trim()
+        : 'Translate to natural English. Return ONLY the translation, no quotes, no explanation: ' + es.trim();
+      const raw = await aiCall(prompt, 200);
+      const out = (raw || '').replace(/^["'\s]+|["'\s]+$/g, '').trim();
+      if (!out) { flash('no pude traducir'); return; }
+      if (dir === 'en2es') setEs(out); else setEn(out);
+    } catch (e) { flash('no pude traducir'); }
+    finally { setAiBusy(''); }
+  };
   const addSuggest = (c) => {
     if (inDeck(c)) { flash('ya guardada'); return; }
     ensureDeck();
@@ -6121,7 +6137,10 @@ function FlashEditor({ open, deckLabel, onClose }) {
               <input value={es} onChange={e => setEs(e.target.value)} placeholder="español" style={inp} autoCapitalize="off" autoCorrect="off" />
               <input value={en} onChange={e => setEn(e.target.value)} placeholder="english" style={inp} />
             </div>
-            <button onClick={add} disabled={!es.trim()} style={{ background: 'var(--primary)', color: 'white', border: 'none', borderRadius: 999, padding: '8px 18px', fontFamily: 'var(--font-body)', fontSize: 12, cursor: 'pointer', opacity: es.trim() ? 1 : 0.4 }}>añadir</button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={translate} disabled={!!aiBusy || (!es.trim() && !en.trim())} style={{ background: 'transparent', color: 'var(--dark)', border: '1px solid rgba(0,0,0,0.15)', borderRadius: 999, padding: '8px 16px', fontFamily: 'var(--font-body)', fontSize: 12, cursor: 'pointer', opacity: (aiBusy || (!es.trim() && !en.trim())) ? 0.4 : 1 }}>{aiBusy === 'translate' ? '…' : '↔ traducir'}</button>
+              <button onClick={add} disabled={!es.trim()} style={{ background: 'var(--primary)', color: 'white', border: 'none', borderRadius: 999, padding: '8px 18px', fontFamily: 'var(--font-body)', fontSize: 12, cursor: 'pointer', opacity: es.trim() ? 1 : 0.4 }}>añadir</button>
+            </div>
           </div>
           {suggestions.length > 0 && (
             <div className="mb-5">
