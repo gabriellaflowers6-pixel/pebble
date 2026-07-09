@@ -5392,6 +5392,7 @@ window.addEventListener('message',function(e){ if(e&&e.data&&e.data.type==='esFl
 window.__esLessons = {};
 function applyEsLessons(l){ try { if (l && typeof l === 'object') { window.__esLessons = l; window.__customTopics = window.__customTopics || {}; Object.keys(l||{}).forEach(function(id){ if (id.indexOf('custom-')===0 && l[id] && l[id].label) window.__customTopics[id] = { id:id, label:l[id].label, en:'' }; }); if (typeof currentScreen !== 'undefined' && currentScreen === 'lecciones') renderLecciones(); } } catch(e){} }
 window.addEventListener('message', function(e){ if (e && e.data && e.data.type === 'esLessonsData') applyEsLessons(e.data.lessons); });
+window.addEventListener('message', function(e){ if (e && e.data && e.data.type === 'wsExtraData' && e.data.extra && typeof e.data.extra === 'object') { window.__wsExtra = e.data.extra; try { const wspEl = document.getElementById('wsPaper'); if (wspEl && wspEl.classList.contains('active') && wspState) wspRender(); } catch(err){} } });
 async function diarioSave(){
   const raw = document.getElementById('diarioInput').value.trim();
   if(!raw) return;
@@ -5873,7 +5874,38 @@ function wspPick(i, k){
 }
 function wspWhy(i){ wspState.why[i] = !wspState.why[i]; wspRender(); }
 function wspRepeat(){ wspState.answers = {}; wspState.open = null; wspState.why = {}; wspState.genMsg = ''; wspRender(); }
-function wspGenExtra(){ /* implemented in Task 3 */ wspState.genMsg = 'Disponible pronto.'; wspRender(); }
+async function wspGenExtra(){
+  const cat = wsCategories[wspState.catIdx];
+  if (!window.__claudeKey) { wspState.genMsg = 'Agrega tu clave de API en ajustes para generar preguntas.'; wspRender(); return; }
+  const btn = document.getElementById('wspGenBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Creando preguntas…'; }
+  const exs = wspExercises(cat);
+  const existing = exs.map(ex => (ex.before||'') + '___' + (ex.after||'')).join(' | ');
+  const prompt = 'You create Spanish fill-in-the-blank exercises for an English speaker (CEFR A1 to B1). Category: "' + cat.label + '" (' + cat.desc + '). '
+    + 'Each exercise drills choosing between these words: ' + JSON.stringify(cat.exercises[0].options) + ' (match capitalization to the position in the sentence). '
+    + 'Return ONLY valid JSON, no markdown, exactly this shape: {"exercises":[{"before":"text before the blank, may be empty","after":"text after the blank, starts with a space if needed","english":"English translation using ___ for the blank","options":["4 choice words"],"answer":"the correct option, exactly one of options","why":"one or two clear English sentences explaining why"}]} '
+    + 'Give 6 exercises. Everyday A1-B1 vocabulary. Do NOT reuse these existing sentences: ' + existing;
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'x-api-key': window.__claudeKey, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1500, messages: [{ role:'user', content: prompt }] })
+    });
+    if (!res.ok) throw new Error('api-' + res.status);
+    const j = await res.json();
+    const text = (j && j.content && j.content[0] && j.content[0].text) || '';
+    const obj = leccParseJson(text);
+    const good = ((obj && obj.exercises) || []).filter(x => x && typeof x.after === 'string' && Array.isArray(x.options) && x.options.length >= 2 && typeof x.answer === 'string' && x.options.indexOf(x.answer) !== -1)
+      .map(x => ({ before: x.before || '', blank: x.answer, after: x.after, english: x.english || '', options: x.options, answer: x.answer, why: x.why || '' }));
+    if (!good.length) throw new Error('bad-shape');
+    window.__wsExtra[cat.id] = ((window.__wsExtra[cat.id]) || []).concat(good);
+    try { window.parent.postMessage({ type:'wsExtra', catId: cat.id, exercises: good }, '*'); } catch(e){}
+    wspState.genMsg = '';
+  } catch(e){
+    wspState.genMsg = 'No se pudo generar. Revisa tu clave o intenta de nuevo.';
+  }
+  wspRender();
+}
 
 function startWsCategory(idx){
   wsCatIdx = idx;
