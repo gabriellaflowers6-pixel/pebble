@@ -5859,7 +5859,7 @@ function wspRender(){
     const right = exs.reduce((n,ex,i) => n + (wspState.answers[i] === ex.answer ? 1 : 0), 0);
     html += '<div class="wsp-score">' + right + ' / ' + exs.length + ' correctas</div>';
   }
-  html += '<div class="wsp-actions"><button class="wsp-rep" onclick="wspRepeat()">↺ Repetir</button><button class="wsp-gen" id="wspGenBtn" onclick="wspGenExtra()">✦ Más preguntas</button></div>';
+  html += '<div class="wsp-actions"><button class="wsp-rep" onclick="wspRepeat()">↺ Repetir</button>' + (wspState.generating ? '<button class="wsp-gen" id="wspGenBtn" disabled>Creando preguntas…</button>' : '<button class="wsp-gen" id="wspGenBtn" onclick="wspGenExtra()">✦ Más preguntas</button>') + '</div>';
   if (wspState.genMsg) html += '<div class="wsp-msg">' + esc(wspState.genMsg) + '</div>';
   document.getElementById('wspBody').innerHTML = html;
 }
@@ -5876,9 +5876,10 @@ function wspWhy(i){ wspState.why[i] = !wspState.why[i]; wspRender(); }
 function wspRepeat(){ wspState.answers = {}; wspState.open = null; wspState.why = {}; wspState.genMsg = ''; wspRender(); }
 async function wspGenExtra(){
   const cat = wsCategories[wspState.catIdx];
+  if (wspState.generating) return;
   if (!window.__claudeKey) { wspState.genMsg = 'Agrega tu clave de API en ajustes para generar preguntas.'; wspRender(); return; }
-  const btn = document.getElementById('wspGenBtn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Creando preguntas…'; }
+  wspState.generating = true;
+  wspRender();
   const exs = wspExercises(cat);
   const existing = exs.map(ex => (ex.before||'') + '___' + (ex.after||'')).join(' | ');
   const prompt = 'You create Spanish fill-in-the-blank exercises for an English speaker (CEFR A1 to B1). Category: "' + cat.label + '" (' + cat.desc + '). '
@@ -5904,6 +5905,7 @@ async function wspGenExtra(){
   } catch(e){
     wspState.genMsg = 'No se pudo generar. Revisa tu clave o intenta de nuevo.';
   }
+  wspState.generating = false;
   wspRender();
 }
 
