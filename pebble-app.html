@@ -1369,7 +1369,7 @@ function dataReducer(state, action) {
     case 'ES_FLASH_NEW_SET': {
       const sets = (state.esFlash?.sets) || [];
       if (sets.some(s => s.id === action.id)) return state;
-      return { ...state, esFlash: { ...state.esFlash, sets: [...sets, { id: action.id, label: action.label, date: action.date, cards: [], themed: !!action.themed }] } };
+      return { ...state, esFlash: { ...state.esFlash, sets: [...sets, { id: action.id, label: action.label, date: action.date, cards: [], themed: !!action.themed, subject: action.subject || null }] } };
     }
     case 'ES_FLASH_ADD_CARD': {
       const sets = (state.esFlash?.sets) || [];
@@ -5458,8 +5458,8 @@ function ThemeSwatch({ id, theme, isActive, onSelect, onDelete, isCustom }) {
   );
 }
 
-const PEBBLE_BUILD = 24;
-const PEBBLE_BUILD_NOTE = 'tarjetas: boton traducir en el editor (ingles<->espanol con IA)';
+const PEBBLE_BUILD = 25;
+const PEBBLE_BUILD_NOTE = 'tarjetas: crear mazo por tema con IA + generar 5 mas';
 
 function SettingsPanel({ open, onClose }) {
   const { themeId, setTheme, customThemes, deleteCustomTheme } = useContext(ThemeCtx);
@@ -6026,6 +6026,8 @@ function FlashEditor({ open, deckLabel, onClose }) {
   const [aiBusy, setAiBusy] = useState('');
   const [aiSugg, setAiSugg] = useState([]);
   const [cats, setCats] = useState(null);
+  const [subj, setSubj] = useState('');
+  const [genN, setGenN] = useState(10);
   React.useEffect(() => {
     if (open && deckLabel) {
       const s = ((data.esFlash && data.esFlash.sets) || []).find(x => x.label === deckLabel);
@@ -6063,6 +6065,40 @@ function FlashEditor({ open, deckLabel, onClose }) {
       if (!out) { flash('no pude traducir'); return; }
       if (dir === 'en2es') setEs(out); else setEn(out);
     } catch (e) { flash('no pude traducir'); }
+    finally { setAiBusy(''); }
+  };
+  const slug = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'tema';
+  const createDeck = async () => {
+    if (!data.settings?.apiKey) { flash('agrega tu clave en ajustes'); return; }
+    const topic = subj.trim();
+    if (!topic) { flash('escribe un tema'); return; }
+    setAiBusy('create');
+    try {
+      const raw = await aiCall('Create a themed Spanish vocabulary deck for an English speaker on the topic: "' + topic + '". Return ONLY valid JSON, no markdown: {"name":"<short deck name in Spanish>","cards":[{"es":"<common Latin American Spanish word or short phrase>","en":"<English translation>"}]}. Give exactly ' + genN + ' cards, common and useful for the topic, no duplicates.', 900);
+      const obj = parseJ(raw, '{', '}') || {};
+      const name = (obj.name && String(obj.name).trim()) || topic;
+      const good = (Array.isArray(obj.cards) ? obj.cards : []).filter(c => c && typeof c.es === 'string' && c.es.trim());
+      if (!good.length) { flash('no pude crear el mazo'); return; }
+      const id = 'deck-' + slug(name) + '-' + Date.now();
+      dispatch({ type: 'ES_FLASH_NEW_SET', id, label: name, date: new Date().toISOString().slice(0, 10), themed: true, subject: topic });
+      good.forEach(c => dispatch({ type: 'ES_FLASH_ADD_CARD', setId: id, card: { kind: 'word', es: c.es.trim(), en: (c.en || '').trim() } }));
+      setDeckId(id); setSubj(''); flash('mazo "' + name + '" creado');
+    } catch (e) { flash('no pude crear el mazo'); }
+    finally { setAiBusy(''); }
+  };
+  const generateMore = async () => {
+    if (!data.settings?.apiKey) { flash('agrega tu clave en ajustes'); return; }
+    const topic = deck.subject || deck.label;
+    setAiBusy('more');
+    try {
+      const have = cards.map(c => c.es).slice(0, 100).join(', ');
+      const raw = await aiCall('Topic: "' + topic + '". Suggest 5 MORE common Latin American Spanish words or short phrases for this topic that are NOT in this list: ' + have + '. Return ONLY valid JSON, no markdown: {"cards":[{"es":"...","en":"..."}]}', 400);
+      const obj = parseJ(raw, '{', '}') || {};
+      const good = (Array.isArray(obj.cards) ? obj.cards : []).filter(c => c && typeof c.es === 'string' && c.es.trim() && !inDeck({ kind: 'word', es: c.es.trim() }));
+      if (!good.length) { flash('sin palabras nuevas'); return; }
+      good.forEach(c => dispatch({ type: 'ES_FLASH_ADD_CARD', setId: deck.id, card: { kind: 'word', es: c.es.trim(), en: (c.en || '').trim() } }));
+      flash('+' + good.length + ' añadidas');
+    } catch (e) { flash('no pude generar'); }
     finally { setAiBusy(''); }
   };
   const addSuggest = (c) => {
@@ -6131,7 +6167,20 @@ function FlashEditor({ open, deckLabel, onClose }) {
               {sets.map(set => <option key={set.id} value={set.id}>{set.label} ({(set.cards || []).length})</option>)}
             </select>
           )}
-          <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--muted)', marginBottom: 12 }}>{cards.length} {cards.length === 1 ? 'tarjeta' : 'tarjetas'}</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--muted)' }}>{cards.length} {cards.length === 1 ? 'tarjeta' : 'tarjetas'}</div>
+            {deck.subject && <button onClick={generateMore} disabled={!!aiBusy} style={{ background: 'transparent', color: 'var(--dark)', border: '1px solid rgba(0,0,0,0.15)', borderRadius: 999, padding: '5px 12px', fontFamily: 'var(--font-body)', fontSize: 11, cursor: 'pointer', opacity: aiBusy ? 0.4 : 1 }}>{aiBusy === 'more' ? '…' : '✨ generar 5 más'}</button>}
+          </div>
+          <div className="glass-card mb-5" style={{ padding: 14 }}>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--muted)', marginBottom: 8 }}>mazo nuevo por tema</div>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+              <input value={subj} onChange={e => setSubj(e.target.value)} placeholder="tema (ej: la playa)" style={inp} />
+              <select value={genN} onChange={e => setGenN(Number(e.target.value))} style={{ ...inp, width: 64, flexShrink: 0 }}>
+                <option value={5}>5</option><option value={10}>10</option><option value={15}>15</option><option value={20}>20</option>
+              </select>
+            </div>
+            <button onClick={createDeck} disabled={!!aiBusy || !subj.trim()} style={{ background: 'var(--primary)', color: 'white', border: 'none', borderRadius: 999, padding: '8px 18px', fontFamily: 'var(--font-body)', fontSize: 12, cursor: 'pointer', opacity: (aiBusy || !subj.trim()) ? 0.4 : 1 }}>{aiBusy === 'create' ? '…' : '✨ crear mazo'}</button>
+          </div>
           <div className="glass-card mb-5" style={{ padding: 14 }}>
             <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
               <input value={es} onChange={e => setEs(e.target.value)} placeholder="español" style={inp} autoCapitalize="off" autoCorrect="off" />
