@@ -6690,7 +6690,7 @@ function fcPlay(t){
   if(b64){ fcAudioEl=new Audio('data:audio/mpeg;base64,'+b64); var pr=fcAudioEl.play(); if(pr&&pr.catch)pr.catch(function(){fcSpeak(t);}); return; }
   fcSpeak(t);
 }
-function sayCard(){ var c=fcDeck[fcIdx]; var t=(c.article?c.article+' ':'')+c.word; fcPlay(t); }
+function sayCard(){ var c=fcDeck[fcIdx]; var t=c.front?c.front:((c.article?c.article+' ':'')+c.word); fcPlay(t); }
 
 /* ===================== STORY HOME ===================== */
 function openStoryHome(){
