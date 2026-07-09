@@ -615,6 +615,7 @@
   <section class="screen" id="flashHome">
     <div class="picker-title">Tarjetas</div>
     <div class="fc-themes" id="fcThemes"></div>
+    <div style="text-align:center;margin:2px 0 8px"><button id="fcEditList" onclick="fcOpenEditList()" style="display:none;font-family:'DM Mono',monospace;font-size:0.74rem;border:1.5px solid var(--olive);background:transparent;color:var(--olive);padding:6px 14px;border-radius:40px;cursor:pointer">&#9999;&#65039; editar lista</button></div>
     <div class="progress" id="fcProgress"></div>
     <div class="stage">
       <div class="card" id="fcCard" onclick="flipCard()">
@@ -6294,9 +6295,12 @@ function buildThemeButtons(){
   });
   el.firstChild.classList.add('active');
 }
+function fcOpenEditList(){ try{ window.parent.postMessage({type:'openFlashEditor', deckLabel: fcDeckName}, '*'); }catch(e){} }
 function loadDeck(kind, key){
   if(kind==='theme'){ fcDeckName=key; fcDeck=themeDecks[key]; }
   else { fcDeckName=stories[key].title; fcDeck=stories[key].deck; }
+  var elb=document.getElementById('fcEditList');
+  if(elb) elb.style.display = ((window.__esFlashNames||[]).indexOf(fcDeckName) >= 0) ? 'inline-block' : 'none';
   fcIdx=0; renderCard();
 }
 let fcRenderToken=0;
