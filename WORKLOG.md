@@ -509,3 +509,11 @@ Durable key fix (Netlify proxy) and mic button (roadmap C) still open from befor
 
 ## 2026-07-09 - DEPLOYED: BUILD 21 (paper worksheet) + BUILD 22 (audio fix) LIVE
 Pushed e370c6c..5c163e7 to origin/main -> GitHub Pages. Ships the Hoja de Trabajo "modo papel" feature (BUILD 21) and the conversation-flashcard audio fix (BUILD 22) together. Verifying live via curl for PEBBLE_BUILD = 22.
+
+## 2026-07-09 - Flashcards item 2: surface the editor from the study screen (BUILD 23)
+**Working on:** Item 2 of Gabby's flashcard batch. She said "i dont see it" about the flashcard editor. Root: FlashEditor (list/add/delete) already exists but was only reachable via Constructor -> Tarjetas -> Administrar tarjetas, far from where she studies cards. So this is discoverability, not a missing feature.
+**What shipped:** An "editar lista" button on the flashHome (Tarjetas) screen, under the deck buttons. Shows ONLY for editable esFlash decks (Conversacion / lessons / themed decks tracked in window.__esFlashNames); hidden for built-in picture/story decks. Tapping posts {type:'openFlashEditor', deckLabel: fcDeckName}; the parent captures deckLabel into new flashEditorDeckLabel state, passes it to FlashEditor, and a pre-select effect (placed before the early return, hook-safe) sets deckId to the set whose label matches. No new editor built (items 3+4 will layer onto the same FlashEditor).
+**Files:** veo-y-digo-source.html (button markup + fcOpenEditList + loadDeck visibility toggle), pebble-app.html (App state + message handler + FlashEditor deckLabel prop + effect), re-baked. Spec docs/superpowers/specs/2026-07-09-flashcard-editor-surface.md. PEBBLE_BUILD 22 -> 23.
+**Verify:** inline node syntax gate all-parse, checkbabel OK, rebake round-trip OK marker-present. Chrome-MCP: button hidden for Naturaleza / shown for Conversacion, posts correct deckLabel; parent editor pre-selects the matching deck (Mazo Dos, 2 cards), no-match (Naturaleza) falls back without crashing; test decks cleaned from the localhost origin.
+**Committed:** YES - ecb2704. **Pushed:** NO - awaiting Gabby's OK. On-device BUILD 23 check pending.
+**Next:** item 3 (add-word: type English -> AI translates to Spanish -> improve/pick, into the same editor's add box); item 4 (create-deck-by-subject button).
