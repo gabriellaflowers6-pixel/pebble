@@ -6,37 +6,43 @@ Paste this to start the next session.
 
 ## >>> READ FIRST <<<
 
-Read `WORKLOG.md` (newest entries at the bottom) and the memory note `project_pebble_spanish_app.md`. Current as of 2026-07-01.
+Read `WORKLOG.md` (newest entries at the bottom) and the memory note `project_pebble_spanish_app.md`. Current as of 2026-07-09.
 
 ## Repo location (IMPORTANT)
 
 Pebble now lives at **`~/dev/pebble`** (moved off `Desktop/my projects/` on 2026-06-30 per CLAUDE.md rule #5, iCloud was evicting `.git` and killing repos). Work here, not on the Desktop. GitHub: `gabriellaflowers6-pixel/pebble`.
 
-## State: BUILD 16, LIVE on main + GitHub Pages
+## State: BUILD 25, LIVE on main + GitHub Pages
 
-Live link: `https://gabriellaflowers6-pixel.github.io/pebble/pebble-app.html`
+Live link: `https://gabriellaflowers6-pixel.github.io/pebble/pebble-app.html` (same URL every deploy; it does not change).
 
 `main` = `origin/main`. All work commits straight to `main` in rapid-iterate mode; the old `lecciones` branch is on origin as a backup.
 
-BUILD number is at the top of Settings (`PEBBLE_BUILD` in `pebble-app.html`), the cache-confirmation tool (no service worker; iOS caches the webclip hard). Bump it on every user-visible change. Currently **BUILD 16**.
+BUILD number is at the top of Settings (`PEBBLE_BUILD` in `pebble-app.html`), the cache-confirmation tool (no service worker; iOS caches the webclip hard). Bump it on every user-visible change. Currently **BUILD 25**.
 
-**CREDIT RULE (Gabby):** never auto-regenerate a cached lesson; each Claude generation costs money. Generate a topic once, cache forever, only regenerate on an explicit "regenerar" tap. Treat AI generations as expensive.
+**CREDIT RULE (Gabby):** never auto-regenerate cached AI content; each Claude generation costs money. Generate once, cache, only regenerate on an explicit tap. Applies to lessons, worksheet "Más preguntas", and the new flashcard AI (translate / create-deck / generar-más). Treat AI generations as expensive.
 
-## Shipped and now live (BUILD 11-16)
+## Shipped and now live (BUILD 11-25)
 
-- **BUILD 11**: keyboard gap fix: `.phone-frame` tracks `visualViewport.offsetTop` via `--kb-top` so the chat composer sits flush above the iOS keyboard.
-- **BUILD 12**: flashcard flip-back spoiler fix: `renderCard` snaps the 3D card to the front without animating.
-- **BUILD 13: Lecciones (new Spanish lessons feature).** `lecciones` screen: phased road-to-fluency checklist (`LECCIONES` const), "Lección de hoy", home nav. Each topic generates a ~10-min lesson via Claude (`leccGenerate`, claude-sonnet-4-6, cached to `data.esLessons` on the React side; `esLessonsData` in / `esLessonCache`+`esLessonProgress` out; res.ok + shape guard). Lesson = teach + pattern + multiple-choice practice (with "why") + mini-quiz (0.6 pass marks done). Hear + save on examples. "teach me X" / "enseñame X" in the Spanish chat (`teachSpanish`). Spec: `docs/superpowers/specs/2026-06-29-spanish-lecciones-design.md`; plan: `docs/superpowers/plans/2026-06-30-spanish-lecciones.md`.
-- **BUILD 14: lesson formatting v2** (shape `_v:2`): pattern is a real horizontal TABLE (`patternTable{headers,rows}`); examples HIGHLIGHT the target word + TAG it (ser/estar); teach is a short intro + `tips[]` per line; the lesson LIST shows English (`en` on all 34 topics). Renderer has backward-compat fallbacks for old-shape lessons. Spec: `docs/superpowers/specs/2026-07-01-lecciones-formatting.md`.
-- **BUILD 15: save + per-lesson decks.** Heart a lesson → "Guardadas" section (`ES_LESSON_SAVE`, `esLessonSave`, `saved` flag). "Hacer tarjetas de esta lección" → themed `Leccion: <topic>` deck from examples + highlighted words (`esMakeDeck`). Spec: `docs/superpowers/specs/2026-07-01-lecciones-save-and-decks.md`.
-- **BUILD 16: no auto-regen + custom lessons.** Removed the `_v!==2` auto-regen (was silently re-creating already-loaded lessons = wasted credits). Added a manual "regenerar" button (`leccRegen`, regenerates only on tap). Added a custom-topic input ("¿Qué quieres aprender?" → `leccCreateCustom`) that generates a lesson for any typed topic and lists it under "Mis lecciones" (`window.__customTopics`; `esLessonCache` now carries `label`; React `ES_LESSON_CACHE` stores it; `applyEsLessons` rebuilds custom topics). Spec: `docs/superpowers/specs/2026-07-01-lecciones-no-autoregen-custom.md`.
+- **BUILD 11-16 (Lecciones + keyboard/flashcard fixes):** keyboard gap fix (`--kb-top`), flashcard flip-back spoiler fix, and the whole **Lecciones** Spanish-lessons feature (checklist, `leccGenerate` AI lessons cached to `data.esLessons`, v2 formatting with real tables + highlighted examples, heart-to-save "Guardadas", per-lesson `Leccion: X` decks via `esMakeDeck`, no-auto-regen + manual "regenerar" + custom "Mis lecciones" topics). Specs in `docs/superpowers/specs/2026-06-29-*` and `2026-07-01-*`.
+- **BUILD 17-19 (Lecciones polish):** themed the Lecciones list/CTA + lesson-view buttons; "Repetir test" (same questions, free) + "Test nuevo" (fresh questions via AI, explicit tap).
+- **BUILD 20:** iOS text-size fix, `html { -webkit-text-size-adjust:100% }` in the Veo source; Safari was font-boosting iframe text so words spilled past edges. If spill recurs, next lever = overflow guards on `.lecc-table` / lesson view.
+- **BUILD 21: Hoja de Trabajo "modo papel".** Second worksheet mode per category: a 📄 button opens a paper page (word key on top, numbered tap-to-fill questions, score, Repetir) + "✦ Más preguntas" (AI generates ~6 more on explicit tap, cached in `data.wsExtra` via `wsExtra`/`wsExtraData` postMessage). Built subagent-driven; specs/plan `docs/superpowers/{specs,plans}/2026-07-08-hoja-papel*`.
+- **BUILD 22: flashcard audio fix.** `sayCard` spoke `c.word` which is ENGLISH for conversation cards (Spanish is in `c.front`); now prefers `c.front`. Picture cards unaffected.
+- **BUILD 23: editar lista.** Surfaced the existing `FlashEditor` from the flashHome study screen, an "editar lista" button (shows only for editable esFlash decks in `window.__esFlashNames`), posts `{openFlashEditor, deckLabel}`, parent pre-selects the matching deck.
+- **BUILD 24: AI translate in add box.** "↔ traducir" button in `FlashEditor`'s add card: type either box, `translate()` fills the other (EN->ES if english filled, else ES->EN), review then añadir. `aiCall`, explicit tap, key-gated.
+- **BUILD 25: create deck by subject.** "mazo nuevo por tema" (subject + size 5/10/15/20 -> `createDeck` AI builds a themed deck with a Spanish name + es/en cards; `ES_FLASH_NEW_SET` now stores `subject`) + "✨ generar 5 más" on subject decks (`generateMore`, reducer dedups). All flashcard management lives in `FlashEditor` (pebble-app.html). Specs `docs/superpowers/specs/2026-07-09-flashcard-*`.
+
+All BUILD 20-25 verified in-browser (Chrome MCP, stubbed fetch for AI paths so no spend) and LIVE. Known-minor deferred: "+N añadidas" toast can overcount under machine-speed double-tap (button is disabled during the call, so real usage is fine; reducer guarantees no duplicate cards).
 
 ## DO THIS FIRST: on-device confirmation (Gabby, iPhone)
 
-All builds through 16 are verified statically + reviewed, but runtime is confirmed on Gabby's phone as she goes (she has been testing and giving feedback each round). Standing checks after any push:
+All builds through 25 are verified statically/in-browser + reviewed, but runtime is confirmed on Gabby's phone as she goes (she tests + gives feedback each round). Standing checks after any push:
 1. Swipe-close the webclip, reopen, Settings → confirm the latest BUILD number (if lower, it is CACHE: no service worker; consider a network-first SW so the PWA always updates).
-2. API key pasted in Settings (device-local; needs a fresh non-revoked key from console.anthropic.com).
-3. Lecciones spot-check: lesson shows a real table + highlighted/labeled examples + tips-per-line + English on the list; reopening a loaded lesson is instant with NO regeneration; "regenerar" refreshes on tap; typing a custom topic → "Crear lección" generates + lists it under "Mis lecciones"; heart → "Guardadas"; "Hacer tarjetas de esta lección" → a "Leccion: X" deck in Tarjetas.
+2. API key pasted in Settings (device-local; needs a fresh non-revoked key from console.anthropic.com). Gabby paid the account 2026-07-09 so AI works again.
+3. Flashcards spot-check (BUILD 22-25): conversation-card 🔊 says the SPANISH; Tarjetas → "editar lista" opens the editor on the current deck; "↔ traducir" fills the other box; "mazo nuevo por tema" (e.g. "beach") creates "La playa" with es/en cards; "✨ generar 5 más" appends on a subject deck.
+4. Worksheet spot-check (BUILD 21): Hoja de Trabajo → 📄 on a category → paper page + "✦ Más preguntas".
+5. Lecciones spot-check: lesson shows a real table + highlighted/labeled examples + tips-per-line + English on the list; reopening a loaded lesson is instant with NO regeneration; "regenerar" / "Test nuevo" refresh on tap; custom topic → "Crear lección" → "Mis lecciones"; heart → "Guardadas".
 
 ## Lecciones follow-up polish (documented, non-blocking)
 
