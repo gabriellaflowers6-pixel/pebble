@@ -498,6 +498,26 @@
   .lecc-test-actions { display:flex; gap:8px; margin:16px 0 10px; align-self:stretch; }
   .lecc-test-actions button { flex:1; }
   .lecc-reset { font-family:'DM Mono',monospace; font-size:0.8rem; font-weight:500; letter-spacing:0.03em; border:1.5px solid var(--terracotta); background:transparent; color:var(--terracotta); border-radius:12px; padding:10px 12px; text-align:center; cursor:pointer; }
+  .wsp-key { background:#fff8ec; border:1.5px solid rgba(42,33,24,0.12); border-radius:12px; padding:12px 14px; margin:10px 0 16px; font-family:'DM Mono',monospace; font-size:0.8rem; line-height:1.7; color:var(--ink); }
+  .wsp-key b { color:var(--terracotta); }
+  .wsp-q { margin:0 0 16px; font-family:'Fraunces',serif; font-size:1.02rem; line-height:1.6; color:var(--ink); overflow-wrap:break-word; }
+  .wsp-num { font-family:'DM Mono',monospace; font-size:0.78rem; color:var(--olive); margin-right:6px; }
+  .wsp-blank { display:inline-block; min-width:52px; border-bottom:2px solid rgba(42,33,24,0.4); text-align:center; cursor:pointer; font-weight:700; }
+  .wsp-blank.right { color:#3c6e2f; border-color:#5f7a43; }
+  .wsp-blank.wrong { color:#c75c3a; border-color:#c75c3a; text-decoration:line-through; }
+  .wsp-fix { color:#3c6e2f; font-weight:700; margin-left:6px; }
+  .wsp-en { display:block; font-family:'DM Mono',monospace; font-size:0.72rem; color:var(--muted); margin-top:2px; }
+  .wsp-opts { display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 4px; }
+  .wsp-opts button { padding:8px 16px; border:1.5px solid rgba(42,33,24,0.2); border-radius:999px; background:var(--paper); font-family:'DM Mono',monospace; font-size:0.85rem; cursor:pointer; }
+  .wsp-why-b { background:none; border:none; font-family:'DM Mono',monospace; font-size:0.72rem; color:var(--olive); text-decoration:underline; cursor:pointer; padding:2px 0; }
+  .wsp-why { font-family:'DM Mono',monospace; font-size:0.78rem; background:#f0ece4; border-radius:8px; padding:10px; margin:6px 0; color:#3a3020; line-height:1.6; }
+  .wsp-score { text-align:center; font-family:'Fraunces',serif; font-size:1.1rem; font-weight:700; margin:18px 0 8px; }
+  .wsp-actions { display:flex; gap:8px; margin:10px 0 30px; }
+  .wsp-actions button { flex:1; }
+  .wsp-gen { font-family:'DM Mono',monospace; font-size:0.8rem; border:1.5px solid var(--gold); background:transparent; color:#8a6a1a; border-radius:12px; padding:11px; cursor:pointer; }
+  .wsp-rep { font-family:'DM Mono',monospace; font-size:0.8rem; border:1.5px solid var(--terracotta); background:transparent; color:var(--terracotta); border-radius:12px; padding:11px; cursor:pointer; }
+  .wsp-divider { font-family:'DM Mono',monospace; font-size:0.66rem; text-transform:uppercase; letter-spacing:0.12em; color:#8a7a62; margin:18px 0 8px; }
+  .wsp-msg { font-family:'DM Mono',monospace; font-size:0.75rem; color:#c75c3a; text-align:center; margin:6px 0; }
   .lecc-reset:active { background:rgba(199,92,58,0.10); }
   .lecc-makecards { font-family:'DM Mono',monospace; font-size:0.8rem; font-weight:500; letter-spacing:0.03em; border:1.5px solid var(--olive); background:transparent; color:var(--olive); border-radius:12px; padding:10px 12px; text-align:center; cursor:pointer; }
   .lecc-makecards:active { background:rgba(85,100,52,0.10); }
@@ -739,6 +759,16 @@
       <span></span>
     </div>
     <div id="wsRefBody" style="padding:0 20px 60px;font-family:'DM Mono',monospace;font-size:.88rem;line-height:1.8;color:#2a1f15"></div>
+  </section>
+
+  <!-- ========== WORKSHEET PAPER MODE (modo papel) ========== -->
+  <section class="screen" id="wsPaper">
+    <div class="reader-nav">
+      <button onclick="openWsCategory()">← Categorías</button>
+      <span id="wspTitle" style="font-family:'DM Mono',monospace;font-size:.85rem;color:var(--muted)"></span>
+      <span></span>
+    </div>
+    <div id="wspBody" style="padding:0 16px 60px;width:100%;max-width:560px"></div>
   </section>
 
   <!-- ========== CONSTRUCTOR DE FRASES ========== -->
@@ -4812,7 +4842,7 @@ const stories = {
 };
 
 /* ===================== NAVIGATION ===================== */
-const screens = ['home','flashHome','storyHome','reader','phrase','test','worksheet','wsHome','wsRef','diario','constructor','atajos','escucha','lecciones'];
+const screens = ['home','flashHome','storyHome','reader','phrase','test','worksheet','wsHome','wsRef','wsPaper','diario','constructor','atajos','escucha','lecciones'];
 
 /* ===================== LECCIONES TOPIC SPINE ===================== */
 const LECCIONES = [
@@ -5775,9 +5805,75 @@ function openWsCategory(){
           <div style="font-family:'DM Mono',monospace;font-size:.78rem;color:#6a5a4a;margin-top:2px">${cat.desc}</div>
         </div>
       </button>
+      <button onclick="openWsPaper(${i})" style="padding:0 14px;background:${cat.color}18;border:2px solid ${cat.color}44;border-radius:12px;cursor:pointer;font-size:1.1rem;flex-shrink:0" title="Hoja (modo papel)">📄</button>
       ${wsRefs[cat.id] ? `<button onclick="openWsRef('${cat.id}')" style="padding:0 14px;background:${cat.color}18;border:2px solid ${cat.color}44;border-radius:12px;cursor:pointer;font-size:1.1rem;flex-shrink:0" title="Reference guide">📖</button>` : ''}
     </div>`).join('');
 }
+
+/* ---- Hoja de trabajo: modo papel ---- */
+let wspState = null; // { catIdx, answers:{i:chosen}, open:i|null, why:{i:bool}, genMsg }
+window.__wsExtra = window.__wsExtra || {};
+
+function wspExercises(cat){
+  const extra = (window.__wsExtra && window.__wsExtra[cat.id]) || [];
+  return cat.exercises.concat(extra);
+}
+function wspKeyHtml(cat){
+  const words = [];
+  cat.exercises.forEach(ex => (ex.options||[]).forEach(o => { const w = o.toLowerCase(); if (words.indexOf(w) === -1) words.push(w); }));
+  const descParts = cat.desc.split('·').map(s => s.trim());
+  const rows = words.map((w,i) => '<b>' + esc(w) + '</b>' + (descParts[i] ? ' = ' + esc(descParts[i]) : '')).join('<br>');
+  const guia = wsRefs[cat.id] ? '<div style="margin-top:8px"><button class="wsp-why-b" onclick="openWsRef(\'' + cat.id + '\')">ver guía completa 📖</button></div>' : '';
+  return '<div class="wsp-key">' + rows + guia + '</div>';
+}
+function openWsPaper(idx){
+  wspState = { catIdx: idx, answers: {}, open: null, why: {}, genMsg: '' };
+  document.getElementById('wspTitle').textContent = wsCategories[idx].label;
+  show('wsPaper');
+  wspRender();
+}
+function wspRender(){
+  const cat = wsCategories[wspState.catIdx];
+  const exs = wspExercises(cat);
+  const baseCount = cat.exercises.length;
+  let html = wspKeyHtml(cat);
+  exs.forEach((ex, i) => {
+    if (i === baseCount) html += '<div class="wsp-divider">Preguntas nuevas ✦</div>';
+    const chosen = wspState.answers[i];
+    let blank;
+    if (chosen == null) blank = '<span class="wsp-blank" onclick="wspOpen(' + i + ')">&nbsp;</span>';
+    else if (chosen === ex.answer) blank = '<span class="wsp-blank right">' + esc(chosen) + '</span>';
+    else blank = '<span class="wsp-blank wrong">' + esc(chosen) + '</span><span class="wsp-fix">' + esc(ex.answer) + '</span>';
+    html += '<div class="wsp-q"><span class="wsp-num">' + (i+1) + '.</span>' + esc(ex.before||'') + blank + esc(ex.after||'')
+      + '<span class="wsp-en">' + esc(ex.english||'') + '</span>';
+    if (wspState.open === i) html += '<div class="wsp-opts">' + ex.options.map((o,k) => '<button onclick="wspPick(' + i + ',' + k + ')">' + esc(o) + '</button>').join('') + '</div>';
+    if (chosen != null) {
+      html += '<button class="wsp-why-b" onclick="wspWhy(' + i + ')">' + (wspState.why[i] ? 'ocultar' : '¿por qué?') + '</button>';
+      if (wspState.why[i]) html += '<div class="wsp-why">' + esc(ex.why||'') + '</div>';
+    }
+    html += '</div>';
+  });
+  const answered = Object.keys(wspState.answers).length;
+  if (exs.length && answered === exs.length) {
+    const right = exs.reduce((n,ex,i) => n + (wspState.answers[i] === ex.answer ? 1 : 0), 0);
+    html += '<div class="wsp-score">' + right + ' / ' + exs.length + ' correctas</div>';
+  }
+  html += '<div class="wsp-actions"><button class="wsp-rep" onclick="wspRepeat()">↺ Repetir</button><button class="wsp-gen" id="wspGenBtn" onclick="wspGenExtra()">✦ Más preguntas</button></div>';
+  if (wspState.genMsg) html += '<div class="wsp-msg">' + esc(wspState.genMsg) + '</div>';
+  document.getElementById('wspBody').innerHTML = html;
+}
+function wspOpen(i){ wspState.open = (wspState.open === i ? null : i); wspRender(); }
+function wspPick(i, k){
+  const cat = wsCategories[wspState.catIdx];
+  const ex = wspExercises(cat)[i];
+  if (!ex || !ex.options[k] || wspState.answers[i] != null) return;
+  wspState.answers[i] = ex.options[k];
+  wspState.open = null;
+  wspRender();
+}
+function wspWhy(i){ wspState.why[i] = !wspState.why[i]; wspRender(); }
+function wspRepeat(){ wspState.answers = {}; wspState.open = null; wspState.why = {}; wspState.genMsg = ''; wspRender(); }
+function wspGenExtra(){ /* implemented in Task 3 */ wspState.genMsg = 'Disponible pronto.'; wspRender(); }
 
 function startWsCategory(idx){
   wsCatIdx = idx;
