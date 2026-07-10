@@ -537,3 +537,10 @@ Pushed e370c6c..5c163e7 to origin/main -> GitHub Pages. Ships the Hoja de Trabaj
 
 ## 2026-07-09 - DEPLOYED: BUILD 24 + 25 (flashcard batch complete) LIVE
 Pushed c4647f7..cc167d8 to origin/main -> GitHub Pages. Ships item 3 (AI translate in add box, BUILD 24) and item 4 (create deck by subject + generar 5 mas, BUILD 25). Whole flashcard batch (items 1-4) now live. Verifying PEBBLE_BUILD = 25 via curl.
+
+## 2026-07-10 - Fix: flashcard editor button always visible (BUILD 26)
+**Bug (Gabby):** "i dont see the editor button anywhere." The BUILD 23 "editar lista" button only rendered for editable esFlash decks (window.__esFlashNames), but Tarjetas opens on a built-in picture deck (Naturaleza) by default, so it was hidden there, and a user with no editable decks (or on a built-in one) had NO visible way into the editor, hence no way to reach "mazo nuevo por tema" to create a first deck. Chicken-and-egg gap flagged earlier this session.
+**Fix (veo source):** removed the display:none default + the loadDeck visibility toggle; the button is now ALWAYS shown under the deck buttons, relabeled "editar / crear mazos". fcOpenEditList still posts the current deckLabel so the editor pre-selects it when editable, else opens at the default deck (where the create-by-subject box lives). Re-baked.
+**Verify:** inline node syntax gate all-parse, rebake OK marker-present, checkbabel OK. Chrome MCP (local veo source): button visible on the default Naturaleza deck, posts openFlashEditor. PEBBLE_BUILD 25 -> 26.
+**Committed:** YES - 375ff07. **Pushed:** NO - awaiting Gabby's OK.
+**Note:** durable UX follow-up if still confusing: a dedicated "＋ nuevo mazo" entry, or auto-open Tarjetas on the user's own deck instead of Naturaleza.
